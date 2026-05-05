@@ -1,0 +1,45 @@
+const { DataTypes, Model } = require('sequelize');
+const sequelize = require('../config/database');
+
+class CustomFieldValue extends Model {}
+
+CustomFieldValue.init(
+  {
+    id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    customFieldId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: false,
+      field: 'custom_field_id',
+    },
+    userId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+      field: 'user_id',
+    },
+    registrationId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+      field: 'registration_id',
+    },
+    articleId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+      field: 'article_id',
+    },
+    value: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+  },
+  {
+    sequelize,
+    modelName: 'CustomFieldValue',
+    tableName: 'custom_field_values',
+  }
+);
+
+module.exports = CustomFieldValue;

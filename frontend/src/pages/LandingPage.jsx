@@ -76,9 +76,9 @@ function LandingPage() {
               <Link to="/login">
                 <Button
                   variant="ghost"
-                  className="min-w-44 border border-white/30 bg-transparent text-white hover:bg-white/10"
+                  className="min-w-44 border border-white/40 bg-white/8 text-[#13253d]  hover:bg-slate-100"
                 >
-                  Ingresar
+                  INGRESAR
                 </Button>
               </Link>
             </div>
