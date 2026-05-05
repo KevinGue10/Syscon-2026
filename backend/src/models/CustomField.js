@@ -7,12 +7,12 @@ class CustomField extends Model {}
 CustomField.init(
   {
     id: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
     eventEditionId: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       allowNull: false,
       field: 'event_edition_id',
     },
@@ -43,7 +43,7 @@ CustomField.init(
       field: 'options_json',
     },
     displayOrder: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
       field: 'display_order',
@@ -64,6 +64,7 @@ CustomField.init(
     sequelize,
     modelName: 'CustomField',
     tableName: 'custom_fields',
+    timestamps: false,
   }
 );
 

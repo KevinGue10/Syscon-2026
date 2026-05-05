@@ -6,12 +6,12 @@ class AuditLog extends Model {}
 AuditLog.init(
   {
     id: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
     userId: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       allowNull: true,
       field: 'user_id',
     },
@@ -42,18 +42,14 @@ AuditLog.init(
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW,
-    },
-    updatedAt: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW,
+      field: 'created_at',
     },
   },
   {
     sequelize,
     modelName: 'AuditLog',
     tableName: 'audit_logs',
-    updatedAt: false,
+    timestamps: false,
   }
 );
 

@@ -1,33 +1,31 @@
 export const participantTypes = [
   {
     id: 'attendee',
-    title: 'Attendee',
-    description: 'Access sessions, networking spaces, and conference material.',
-    price: 220,
+    title: 'Asistente',
+    description: 'Participacion general en sesiones, networking y agenda de conferencia.',
   },
   {
     id: 'author',
-    title: 'Author',
-    description: 'Includes presentation registration and one paper submission.',
-    price: 420,
-  },
-  {
-    id: 'student',
-    title: 'Student',
-    description: 'Reduced access tier for student researchers and volunteers.',
-    price: 140,
-  },
-  {
-    id: 'workshop',
-    title: 'Workshop Only',
-    description: 'Single-track access for tutorials and workshops.',
-    price: 95,
+    title: 'Autor',
+    description: 'Registro para autores con carga de articulos y resumen de pago posterior.',
   },
 ];
 
 export const registrationSteps = [
-  'Personal Info',
-  'Participant Type',
-  'Papers',
-  'Payment Summary',
+  'Cuenta',
+  'Inscripcion',
+  'Articulos',
+  'Resumen',
+];
+
+export const attendanceTypes = [
+  { value: 'in_person', label: 'Presencial' },
+  { value: 'virtual', label: 'Virtual' },
+];
+
+export const memberTypes = [
+  { value: 'ieee_member', label: 'Miembro IEEE' },
+  { value: 'non_ieee_member', label: 'No miembro IEEE' },
+  { value: 'student', label: 'Estudiante' },
+  { value: 'professional', label: 'Profesional' },
 ];

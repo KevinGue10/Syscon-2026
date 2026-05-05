@@ -6,7 +6,7 @@ class Coupon extends Model {}
 Coupon.init(
   {
     id: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
@@ -30,6 +30,7 @@ Coupon.init(
     sequelize,
     modelName: 'Coupon',
     tableName: 'coupons',
+    timestamps: false,
   }
 );
 

@@ -7,7 +7,7 @@ class User extends Model {}
 User.init(
   {
     id: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
@@ -35,7 +35,7 @@ User.init(
       field: 'password_hash',
     },
     countryId: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       allowNull: false,
       field: 'country_id',
     },

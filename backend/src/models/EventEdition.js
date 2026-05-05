@@ -6,7 +6,7 @@ class EventEdition extends Model {}
 EventEdition.init(
   {
     id: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
@@ -31,6 +31,7 @@ EventEdition.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
+      field: 'is_active',
     },
   },
   {

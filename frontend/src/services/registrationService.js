@@ -1,21 +1,32 @@
 import api from './api';
-import { calculatePricing } from '../utils/pricing';
+import { normalizeBackendRegistration } from '../utils/backendMappers';
 
 export const registrationService = {
-  async submitRegistration(payload) {
-    void api;
+  async createRegistration(payload) {
+    const { data } = await api.post('/registrations', payload);
 
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const pricing = calculatePricing(payload);
-        resolve({
-          id: `REG-${Math.floor(Math.random() * 9000) + 1000}`,
-          ...payload,
-          pricing,
-          paymentStatus: pricing.balance > 0 ? 'Partial' : 'Paid',
-          createdAt: new Date().toISOString(),
-        });
-      }, 800);
-    });
+    return {
+      raw: data,
+      registration: normalizeBackendRegistration({
+        registration: data.registration,
+        paymentSummary: data.paymentSummary,
+      }),
+    };
+  },
+
+  async addPaper(registrationId, payload) {
+    const { data } = await api.post(`/registrations/${registrationId}/papers`, payload);
+    return data;
+  },
+
+  async getPaymentSummary(registrationId) {
+    const { data } = await api.get(`/registrations/${registrationId}/payment-summary`);
+    return {
+      raw: data,
+      registration: normalizeBackendRegistration({
+        registration: data.registration,
+        paymentSummary: data.paymentSummary,
+      }),
+    };
   },
 };

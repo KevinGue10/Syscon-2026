@@ -7,7 +7,7 @@ const sequelize = new Sequelize(env.db.name, env.db.user, env.db.password, {
   dialect: 'mysql',
   logging: env.nodeEnv === 'development' ? false : false,
   define: {
-    underscored: false,
+    underscored: true,
     freezeTableName: true,
   },
   timezone: '+00:00',

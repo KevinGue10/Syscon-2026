@@ -7,17 +7,17 @@ class EmailLog extends Model {}
 EmailLog.init(
   {
     id: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
     userId: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       allowNull: true,
       field: 'user_id',
     },
     registrationId: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       allowNull: true,
       field: 'registration_id',
     },
@@ -45,7 +45,7 @@ EmailLog.init(
     sequelize,
     modelName: 'EmailLog',
     tableName: 'email_logs',
-    updatedAt: false,
+    timestamps: false,
   }
 );
 

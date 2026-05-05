@@ -6,27 +6,27 @@ class CustomFieldValue extends Model {}
 CustomFieldValue.init(
   {
     id: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
     customFieldId: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       allowNull: false,
       field: 'custom_field_id',
     },
     userId: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       allowNull: true,
       field: 'user_id',
     },
     registrationId: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       allowNull: true,
       field: 'registration_id',
     },
     articleId: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       allowNull: true,
       field: 'article_id',
     },
@@ -39,6 +39,7 @@ CustomFieldValue.init(
     sequelize,
     modelName: 'CustomFieldValue',
     tableName: 'custom_field_values',
+    timestamps: false,
   }
 );
 

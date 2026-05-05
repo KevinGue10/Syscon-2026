@@ -1,40 +1,27 @@
 import api from './api';
-
-const mockUsers = {
-  'attendee@ieee.org': {
-    id: 'user-001',
-    name: 'Camila Torres',
-    email: 'attendee@ieee.org',
-    role: 'user',
-    organization: 'National University Research Lab',
-  },
-  'admin@ieee.org': {
-    id: 'admin-001',
-    name: 'Marcus Chen',
-    email: 'admin@ieee.org',
-    role: 'admin',
-    organization: 'IEEE Coordination Team',
-  },
-};
+import { normalizeAuthUser } from '../utils/backendMappers';
 
 export const authService = {
   async login(credentials) {
-    void api;
+    const { data } = await api.post('/auth/login', credentials);
+    return {
+      token: data.token,
+      user: normalizeAuthUser(data.user),
+      message: data.message,
+    };
+  },
 
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const user = mockUsers[credentials.email?.toLowerCase()];
+  async register(payload) {
+    const { data } = await api.post('/auth/register', payload);
+    return {
+      token: data.token,
+      user: normalizeAuthUser(data.user),
+      message: data.message,
+    };
+  },
 
-        if (!user || !credentials.password || credentials.password.length < 6) {
-          reject(new Error('Invalid credentials for mock login.'));
-          return;
-        }
-
-        resolve({
-          token: `mock-token-${user.id}`,
-          user,
-        });
-      }, 700);
-    });
+  async getCurrentUser() {
+    const { data } = await api.get('/auth/me');
+    return normalizeAuthUser(data.user);
   },
 };

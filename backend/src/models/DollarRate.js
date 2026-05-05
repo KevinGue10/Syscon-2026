@@ -6,7 +6,7 @@ class DollarRate extends Model {}
 DollarRate.init(
   {
     id: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
@@ -24,6 +24,7 @@ DollarRate.init(
     sequelize,
     modelName: 'DollarRate',
     tableName: 'dollar_rates',
+    timestamps: false,
   }
 );
 

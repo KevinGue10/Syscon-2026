@@ -6,7 +6,7 @@ class Country extends Model {}
 Country.init(
   {
     id: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
@@ -23,6 +23,7 @@ Country.init(
     sequelize,
     modelName: 'Country',
     tableName: 'countries',
+    timestamps: false,
   }
 );
 

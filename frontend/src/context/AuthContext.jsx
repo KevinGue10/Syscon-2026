@@ -13,8 +13,7 @@ const INITIAL_AUTH = storage.get('ieee-auth', {
 export function AuthProvider({ children }) {
   const [authState, setAuthState] = useState(INITIAL_AUTH);
 
-  const login = async (credentials) => {
-    const response = await authService.login(credentials);
+  const setAuthenticatedState = (response) => {
     const nextState = {
       user: response.user,
       token: response.token,
@@ -24,6 +23,17 @@ export function AuthProvider({ children }) {
     storage.set('ieee-auth', nextState);
     localStorage.setItem('ieee-auth-token', response.token);
     setAuthState(nextState);
+  };
+
+  const login = async (credentials) => {
+    const response = await authService.login(credentials);
+    setAuthenticatedState(response);
+    return response.user;
+  };
+
+  const register = async (payload) => {
+    const response = await authService.register(payload);
+    setAuthenticatedState(response);
     return response.user;
   };
 
@@ -41,6 +51,7 @@ export function AuthProvider({ children }) {
     () => ({
       ...authState,
       login,
+      register,
       logout,
     }),
     [authState],

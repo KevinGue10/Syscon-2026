@@ -7,12 +7,12 @@ class PricingRule extends Model {}
 PricingRule.init(
   {
     id: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
     eventEditionId: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       allowNull: false,
       field: 'event_edition_id',
     },
@@ -78,6 +78,7 @@ PricingRule.init(
     sequelize,
     modelName: 'PricingRule',
     tableName: 'pricing_rules',
+    timestamps: false,
   }
 );
 

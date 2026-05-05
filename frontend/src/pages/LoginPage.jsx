@@ -20,8 +20,8 @@ function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
-      email: 'attendee@ieee.org',
-      password: '123456',
+      email: '',
+      password: '',
     },
   });
 
@@ -43,20 +43,20 @@ function LoginPage() {
       <div className="mx-auto max-w-xl">
         <Card className="p-8 sm:p-10">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-            Secure Access
+            Acceso
           </p>
-          <h1 className="mt-3 text-4xl font-semibold text-slate-950">Sign in to the platform</h1>
+          <h1 className="mt-3 text-4xl font-semibold text-slate-950">Ingresa a la plataforma</h1>
           <p className="mt-4 text-sm text-slate-600">
-            Mock authentication is enabled. Use `attendee@ieee.org` or `admin@ieee.org`.
+            Este formulario usa el backend local real configurado en `VITE_API_URL`.
           </p>
 
           <form className="mt-8 grid gap-5" onSubmit={handleSubmit(onSubmit)}>
-            {error ? <Alert title="Login failed" description={error} variant="danger" /> : null}
+            {error ? <Alert title="No fue posible iniciar sesion" description={error} variant="danger" /> : null}
 
             <InputField
               label="Email"
               type="email"
-              placeholder="attendee@ieee.org"
+              placeholder="correo@dominio.com"
               error={errors.email?.message}
               {...register('email', {
                 required: 'Email is required',
@@ -70,19 +70,19 @@ function LoginPage() {
             <InputField
               label="Password"
               type="password"
-              placeholder="Minimum 6 characters"
+              placeholder="Minimo 8 caracteres"
               error={errors.password?.message}
               {...register('password', {
                 required: 'Password is required',
                 minLength: {
-                  value: 6,
-                  message: 'Password must have at least 6 characters',
+                  value: 8,
+                  message: 'Password must have at least 8 characters',
                 },
               })}
             />
 
             <Button type="submit" variant="primary" disabled={isSubmitting} className="mt-2">
-              {isSubmitting ? 'Signing in...' : 'Login'}
+              {isSubmitting ? 'Ingresando...' : 'Ingresar'}
             </Button>
           </form>
         </Card>

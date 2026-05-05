@@ -31,6 +31,13 @@ export function SessionProvider({ children }) {
     }));
   };
 
+  const setRegistrations = (registrations) => {
+    setSession((current) => ({
+      ...current,
+      registrations,
+    }));
+  };
+
   const clearSession = () => {
     setSession(initialSession);
   };
@@ -40,6 +47,7 @@ export function SessionProvider({ children }) {
       session,
       setUserProfile,
       addRegistration,
+      setRegistrations,
       clearSession,
     }),
     [session],
