@@ -23,9 +23,20 @@ export const attendanceTypes = [
   { value: 'virtual', label: 'Virtual' },
 ];
 
-export const memberTypes = [
-  { value: 'ieee_member', label: 'Miembro IEEE' },
-  { value: 'non_ieee_member', label: 'No miembro IEEE' },
-  { value: 'student', label: 'Estudiante' },
+export const occupationTypes = [
   { value: 'professional', label: 'Profesional' },
+  { value: 'student', label: 'Estudiante' },
+];
+
+export const genderOptions = [
+  { value: 'female', label: 'Femenino' },
+  { value: 'male', label: 'Masculino' },
+  { value: 'other', label: 'Otro' },
+];
+
+export const documentTypeOptions = [
+  { value: 'CC', label: 'Cedula de ciudadania' },
+  { value: 'CE', label: 'Cedula de extranjeria' },
+  { value: 'TI', label: 'Tarjeta de identidad' },
+  { value: 'PP', label: 'Pasaporte' },
 ];

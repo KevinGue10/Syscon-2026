@@ -43,6 +43,31 @@ User.init(
       type: DataTypes.STRING(100),
       allowNull: false,
     },
+    address: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'address',
+    },
+    birthDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+      field: 'birth_date',
+    },
+    gender: {
+      type: DataTypes.STRING(30),
+      allowNull: true,
+      field: 'gender',
+    },
+    docType: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      field: 'doc_type',
+    },
+    docNumber: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      field: 'doc_number',
+    },
     affiliation: {
       type: DataTypes.STRING(150),
       allowNull: false,
@@ -52,6 +77,11 @@ User.init(
       type: DataTypes.STRING(30),
       allowNull: false,
       field: 'phone_number',
+    },
+    occupation: {
+      type: DataTypes.STRING(150),
+      allowNull: true,
+      field: 'occupation',
     },
     role: {
       type: DataTypes.ENUM(...Object.values(USER_ROLES)),

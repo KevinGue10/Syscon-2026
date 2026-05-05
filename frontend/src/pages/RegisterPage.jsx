@@ -11,7 +11,9 @@ import { Stepper } from '../components/Stepper';
 import { TextAreaField } from '../components/TextAreaField';
 import {
   attendanceTypes,
-  memberTypes,
+  documentTypeOptions,
+  genderOptions,
+  occupationTypes,
   participantTypes,
   registrationSteps,
 } from '../constants/participantTypes';
@@ -30,11 +32,17 @@ const defaultValues = {
   phoneNumber: '',
   countryId: '',
   city: '',
+  address: '',
+  birthDate: '',
+  gender: '',
+  docType: '',
+  docNumber: '',
   affiliation: '',
+  occupation: '',
   eventEditionId: '',
   participationType: 'attendee',
   attendanceType: 'in_person',
-  memberType: 'professional',
+  registrationCategory: 'professional',
   isIeeeMember: false,
   membershipNumber: '',
   papers: [],
@@ -82,6 +90,7 @@ function RegisterPage() {
   const values = watch();
   const selectedEventEditionId = values.eventEditionId;
   const isIeeeMember = watch('isIeeeMember');
+  const isFinalStep = currentStep === registrationSteps.length - 1;
 
   useEffect(() => {
     async function loadMetadata() {
@@ -199,11 +208,32 @@ function RegisterPage() {
   const summaryRows = [
     { label: 'Tipo de participacion', value: labelFromOptions(values.participationType, participantOptions) },
     { label: 'Modalidad', value: labelFromOptions(values.attendanceType, attendanceTypes) },
-    { label: 'Tipo de miembro', value: labelFromOptions(values.memberType, memberTypes) },
+    {
+      label: 'Categoria de inscripcion',
+      value: labelFromOptions(values.registrationCategory, occupationTypes),
+    },
     { label: 'Articulos preparados', value: `${paperFields.length}` },
     {
       label: 'Miembro IEEE',
       value: values.isIeeeMember ? 'Si' : 'No',
+    },
+  ];
+
+  const guidanceItems = [
+    {
+      title: 'Informacion personal',
+      description:
+        'Ingresa los datos del participante tal como deben quedar en el registro oficial del evento.',
+    },
+    {
+      title: 'Datos de inscripcion',
+      description:
+        'Selecciona modalidad, tipo de participacion y perfil de miembro para calcular la tarifa correspondiente.',
+    },
+    {
+      title: 'Articulos y soporte',
+      description:
+        'Si vas a registrar ponencias o articulos, ten a mano el codigo, autores y numero de paginas.',
     },
   ];
 
@@ -216,7 +246,13 @@ function RegisterPage() {
       'phoneNumber',
       'countryId',
       'city',
+      'address',
+      'birthDate',
+      'gender',
+      'docType',
+      'docNumber',
       'affiliation',
+      'occupation',
       ...metadata.customFields.user.map((field) => customFieldName('user', field.id)),
     ];
 
@@ -224,7 +260,7 @@ function RegisterPage() {
       'eventEditionId',
       'participationType',
       'attendanceType',
-      'memberType',
+      'registrationCategory',
       ...(isIeeeMember ? ['membershipNumber'] : []),
       ...metadata.customFields.registration.map((field) => customFieldName('registration', field.id)),
     ];
@@ -246,6 +282,11 @@ function RegisterPage() {
   };
 
   const onSubmit = async (data) => {
+    if (!isFinalStep) {
+      await validateStep();
+      return;
+    }
+
     try {
       setFormError('');
 
@@ -266,8 +307,14 @@ function RegisterPage() {
         password: data.password,
         countryId: Number(data.countryId),
         city: data.city,
+        address: data.address,
+        birthDate: data.birthDate,
+        gender: data.gender,
+        docType: data.docType,
+        docNumber: data.docNumber,
         affiliation: data.affiliation,
         phoneNumber: data.phoneNumber,
+        occupation: data.occupation,
         customFieldValues: userCustomValues,
       });
 
@@ -275,7 +322,10 @@ function RegisterPage() {
         eventEditionId: Number(data.eventEditionId),
         participationType: data.participationType,
         attendanceType: data.attendanceType,
-        memberType: data.memberType,
+        memberType: resolveMemberType({
+          occupation: data.registrationCategory,
+          isIeeeMember: data.isIeeeMember,
+        }),
         isIeeeMember: Boolean(data.isIeeeMember),
         membershipNumber: data.isIeeeMember ? data.membershipNumber : '',
         status: 'submitted',
@@ -332,20 +382,23 @@ function RegisterPage() {
     }
   };
 
+  const submitRegistration = handleSubmit(onSubmit);
+
   return (
     <section className="container-shell py-16">
       <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-6">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-              Registro conectado al backend
+              Formulario de inscripcion
             </p>
             <h1 className="mt-3 text-4xl font-semibold text-slate-950">
-              Crea tu cuenta e inscripcion del evento
+              Completa tu registro para participar en TEMSCON LATAM 2026
             </h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
-              Este flujo usa los endpoints reales del backend local: metadatos, alta de usuario,
-              creacion de inscripcion y carga de articulos.
+              Diligencia tu informacion personal, define el tipo de participacion y agrega los
+              articulos que vayas a presentar. Al finalizar, tu inscripcion quedara asociada a la
+              cuenta creada en la plataforma.
             </p>
           </div>
 
@@ -360,7 +413,21 @@ function RegisterPage() {
               />
             ) : null}
 
-            <form className="space-y-8" onSubmit={handleSubmit(onSubmit)}>
+            <form
+              className="space-y-8"
+              onSubmit={(event) => event.preventDefault()}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && event.target.tagName !== 'TEXTAREA') {
+                  event.preventDefault();
+
+                  if (isFinalStep) {
+                    submitRegistration();
+                  } else {
+                    validateStep();
+                  }
+                }
+              }}
+            >
               {formError ? (
                 <Alert title="Error de registro" description={formError} variant="danger" />
               ) : null}
@@ -375,7 +442,7 @@ function RegisterPage() {
                   <InputField
                     label="Apellidos"
                     error={errors.lastName?.message}
-                    {...register('lastName', { required: 'El apellido es obligatorio' })}
+                    {...register('lastName', { required: 'Los apellidos son obligatorios' })}
                   />
                   <InputField
                     label="Correo electronico"
@@ -393,7 +460,7 @@ function RegisterPage() {
                     label="Contrasena"
                     type="password"
                     error={errors.password?.message}
-                    helperText="El backend exige minimo 8 caracteres."
+                    helperText="Debe tener al menos 8 caracteres."
                     {...register('password', {
                       required: 'La contrasena es obligatoria',
                       minLength: {
@@ -419,9 +486,51 @@ function RegisterPage() {
                     {...register('city', { required: 'La ciudad es obligatoria' })}
                   />
                   <InputField
+                    label="Direccion"
+                    error={errors.address?.message}
+                    {...register('address', { required: 'La direccion es obligatoria' })}
+                  />
+                  <InputField
+                    label="Fecha de nacimiento"
+                    type="date"
+                    error={errors.birthDate?.message}
+                    {...register('birthDate', {
+                      required: 'La fecha de nacimiento es obligatoria',
+                    })}
+                  />
+                  <SelectField
+                    label="Genero"
+                    options={genderOptions}
+                    error={errors.gender?.message}
+                    {...register('gender', { required: 'El genero es obligatorio' })}
+                  />
+                  <SelectField
+                    label="Tipo de documento"
+                    options={documentTypeOptions}
+                    error={errors.docType?.message}
+                    {...register('docType', {
+                      required: 'El tipo de documento es obligatorio',
+                    })}
+                  />
+                  <InputField
+                    label="Numero de documento"
+                    error={errors.docNumber?.message}
+                    {...register('docNumber', {
+                      required: 'El numero de documento es obligatorio',
+                    })}
+                  />
+                  <InputField
                     label="Afiliacion"
                     error={errors.affiliation?.message}
                     {...register('affiliation', { required: 'La afiliacion es obligatoria' })}
+                  />
+                  <InputField
+                    label="Ocupacion"
+                    placeholder="Ejemplo: Engineer"
+                    error={errors.occupation?.message}
+                    {...register('occupation', {
+                      required: 'La ocupacion es obligatoria',
+                    })}
                   />
                   <div className="md:col-span-2">
                     <DynamicCustomFields
@@ -437,14 +546,17 @@ function RegisterPage() {
               {currentStep === 1 ? (
                 <div className="space-y-5">
                   <div className="grid gap-5 md:grid-cols-2">
-                    <SelectField
-                      label="Edicion del evento"
-                      options={eventEditionOptions}
-                      error={errors.eventEditionId?.message}
-                      {...register('eventEditionId', {
-                        required: 'La edicion del evento es obligatoria',
-                      })}
-                    />
+                    <div className="flex flex-col gap-2">
+                      <span className="text-sm font-semibold text-slate-700">Conferencia</span>
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                        <p className="text-sm font-semibold text-slate-900">
+                          {eventEditionOptions[0]?.label || 'TEMSCON LATAM 2026'}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          Esta inscripcion corresponde a la edicion activa del evento.
+                        </p>
+                      </div>
+                    </div>
                     <SelectField
                       label="Tipo de participacion"
                       options={participantOptions}
@@ -462,11 +574,11 @@ function RegisterPage() {
                       })}
                     />
                     <SelectField
-                      label="Tipo de miembro"
-                      options={memberTypes}
-                      error={errors.memberType?.message}
-                      {...register('memberType', {
-                        required: 'El tipo de miembro es obligatorio',
+                      label="Categoria de inscripcion"
+                      options={occupationTypes}
+                      error={errors.registrationCategory?.message}
+                      {...register('registrationCategory', {
+                        required: 'La categoria de inscripcion es obligatoria',
                       })}
                     />
                   </div>
@@ -476,9 +588,6 @@ function RegisterPage() {
                     <span>
                       <span className="block text-sm font-semibold text-slate-800">
                         Confirmo que soy miembro IEEE
-                      </span>
-                      <span className="block text-sm text-slate-500">
-                        Si activas esta opcion, el backend recibira `isIeeeMember=true`.
                       </span>
                     </span>
                   </label>
@@ -617,8 +726,8 @@ function RegisterPage() {
               {currentStep === 3 ? (
                 <div className="space-y-6">
                   <Alert
-                    title="Resumen conectado al backend"
-                    description="El costo definitivo no se calcula localmente. El backend lo resolvera con las reglas activas de pricing cuando completes el envio."
+                    title="Resumen de inscripcion"
+                    description="Revisa la informacion antes de finalizar el registro. El valor definitivo se reflejara segun la configuracion vigente del evento."
                     variant="info"
                   />
                   <div className="grid gap-4">
@@ -644,7 +753,12 @@ function RegisterPage() {
                     Continuar
                   </Button>
                 ) : (
-                  <Button type="submit" variant="accent" disabled={isSubmitting || isLoadingMetadata}>
+                  <Button
+                    type="button"
+                    variant="accent"
+                    disabled={isSubmitting || isLoadingMetadata}
+                    onClick={submitRegistration}
+                  >
                     {isSubmitting ? 'Enviando...' : 'Crear cuenta e inscripcion'}
                   </Button>
                 )}
@@ -656,13 +770,34 @@ function RegisterPage() {
         <div className="space-y-6">
           <Card className="sticky top-24 p-8">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-              Payload esperado
+              Antes de continuar
             </p>
-            <div className="mt-6 space-y-4 text-sm text-slate-600">
-              <SummaryRow label="POST /auth/register" value="usuario + token" />
-              <SummaryRow label="POST /registrations" value="inscripcion autenticada" />
-              <SummaryRow label="POST /registrations/:id/papers" value={`${paperFields.length} articulos`} />
-              <SummaryRow label="GET /registrations/:id/payment-summary" value="resumen final" />
+            <h2 className="mt-3 text-2xl font-semibold text-slate-950">
+              Prepara tu informacion para agilizar el proceso
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-slate-600">
+              El formulario se completa por etapas. Puedes avanzar paso a paso y registrar la
+              informacion clave del participante y, si aplica, de los articulos asociados.
+            </p>
+            <div className="mt-6 space-y-4">
+              {guidanceItems.map((item, index) => (
+                <div key={item.title} className="rounded-2xl bg-slate-50 px-5 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">
+                    Paso recomendado {index + 1}
+                  </p>
+                  <p className="mt-2 text-base font-semibold text-slate-950">{item.title}</p>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">{item.description}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 rounded-2xl border border-dashed border-brand-200 bg-brand-50 px-5 py-4">
+              <p className="text-sm font-semibold text-brand-900">
+                Articulos agregados actualmente: {paperFields.length}
+              </p>
+              <p className="mt-1 text-sm text-brand-800">
+                Si el participante solo asistira al evento, puedes continuar sin registrar
+                articulos.
+              </p>
             </div>
           </Card>
         </div>
@@ -819,6 +954,14 @@ function resolveInputType(fieldType) {
     default:
       return 'text';
   }
+}
+
+function resolveMemberType({ occupation, isIeeeMember }) {
+  if (occupation === 'student') {
+    return 'student';
+  }
+
+  return isIeeeMember ? 'ieee_member' : 'non_ieee_member';
 }
 
 function labelFromOptions(value, options) {

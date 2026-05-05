@@ -1,15 +1,14 @@
-export function SelectField({
-  label,
-  error,
-  options,
-  placeholder = 'Select an option',
-  className = '',
-  ...props
-}) {
+import { forwardRef } from 'react';
+
+export const SelectField = forwardRef(function SelectField(
+  { label, error, options, placeholder = 'Selecciona una opcion', className = '', ...props },
+  ref,
+) {
   return (
     <label className={`flex flex-col gap-2 ${className}`}>
       <span className="text-sm font-semibold text-slate-700">{label}</span>
       <select
+        ref={ref}
         className={`w-full rounded-2xl border bg-white px-4 py-3 text-sm outline-none transition ${
           error
             ? 'border-rose-400 ring-2 ring-rose-100'
@@ -27,4 +26,4 @@ export function SelectField({
       {error ? <span className="text-sm text-rose-600">{error}</span> : null}
     </label>
   );
-}
+});

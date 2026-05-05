@@ -22,8 +22,14 @@ const register = asyncHandler(async (req, res) => {
     passwordHash,
     countryId: req.body.countryId,
     city: req.body.city,
+    address: req.body.address || null,
+    birthDate: req.body.birthDate || null,
+    gender: req.body.gender || null,
+    docType: req.body.docType || null,
+    docNumber: req.body.docNumber || null,
     affiliation: req.body.affiliation,
     phoneNumber: req.body.phoneNumber,
+    occupation: req.body.occupation || null,
   });
 
   const activeEventEdition = await EventEdition.findOne({ where: { isActive: true } });

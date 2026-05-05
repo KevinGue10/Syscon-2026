@@ -30,7 +30,7 @@ export function Stepper({ steps, currentStep }) {
               </div>
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                  Step {index + 1}
+                  Paso {index + 1}
                 </p>
                 <p className="text-sm font-semibold text-slate-900">{step}</p>
               </div>
