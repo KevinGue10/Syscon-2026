@@ -9,6 +9,7 @@ export function normalizeAuthUser(user) {
     name: [user.firstName, user.lastName].filter(Boolean).join(' ').trim(),
     organization: user.affiliation || '',
     countryId: user.countryId || null,
+    country: user.country || null,
   };
 }
 

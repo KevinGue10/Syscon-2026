@@ -1,4 +1,5 @@
 const { validationResult } = require('express-validator');
+const { sendError } = require('../utils/responseContract');
 
 const validationMiddleware = (req, res, next) => {
   const errors = validationResult(req);
@@ -7,8 +8,9 @@ const validationMiddleware = (req, res, next) => {
     return next();
   }
 
-  return res.status(422).json({
-    message: 'Validation failed.',
+  return sendError(res, {
+    statusCode: 422,
+    message: 'Revisa los campos marcados.',
     errors: errors.array().map((error) => ({
       field: error.path,
       message: error.msg,

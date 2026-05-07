@@ -14,6 +14,8 @@ function LoginPage() {
   const { login } = useAuth();
   const { setUserProfile } = useSession();
   const [error, setError] = useState('');
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
   const {
     register,
     handleSubmit,
@@ -34,7 +36,7 @@ function LoginPage() {
         user.role === 'admin' ? '/admin' : location.state?.from || '/dashboard';
       navigate(redirectPath, { replace: true });
     } catch (submissionError) {
-      setError(submissionError.message);
+      setError(resolveLoginError(submissionError));
     }
   };
 
@@ -47,7 +49,7 @@ function LoginPage() {
           </p>
           <h1 className="mt-3 text-4xl font-semibold text-slate-950">Ingresa a la plataforma</h1>
           <p className="mt-4 text-sm text-slate-600">
-            Este formulario usa el backend local real configurado en `VITE_API_URL`.
+            Ingresa con tu correo y contrasena para acceder a tu panel de participante.
           </p>
 
           <form className="mt-8 grid gap-5" onSubmit={handleSubmit(onSubmit)}>
@@ -59,27 +61,62 @@ function LoginPage() {
               placeholder="correo@dominio.com"
               error={errors.email?.message}
               {...register('email', {
-                required: 'Email is required',
+                required: 'El correo es obligatorio',
                 pattern: {
                   value: /^\S+@\S+\.\S+$/,
-                  message: 'Enter a valid email',
+                  message: 'Ingresa un correo valido',
                 },
               })}
             />
 
             <InputField
-              label="Password"
+              label="Contrasena"
               type="password"
               placeholder="Minimo 8 caracteres"
               error={errors.password?.message}
               {...register('password', {
-                required: 'Password is required',
+                required: 'La contrasena es obligatoria',
                 minLength: {
                   value: 8,
-                  message: 'Password must have at least 8 characters',
+                  message: 'La contrasena debe tener al menos 8 caracteres',
                 },
               })}
             />
+
+            <div className="flex justify-start">
+              <button
+                type="button"
+                onClick={() => setShowRecovery((current) => !current)}
+                className="text-sm font-semibold text-brand-600 transition hover:text-brand-800"
+              >
+                {showRecovery ? 'Ocultar recuperacion de contrasena' : '¿Olvidaste tu contrasena?'}
+              </button>
+            </div>
+
+            {showRecovery ? (
+              <div className="rounded-3xl border border-brand-100 bg-brand-50/70 p-5">
+                <p className="text-sm font-semibold text-slate-950">Recuperar contrasena</p>
+                <p className="mt-2 text-sm leading-7 text-slate-600">
+                  Esta seccion queda lista para conectar el envio de correo desde el backend.
+                  Por ahora, el flujo es solo visual.
+                </p>
+                <div className="mt-4 grid gap-4">
+                  <InputField
+                    label="Correo para recuperacion"
+                    type="email"
+                    placeholder="correo@dominio.com"
+                    value={recoveryEmail}
+                    onChange={(event) => setRecoveryEmail(event.target.value)}
+                  />
+                  <Button type="button" variant="secondary" className="w-full sm:w-fit">
+                    Solicitar recuperacion
+                  </Button>
+                </div>
+                <p className="mt-3 text-xs uppercase tracking-[0.18em] text-slate-500">
+                  Proximamente enviaremos un enlace de restablecimiento a este correo.
+                </p>
+              </div>
+            ) : null}
 
             <Button type="submit" variant="primary" disabled={isSubmitting} className="mt-2">
               {isSubmitting ? 'Ingresando...' : 'Ingresar'}
@@ -88,6 +125,14 @@ function LoginPage() {
         </Card>
       </div>
     </section>
+  );
+}
+
+function resolveLoginError(error) {
+  return (
+    error?.response?.data?.message ||
+    error?.message ||
+    'No fue posible iniciar sesion.'
   );
 }
 

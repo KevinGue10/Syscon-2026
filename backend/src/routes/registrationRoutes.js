@@ -8,6 +8,7 @@ const {
   updateRegistrationValidation,
   addPaperValidation,
 } = require('../validations/registrationValidations');
+const { fullDetailsValidation } = require('../validations/userValidations');
 
 const router = express.Router();
 
@@ -16,6 +17,7 @@ router.post('/', createRegistrationValidation, validationMiddleware, registratio
 router.get('/me', registrationController.getMyRegistrations);
 router.get('/:id', registrationIdParamValidation, validationMiddleware, registrationController.getRegistrationById);
 router.put('/:id', updateRegistrationValidation, validationMiddleware, registrationController.updateRegistration);
+router.put('/:id/full-details', [...registrationIdParamValidation, ...fullDetailsValidation], validationMiddleware, registrationController.updateFullDetails);
 router.post('/:id/papers', addPaperValidation, validationMiddleware, registrationController.addPaper);
 router.get('/:id/payment-summary', registrationIdParamValidation, validationMiddleware, registrationController.getPaymentSummary);
 

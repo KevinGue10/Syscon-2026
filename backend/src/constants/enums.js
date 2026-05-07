@@ -66,6 +66,22 @@ const EMAIL_LOG_STATUSES = {
   FAILED: 'failed',
 };
 
+const GENDERS = {
+  FEMALE: 'female',
+  MALE: 'male',
+  OTHER: 'other',
+  PREFER_NOT_TO_SAY: 'prefer_not_to_say',
+};
+
+const DOCUMENT_TYPES = {
+  CC: 'CC',
+  CE: 'CE',
+  TI: 'TI',
+  PASSPORT: 'PASSPORT',
+  DNI: 'DNI',
+  NIT: 'NIT',
+};
+
 module.exports = {
   USER_ROLES,
   PARTICIPANT_TYPES,
@@ -78,4 +94,6 @@ module.exports = {
   CUSTOM_FIELD_TYPES,
   CUSTOM_FIELD_APPLIES_TO,
   EMAIL_LOG_STATUSES,
+  GENDERS,
+  DOCUMENT_TYPES,
 };

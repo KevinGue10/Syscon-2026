@@ -7,11 +7,14 @@ const AppError = require('../utils/errors');
 const { sendWelcomeEmail } = require('../services/emailService');
 const { createAuditLog } = require('../services/auditService');
 const { saveCustomFieldValues } = require('../services/customFieldService');
+const { sendSuccess } = require('../utils/responseContract');
 
 const register = asyncHandler(async (req, res) => {
   const existingUser = await User.findOne({ where: { email: req.body.email.toLowerCase() } });
   if (existingUser) {
-    throw new AppError('Email is already registered.', 409);
+    throw new AppError('Revisa los campos marcados.', 409, [
+      { field: 'email', message: 'El correo ya se encuentra registrado.' },
+    ]);
   }
 
   const passwordHash = await bcrypt.hash(req.body.password, 10);
@@ -52,35 +55,43 @@ const register = asyncHandler(async (req, res) => {
   });
   await sendWelcomeEmail(user);
 
-  res.status(201).json({
-    message: 'User registered successfully.',
-    token,
-    user: sanitizeUser(user),
+  return sendSuccess(res, {
+    statusCode: 201,
+    message: 'Cuenta creada correctamente.',
+    data: {
+      token,
+      user: sanitizeUser(user),
+    },
   });
 });
 
 const login = asyncHandler(async (req, res) => {
   const user = await User.findOne({ where: { email: req.body.email.toLowerCase() } });
   if (!user) {
-    throw new AppError('Invalid email or password.', 401);
+    throw new AppError('Credenciales inválidas.', 401);
   }
 
   const isPasswordValid = await bcrypt.compare(req.body.password, user.passwordHash);
   if (!isPasswordValid) {
-    throw new AppError('Invalid email or password.', 401);
+    throw new AppError('Credenciales inválidas.', 401);
   }
 
   const token = signToken({ userId: user.id, role: user.role });
-  res.json({
-    message: 'Login successful.',
-    token,
-    user: sanitizeUser(user),
+  return sendSuccess(res, {
+    message: 'Inicio de sesión correcto.',
+    data: {
+      token,
+      user: sanitizeUser(user),
+    },
   });
 });
 
 const me = asyncHandler(async (req, res) => {
-  res.json({
-    user: sanitizeUser(req.user),
+  return sendSuccess(res, {
+    message: 'Usuario obtenido correctamente.',
+    data: {
+      user: sanitizeUser(req.user),
+    },
   });
 });
 

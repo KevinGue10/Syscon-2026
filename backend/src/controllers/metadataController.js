@@ -1,9 +1,13 @@
 const asyncHandler = require('../utils/asyncHandler');
 const { Country, EventEdition, CustomField } = require('../models');
+const { sendSuccess } = require('../utils/responseContract');
 
 const listCountries = asyncHandler(async (req, res) => {
   const countries = await Country.findAll({ order: [['name', 'ASC']] });
-  res.json({ countries });
+  return sendSuccess(res, {
+    message: 'Países obtenidos correctamente.',
+    data: { countries },
+  });
 });
 
 const listEventEditions = asyncHandler(async (req, res) => {
@@ -11,7 +15,10 @@ const listEventEditions = asyncHandler(async (req, res) => {
     where: req.query.onlyActive === 'true' ? { isActive: true } : undefined,
     order: [['year', 'DESC']],
   });
-  res.json({ eventEditions });
+  return sendSuccess(res, {
+    message: 'Ediciones del evento obtenidas correctamente.',
+    data: { eventEditions },
+  });
 });
 
 const listCustomFields = asyncHandler(async (req, res) => {
@@ -27,7 +34,10 @@ const listCustomFields = asyncHandler(async (req, res) => {
     where,
     order: [['displayOrder', 'ASC'], ['id', 'ASC']],
   });
-  res.json({ customFields });
+  return sendSuccess(res, {
+    message: 'Campos personalizados obtenidos correctamente.',
+    data: { customFields },
+  });
 });
 
 module.exports = {

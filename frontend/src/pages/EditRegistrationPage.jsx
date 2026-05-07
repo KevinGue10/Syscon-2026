@@ -17,19 +17,18 @@ import {
   participantTypes,
   registrationSteps,
 } from '../constants/participantTypes';
-import { useAuth } from '../hooks/useAuth';
 import { useSession } from '../hooks/useSession';
+import { dashboardService } from '../services/dashboardService';
 import { metadataService } from '../services/metadataService';
 import { registrationService } from '../services/registrationService';
 import { formatCurrency } from '../utils/currency';
-import { normalizeBackendRegistration, toCustomFieldValues } from '../utils/backendMappers';
+import { toCustomFieldValues } from '../utils/backendMappers';
 import { translatePaymentStatus } from '../utils/translations';
 
 const defaultValues = {
   firstName: '',
   lastName: '',
   email: '',
-  password: '',
   phoneNumber: '',
   countryId: '',
   city: '',
@@ -46,144 +45,128 @@ const defaultValues = {
   registrationCategory: 'professional',
   isIeeeMember: false,
   membershipNumber: '',
+  customFields: {
+    registration: {},
+  },
   papers: [],
 };
 
-function RegisterPage() {
+function EditRegistrationPage() {
   const navigate = useNavigate();
-  const { register: registerAccount } = useAuth();
-  const { addRegistration, setUserProfile } = useSession();
+  const { setUserProfile, setRegistrations } = useSession();
   const [currentStep, setCurrentStep] = useState(0);
   const [formError, setFormError] = useState('');
-  const [successState, setSuccessState] = useState(null);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [pageState, setPageState] = useState({
+    isLoading: true,
+    user: null,
+    registration: null,
+  });
   const [metadata, setMetadata] = useState({
     countries: [],
-    eventEditions: [],
     customFields: {
-      user: [],
       registration: [],
       article: [],
     },
   });
-  const [isLoadingMetadata, setIsLoadingMetadata] = useState(true);
   const {
-    control,
     register,
     handleSubmit,
     reset,
     setError,
-    setValue,
     trigger,
     watch,
-    clearErrors,
+    control,
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues,
   });
-
   const {
     fields: paperFields,
     append: appendPaper,
-    remove: removePaper,
+    remove: removePaperField,
   } = useFieldArray({
     control,
     name: 'papers',
   });
 
   const values = watch();
-  const selectedEventEditionId = values.eventEditionId;
   const isIeeeMember = watch('isIeeeMember');
   const isFinalStep = currentStep === registrationSteps.length - 1;
 
   useEffect(() => {
-    async function loadMetadata() {
+    async function loadPage() {
       try {
-        setIsLoadingMetadata(true);
-        const [countries, eventEditions] = await Promise.all([
+        setPageState((current) => ({
+          ...current,
+          isLoading: true,
+        }));
+
+        const [detailsResponse, countries] = await Promise.all([
+          dashboardService.getMyRegistrationDetails(),
           metadataService.getCountries(),
-          metadataService.getActiveEventEditions(),
         ]);
 
-        const activeEdition = eventEditions[0];
-        const editionId = activeEdition?.id || '';
+        const activeRegistration = detailsResponse.registrations?.[0] || null;
 
-        const [userFields, registrationFields, articleFields] = editionId
+        if (!activeRegistration || !detailsResponse.user) {
+          setPageState({
+            isLoading: false,
+            user: null,
+            registration: null,
+          });
+          setMetadata({
+            countries,
+            customFields: {
+              registration: [],
+              article: [],
+            },
+          });
+          return;
+        }
+
+        const [registrationFields, articleFields] = activeRegistration.eventEditionId
           ? await Promise.all([
               metadataService.getCustomFields({
-                eventEditionId: editionId,
-                appliesTo: 'user',
-              }),
-              metadataService.getCustomFields({
-                eventEditionId: editionId,
+                eventEditionId: activeRegistration.eventEditionId,
                 appliesTo: 'registration',
               }),
               metadataService.getCustomFields({
-                eventEditionId: editionId,
+                eventEditionId: activeRegistration.eventEditionId,
                 appliesTo: 'article',
               }),
             ])
-          : [[], [], []];
+          : [[], []];
 
         setMetadata({
           countries,
-          eventEditions,
           customFields: {
-            user: userFields,
             registration: registrationFields,
             article: articleFields,
           },
         });
 
-        if (editionId) {
-          setValue('eventEditionId', String(editionId));
-        }
+        setPageState({
+          isLoading: false,
+          user: detailsResponse.user,
+          registration: activeRegistration,
+        });
+
+        reset(buildFormValues(detailsResponse.user, activeRegistration, registrationFields, articleFields));
       } catch (error) {
-        setFormError(resolveApiError(error, 'No fue posible cargar los catalogos del backend.'));
-      } finally {
-        setIsLoadingMetadata(false);
+        setFormError(
+          resolveApiError(error, 'No fue posible cargar la informacion actual de tu inscripcion.'),
+        );
+        setPageState({
+          isLoading: false,
+          user: null,
+          registration: null,
+        });
       }
     }
 
-    loadMetadata();
-  }, [setValue]);
-
-  useEffect(() => {
-    async function reloadCustomFields() {
-      if (!selectedEventEditionId) {
-        return;
-      }
-
-      try {
-        const [userFields, registrationFields, articleFields] = await Promise.all([
-          metadataService.getCustomFields({
-            eventEditionId: selectedEventEditionId,
-            appliesTo: 'user',
-          }),
-          metadataService.getCustomFields({
-            eventEditionId: selectedEventEditionId,
-            appliesTo: 'registration',
-          }),
-          metadataService.getCustomFields({
-            eventEditionId: selectedEventEditionId,
-            appliesTo: 'article',
-          }),
-        ]);
-
-        setMetadata((current) => ({
-          ...current,
-          customFields: {
-            user: userFields,
-            registration: registrationFields,
-            article: articleFields,
-          },
-        }));
-      } catch {
-        // Keep the page usable if optional metadata refresh fails.
-      }
-    }
-
-    reloadCustomFields();
-  }, [selectedEventEditionId]);
+    loadPage();
+  }, [reset]);
 
   const countryOptions = useMemo(
     () =>
@@ -194,19 +177,28 @@ function RegisterPage() {
     [metadata.countries],
   );
 
-  const eventEditionOptions = useMemo(
-    () =>
-      metadata.eventEditions.map((edition) => ({
-        value: String(edition.id),
-        label: `${edition.name} ${edition.year}`,
-      })),
-    [metadata.eventEditions],
-  );
-
   const participantOptions = participantTypes.map((item) => ({
     value: item.id,
     label: item.title,
   }));
+
+  const guidanceItems = [
+    {
+      title: 'Actualiza tus datos personales',
+      description:
+        'Corrige la informacion visible de tu perfil para que tu inscripcion quede clara y consistente.',
+    },
+    {
+      title: 'Ajusta tu modalidad de inscripcion',
+      description:
+        'Puedes revisar el tipo de participacion, la modalidad y tu categoria para mantener vigente tu registro.',
+    },
+    {
+      title: 'Confirma tu informacion actual',
+      description:
+        'Antes de guardar, revisa el resumen final para validar que todo quede como esperas.',
+    },
+  ];
 
   const summaryRows = [
     { label: 'Tipo de participacion', value: labelFromOptions(values.participationType, participantOptions) },
@@ -215,28 +207,13 @@ function RegisterPage() {
       label: 'Categoria de inscripcion',
       value: labelFromOptions(values.registrationCategory, occupationTypes),
     },
-    { label: 'Articulos preparados', value: `${paperFields.length}` },
     {
       label: 'Miembro IEEE',
       value: values.isIeeeMember ? 'Si' : 'No',
     },
-  ];
-
-  const guidanceItems = [
     {
-      title: 'Informacion personal',
-      description:
-        'Ingresa los datos del participante tal como deben quedar en el registro oficial del evento.',
-    },
-    {
-      title: 'Datos de inscripcion',
-      description:
-        'Selecciona modalidad, tipo de participacion y perfil de miembro para calcular la tarifa correspondiente.',
-    },
-    {
-      title: 'Articulos y soporte',
-      description:
-        'Si vas a registrar ponencias o articulos, ten a mano el codigo, autores y numero de paginas.',
+      label: 'Articulos registrados',
+      value: `${paperFields.length || 0}`,
     },
   ];
 
@@ -244,8 +221,6 @@ function RegisterPage() {
     const userFieldNames = [
       'firstName',
       'lastName',
-      'email',
-      'password',
       'phoneNumber',
       'countryId',
       'city',
@@ -256,11 +231,9 @@ function RegisterPage() {
       'docNumber',
       'affiliation',
       'occupation',
-      ...metadata.customFields.user.map((field) => customFieldName('user', field.id)),
     ];
 
     const registrationFieldNames = [
-      'eventEditionId',
       'participationType',
       'attendanceType',
       'registrationCategory',
@@ -268,13 +241,19 @@ function RegisterPage() {
       ...metadata.customFields.registration.map((field) => customFieldName('registration', field.id)),
     ];
 
-    const paperFieldNames = paperFields.flatMap((_, index) => [
-      `papers.${index}.title`,
-      `papers.${index}.paperCode`,
-      `papers.${index}.authorsText`,
-      `papers.${index}.pages`,
-      ...metadata.customFields.article.map((field) => customFieldName(`article_${index}`, field.id)),
-    ]);
+    const paperFieldNames = paperFields.flatMap((paper, index) => {
+      if (paper.existingPaperId) {
+        return [];
+      }
+
+      return [
+        `papers.${index}.title`,
+        `papers.${index}.paperCode`,
+        `papers.${index}.authorsText`,
+        `papers.${index}.pages`,
+        ...metadata.customFields.article.map((field) => customFieldName(`article_${index}`, field.id)),
+      ];
+    });
 
     const fieldsByStep = [userFieldNames, registrationFieldNames, paperFieldNames, []];
     const valid = await trigger(fieldsByStep[currentStep]);
@@ -285,30 +264,22 @@ function RegisterPage() {
   };
 
   const onSubmit = async (data) => {
-    if (!isFinalStep) {
+    if (!isFinalStep || !pageState.registration) {
       await validateStep();
       return;
     }
 
     try {
-      clearErrors();
       setFormError('');
-
-      const userCustomValues = toCustomFieldValues(
-        metadata.customFields.user,
-        collectCustomFieldValues(data, 'user'),
-      );
 
       const registrationCustomValues = toCustomFieldValues(
         metadata.customFields.registration,
         collectCustomFieldValues(data, 'registration'),
       );
 
-      const registeredUser = await registerAccount({
+      const updateResponse = await registrationService.updateRegistration(pageState.registration.id, {
         firstName: data.firstName,
         lastName: data.lastName,
-        email: data.email,
-        password: data.password,
         countryId: Number(data.countryId),
         city: data.city,
         address: data.address,
@@ -319,10 +290,6 @@ function RegisterPage() {
         affiliation: data.affiliation,
         phoneNumber: data.phoneNumber,
         occupation: data.occupation,
-        customFieldValues: userCustomValues,
-      });
-
-      const registrationPayload = {
         eventEditionId: Number(data.eventEditionId),
         participationType: data.participationType,
         attendanceType: data.attendanceType,
@@ -332,21 +299,37 @@ function RegisterPage() {
         }),
         isIeeeMember: Boolean(data.isIeeeMember),
         membershipNumber: data.isIeeeMember ? data.membershipNumber : '',
-        status: 'submitted',
+        status: pageState.registration.status,
         customFieldValues: registrationCustomValues,
-      };
+      });
 
-      const createdRegistration = await registrationService.createRegistration(registrationPayload);
-      const paperResponses = [];
+      const originalPaperIds = (pageState.registration.papers || [])
+        .map((paper) => paper.id)
+        .filter(Boolean);
+      const currentExistingPaperIds = (data.papers || [])
+        .map((paper) => paper.existingPaperId)
+        .filter(Boolean);
+      const papersToDelete = originalPaperIds.filter(
+        (paperId) => !currentExistingPaperIds.includes(paperId),
+      );
 
-      for (let index = 0; index < data.papers.length; index += 1) {
+      for (const paperId of papersToDelete) {
+        await registrationService.deletePaper(paperId);
+      }
+
+      for (let index = 0; index < (data.papers || []).length; index += 1) {
         const paper = data.papers[index];
+
+        if (paper.existingPaperId) {
+          continue;
+        }
+
         const articleCustomValues = toCustomFieldValues(
           metadata.customFields.article,
           collectCustomFieldValues(data, `article_${index}`),
         );
 
-        const response = await registrationService.addPaper(createdRegistration.registration.id, {
+        await registrationService.addPaper(pageState.registration.id, {
           title: paper.title,
           paperCode: paper.paperCode,
           authors: paper.authorsText
@@ -356,26 +339,12 @@ function RegisterPage() {
           pages: paper.pages ? Number(paper.pages) : undefined,
           customFieldValues: articleCustomValues,
         });
-
-        paperResponses.push(response.paper);
       }
 
-      const paymentSummaryResponse = await registrationService.getPaymentSummary(
-        createdRegistration.registration.id,
-      );
-
-      const normalizedRegistration = normalizeBackendRegistration({
-        registration: paymentSummaryResponse.raw.registration,
-        paymentSummary: paymentSummaryResponse.raw.paymentSummary,
-        papers: paperResponses,
-      });
-
-      addRegistration(normalizedRegistration);
-      setUserProfile({
-        ...registeredUser,
-        email: data.email,
+      const updatedUser = updateResponse.user || {
         firstName: data.firstName,
         lastName: data.lastName,
+        email: data.email,
         phoneNumber: data.phoneNumber,
         city: data.city,
         address: data.address,
@@ -387,25 +356,55 @@ function RegisterPage() {
         occupation: data.occupation,
         organization: data.affiliation,
         countryId: Number(data.countryId),
-      });
-      setSuccessState({
-        registration: normalizedRegistration,
-        paymentSummary: paymentSummaryResponse.raw.paymentSummary,
-        message:
-          paymentSummaryResponse.raw?.message ||
-          'La cuenta y la inscripcion fueron creadas correctamente.',
-      });
+        country:
+          metadata.countries.find((country) => String(country.id) === String(data.countryId))?.name || '',
+      };
+
+      setUserProfile(updatedUser);
+
+      const refreshedDetails = await dashboardService.getMyRegistrationDetails();
+      setRegistrations(refreshedDetails.registrations || []);
+      setPageState((current) => ({
+        ...current,
+        user: refreshedDetails.user || current.user,
+        registration: refreshedDetails.registrations?.[0] || current.registration,
+      }));
+      setIsSuccessModalOpen(true);
     } catch (error) {
       applyBackendErrors({
         error,
         setError,
         setFormError,
-        fallbackMessage: 'No fue posible completar el registro.',
+        fallbackMessage: 'No fue posible guardar los cambios de tu inscripcion.',
       });
     }
   };
 
-  const submitRegistration = handleSubmit(onSubmit);
+  const submitEdition = handleSubmit(onSubmit);
+
+  if (pageState.isLoading) {
+    return (
+      <section className="container-shell py-16">
+        <Alert
+          title="Cargando edicion de inscripcion"
+          description="Estamos preparando tu informacion actual para que puedas revisarla y ajustarla."
+          variant="info"
+        />
+      </section>
+    );
+  }
+
+  if (!pageState.user || !pageState.registration) {
+    return (
+      <section className="container-shell py-16">
+        <Alert
+          title="No encontramos una inscripcion activa"
+          description="Cuando tengas una inscripcion registrada, podras editarla desde esta misma pantalla."
+          variant="warning"
+        />
+      </section>
+    );
+  }
 
   return (
     <section className="container-shell py-16">
@@ -413,29 +412,20 @@ function RegisterPage() {
         <div className="space-y-6">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-              Formulario de inscripcion
+              Editar informacion
             </p>
             <h1 className="mt-3 text-4xl font-semibold text-slate-950">
-              Completa tu registro para participar en TEMSCON LATAM 2026
+              Actualiza tu inscripcion de TEMSCON LATAM 2026
             </h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
-              Diligencia tu informacion personal, define el tipo de participacion y agrega los
-              articulos que vayas a presentar. Al finalizar, tu inscripcion quedara asociada a la
-              cuenta creada en la plataforma.
+              Revisa la informacion cargada en tu cuenta, ajusta los datos que necesites y guarda
+              los cambios para mantener tu inscripcion al dia.
             </p>
           </div>
 
           <Stepper steps={registrationSteps} currentStep={currentStep} />
 
           <Card className="p-8">
-            {isLoadingMetadata ? (
-              <Alert
-                title="Cargando metadatos"
-                description="Obteniendo paises, edicion activa y campos configurados desde el backend."
-                variant="info"
-              />
-            ) : null}
-
             <form
               className="space-y-8"
               onSubmit={(event) => event.preventDefault()}
@@ -444,7 +434,7 @@ function RegisterPage() {
                   event.preventDefault();
 
                   if (isFinalStep) {
-                    submitRegistration();
+                    submitEdition();
                   } else {
                     validateStep();
                   }
@@ -452,7 +442,7 @@ function RegisterPage() {
               }}
             >
               {formError ? (
-                <Alert title="Error de registro" description={formError} variant="danger" />
+                <Alert title="No fue posible guardar los cambios" description={formError} variant="danger" />
               ) : null}
 
               {currentStep === 0 ? (
@@ -469,28 +459,9 @@ function RegisterPage() {
                   />
                   <InputField
                     label="Correo electronico"
-                    type="email"
-                    error={errors.email?.message}
-                    {...register('email', {
-                      required: 'El correo es obligatorio',
-                      pattern: {
-                        value: /^\S+@\S+\.\S+$/,
-                        message: 'Ingresa un correo valido',
-                      },
-                    })}
-                  />
-                  <InputField
-                    label="Contrasena"
-                    type="password"
-                    error={errors.password?.message}
-                    helperText="Debe tener al menos 8 caracteres."
-                    {...register('password', {
-                      required: 'La contrasena es obligatoria',
-                      minLength: {
-                        value: 8,
-                        message: 'La contrasena debe tener al menos 8 caracteres',
-                      },
-                    })}
+                    readOnly
+                    helperText="Este es el correo con el que accedes actualmente a la plataforma."
+                    {...register('email')}
                   />
                   <InputField
                     label="Telefono"
@@ -517,9 +488,7 @@ function RegisterPage() {
                     label="Fecha de nacimiento"
                     type="date"
                     error={errors.birthDate?.message}
-                    {...register('birthDate', {
-                      required: 'La fecha de nacimiento es obligatoria',
-                    })}
+                    {...register('birthDate', { required: 'La fecha de nacimiento es obligatoria' })}
                   />
                   <SelectField
                     label="Genero"
@@ -531,16 +500,12 @@ function RegisterPage() {
                     label="Tipo de documento"
                     options={documentTypeOptions}
                     error={errors.docType?.message}
-                    {...register('docType', {
-                      required: 'El tipo de documento es obligatorio',
-                    })}
+                    {...register('docType', { required: 'El tipo de documento es obligatorio' })}
                   />
                   <InputField
                     label="Numero de documento"
                     error={errors.docNumber?.message}
-                    {...register('docNumber', {
-                      required: 'El numero de documento es obligatorio',
-                    })}
+                    {...register('docNumber', { required: 'El numero de documento es obligatorio' })}
                   />
                   <InputField
                     label="Afiliacion"
@@ -549,20 +514,9 @@ function RegisterPage() {
                   />
                   <InputField
                     label="Ocupacion"
-                    placeholder="Ejemplo: Engineer"
                     error={errors.occupation?.message}
-                    {...register('occupation', {
-                      required: 'La ocupacion es obligatoria',
-                    })}
+                    {...register('occupation', { required: 'La ocupacion es obligatoria' })}
                   />
-                  <div className="md:col-span-2">
-                    <DynamicCustomFields
-                      fields={metadata.customFields.user}
-                      register={register}
-                      errors={errors}
-                      scope="user"
-                    />
-                  </div>
                 </div>
               ) : null}
 
@@ -573,10 +527,10 @@ function RegisterPage() {
                       <span className="text-sm font-semibold text-slate-700">Conferencia</span>
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                         <p className="text-sm font-semibold text-slate-900">
-                          {eventEditionOptions[0]?.label || 'TEMSCON LATAM 2026'}
+                          {pageState.registration.eventEdition?.name || 'TEMSCON LATAM 2026'}
                         </p>
                         <p className="mt-1 text-sm text-slate-500">
-                          Esta inscripcion corresponde a la edicion activa del evento.
+                          Tu inscripcion se encuentra asociada a esta edicion activa del evento.
                         </p>
                       </div>
                     </div>
@@ -608,10 +562,8 @@ function RegisterPage() {
 
                   <label className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4">
                     <input type="checkbox" className="mt-1 h-4 w-4" {...register('isIeeeMember')} />
-                    <span>
-                      <span className="block text-sm font-semibold text-slate-800">
-                        Confirmo que soy miembro IEEE
-                      </span>
+                    <span className="block text-sm font-semibold text-slate-800">
+                      Confirmo que soy miembro IEEE
                     </span>
                   </label>
 
@@ -641,16 +593,17 @@ function RegisterPage() {
                 <div className="space-y-6">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <h2 className="text-xl font-semibold text-slate-950">Articulos</h2>
-                      <p className="text-sm text-slate-500">
-                        Cada articulo se envia al backend despues de crear la inscripcion.
-                      </p>
+                    <h2 className="text-xl font-semibold text-slate-950">Articulos registrados</h2>
+                    <p className="mt-2 text-sm leading-7 text-slate-500">
+                      Agrega nuevos articulos o elimina los actuales antes de guardar los cambios.
+                    </p>
                     </div>
                     <Button
                       type="button"
                       variant="secondary"
                       onClick={() =>
                         appendPaper({
+                          existingPaperId: null,
                           title: '',
                           paperCode: '',
                           authorsText: '',
@@ -664,99 +617,135 @@ function RegisterPage() {
 
                   {!paperFields.length ? (
                     <Alert
-                      title="Sin articulos cargados"
-                      description="Puedes continuar sin articulos si el participante solo asistira al evento."
+                      title="No tienes articulos registrados"
+                      description="Tu inscripcion actual no tiene articulos asociados. Puedes agregar uno ahora."
                       variant="info"
                     />
-                  ) : null}
+                  ) : (
+                    <div className="space-y-4">
+                      {paperFields.map((paper, index) => (
+                        <Card key={paper.id} className="border border-slate-100 bg-slate-50 p-5">
+                          <div className="mb-4 flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                Articulo {index + 1}
+                              </p>
+                              {paper.existingPaperId ? (
+                                <p className="mt-1 text-sm text-slate-500">
+                                  Este articulo ya esta asociado a tu inscripcion.
+                                </p>
+                              ) : (
+                                <p className="mt-1 text-sm text-slate-500">
+                                  Completa la informacion para registrar un nuevo articulo.
+                                </p>
+                              )}
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="border border-slate-200"
+                              onClick={() => removePaperField(index)}
+                            >
+                              Eliminar
+                            </Button>
+                          </div>
 
-                  {paperFields.map((paper, index) => (
-                    <Card key={paper.id} className="border border-slate-100 bg-slate-50 p-5">
-                      <div className="mb-4 flex items-center justify-between gap-3">
-                        <h3 className="text-lg font-semibold text-slate-950">
-                          Articulo {index + 1}
-                        </h3>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="border border-slate-200"
-                          onClick={() => removePaper(index)}
-                        >
-                          Eliminar
-                        </Button>
-                      </div>
+                          <div className="grid gap-5 md:grid-cols-2">
+                            <InputField
+                              label="Titulo"
+                              className="md:col-span-2"
+                              readOnly={Boolean(paper.existingPaperId)}
+                              error={errors.papers?.[index]?.title?.message}
+                              {...register(`papers.${index}.title`, {
+                                required: paper.existingPaperId ? false : 'El titulo es obligatorio',
+                              })}
+                            />
+                            <InputField
+                              label="Codigo del articulo"
+                              readOnly={Boolean(paper.existingPaperId)}
+                              error={errors.papers?.[index]?.paperCode?.message}
+                              {...register(`papers.${index}.paperCode`, {
+                                required: paper.existingPaperId ? false : 'El codigo es obligatorio',
+                              })}
+                            />
+                            <InputField
+                              label="Paginas"
+                              type="number"
+                              min="1"
+                              readOnly={Boolean(paper.existingPaperId)}
+                              error={errors.papers?.[index]?.pages?.message}
+                              {...register(`papers.${index}.pages`, {
+                                min: {
+                                  value: 1,
+                                  message: 'Debe ser mayor que cero',
+                                },
+                              })}
+                            />
+                            <InputField
+                              type="hidden"
+                              {...register(`papers.${index}.existingPaperId`)}
+                            />
+                            <TextAreaField
+                              label="Autores"
+                              className="md:col-span-2"
+                              readOnly={Boolean(paper.existingPaperId)}
+                              error={errors.papers?.[index]?.authorsText?.message}
+                              placeholder="Separa los autores por coma"
+                              {...register(`papers.${index}.authorsText`, {
+                                required: paper.existingPaperId ? false : 'Debes ingresar al menos un autor',
+                                validate: (value) =>
+                                  paper.existingPaperId
+                                    ? true
+                                    : value
+                                        .split(',')
+                                        .map((item) => item.trim())
+                                        .filter(Boolean).length
+                                      ? true
+                                      : 'Debes ingresar al menos un autor valido',
+                              })}
+                            />
+                          </div>
 
-                      <div className="grid gap-5 md:grid-cols-2">
-                        <InputField
-                          label="Titulo"
-                          className="md:col-span-2"
-                          error={errors.papers?.[index]?.title?.message}
-                          {...register(`papers.${index}.title`, {
-                            required: 'El titulo es obligatorio',
-                          })}
-                        />
-                        <InputField
-                          label="Codigo del articulo"
-                          error={errors.papers?.[index]?.paperCode?.message}
-                          helperText="Debe ser unico en backend."
-                          {...register(`papers.${index}.paperCode`, {
-                            required: 'El codigo es obligatorio',
-                          })}
-                        />
-                        <InputField
-                          label="Paginas"
-                          type="number"
-                          min="1"
-                          error={errors.papers?.[index]?.pages?.message}
-                          {...register(`papers.${index}.pages`, {
-                            min: {
-                              value: 1,
-                              message: 'Debe ser mayor que cero',
-                            },
-                          })}
-                        />
-                        <TextAreaField
-                          label="Autores"
-                          className="md:col-span-2"
-                          error={errors.papers?.[index]?.authorsText?.message}
-                          placeholder="Separa los autores por coma"
-                          {...register(`papers.${index}.authorsText`, {
-                            required: 'Debes ingresar al menos un autor',
-                            validate: (value) =>
-                              value
-                                .split(',')
-                                .map((item) => item.trim())
-                                .filter(Boolean).length
-                                ? true
-                                : 'Debes ingresar al menos un autor valido',
-                          })}
-                        />
-                      </div>
-
-                      <div className="mt-5">
-                        <DynamicCustomFields
-                          fields={metadata.customFields.article}
-                          register={register}
-                          errors={errors}
-                          scope={`article_${index}`}
-                        />
-                      </div>
-                    </Card>
-                  ))}
+                          {!paper.existingPaperId ? (
+                            <div className="mt-5">
+                              <DynamicCustomFields
+                                fields={metadata.customFields.article}
+                                register={register}
+                                errors={errors}
+                                scope={`article_${index}`}
+                              />
+                            </div>
+                          ) : null}
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : null}
 
               {currentStep === 3 ? (
                 <div className="space-y-6">
                   <Alert
-                    title="Resumen de inscripcion"
-                    description="Revisa la informacion antes de finalizar el registro. El valor definitivo se reflejara segun la configuracion vigente del evento."
+                    title="Resumen de cambios"
+                    description="Verifica tu informacion antes de guardar la actualizacion de tu inscripcion."
                     variant="info"
                   />
                   <div className="grid gap-4">
                     {summaryRows.map((row) => (
                       <SummaryRow key={row.label} label={row.label} value={row.value} />
                     ))}
+                    <SummaryRow
+                      label="Saldo pendiente"
+                      value={formatCurrency(
+                        pageState.registration.paymentSummary?.pendingAmount ||
+                          pageState.registration.pricing?.balance ||
+                          pageState.registration.pendingAmount,
+                      )}
+                    />
+                    <SummaryRow
+                      label="Estado de pago"
+                      value={translatePaymentStatus(pageState.registration.paymentStatus)}
+                    />
                   </div>
                 </div>
               ) : null}
@@ -766,10 +755,16 @@ function RegisterPage() {
                   type="button"
                   variant="ghost"
                   className="border border-slate-200"
-                  onClick={() => setCurrentStep((prev) => Math.max(prev - 1, 0))}
-                  disabled={currentStep === 0}
+                  onClick={() => {
+                    if (currentStep === 0) {
+                      navigate('/registration-details');
+                      return;
+                    }
+
+                    setCurrentStep((prev) => Math.max(prev - 1, 0));
+                  }}
                 >
-                  Atras
+                  {currentStep === 0 ? 'Volver' : 'Atras'}
                 </Button>
                 {currentStep < registrationSteps.length - 1 ? (
                   <Button type="button" variant="primary" onClick={validateStep}>
@@ -779,10 +774,10 @@ function RegisterPage() {
                   <Button
                     type="button"
                     variant="accent"
-                    disabled={isSubmitting || isLoadingMetadata}
-                    onClick={submitRegistration}
+                    disabled={isSubmitting}
+                    onClick={submitEdition}
                   >
-                    {isSubmitting ? 'Enviando...' : 'Crear cuenta e inscripcion'}
+                    {isSubmitting ? 'Guardando...' : 'Guardar cambios'}
                   </Button>
                 )}
               </div>
@@ -794,83 +789,64 @@ function RegisterPage() {
           <Card className="sticky top-24 overflow-hidden border-none bg-[#13253d] p-8 text-white shadow-[0_30px_80px_rgba(19,37,61,0.32)]">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,74,74,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(57,141,222,0.18),transparent_30%)]" />
             <div className="relative">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#9ec5ff]">
-              Antes de continuar
-            </p>
-            <h2 className="mt-3 text-2xl font-semibold text-white">
-              Prepara tu informacion para agilizar el proceso
-            </h2>
-            <p className="mt-4 text-sm leading-7 text-white/78">
-              El formulario se completa por etapas. Puedes avanzar paso a paso y registrar la
-              informacion clave del participante y, si aplica, de los articulos asociados.
-            </p>
-            <div className="mt-6 space-y-4">
-              {guidanceItems.map((item, index) => (
-                <div
-                  key={item.title}
-                  className="rounded-2xl border border-white/10 bg-white/6 px-5 py-4 backdrop-blur-sm"
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff9a9a]">
-                    Paso recomendado {index + 1}
-                  </p>
-                  <p className="mt-2 text-base font-semibold text-white">{item.title}</p>
-                  <p className="mt-2 text-sm leading-7 text-white/72">{item.description}</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-6 rounded-2xl border border-dashed border-[#ff6b6b]/55 bg-[#0f1d30]/70 px-5 py-4">
-              <p className="text-sm font-semibold text-white">
-                Articulos agregados actualmente: {paperFields.length}
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#9ec5ff]">
+                Edicion guiada
               </p>
-              <p className="mt-1 text-sm text-white/72">
-                Si el participante solo asistira al evento, puedes continuar sin registrar
-                articulos.
+              <h2 className="mt-3 text-2xl font-semibold text-white">
+                Actualiza tu informacion con tranquilidad
+              </h2>
+              <p className="mt-4 text-sm leading-7 text-white/78">
+                Esta pantalla conserva la misma estructura de tu registro para que puedas ubicar
+                rapido cada dato y mantener tu inscripcion al dia.
               </p>
-            </div>
+              <div className="mt-6 space-y-4">
+                {guidanceItems.map((item, index) => (
+                  <div
+                    key={item.title}
+                    className="rounded-2xl border border-white/10 bg-white/6 px-5 py-4 backdrop-blur-sm"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff9a9a]">
+                      Paso recomendado {index + 1}
+                    </p>
+                    <p className="mt-2 text-base font-semibold text-white">{item.title}</p>
+                    <p className="mt-2 text-sm leading-7 text-white/72">{item.description}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 rounded-2xl border border-dashed border-[#ff6b6b]/55 bg-[#0f1d30]/70 px-5 py-4">
+                <p className="text-sm font-semibold text-white">
+                  Articulos actualmente asociados: {paperFields.length || 0}
+                </p>
+                <p className="mt-1 text-sm text-white/72">
+                  Podras revisar esta informacion antes de guardar los cambios de tu inscripcion.
+                </p>
+              </div>
             </div>
           </Card>
         </div>
       </div>
 
       <Modal
-        isOpen={Boolean(successState)}
-        title="Registro creado correctamente"
-        onClose={() => setSuccessState(null)}
+        isOpen={isSuccessModalOpen}
+        title="Usuario editado exitosamente"
+        onClose={() => {
+          setIsSuccessModalOpen(false);
+          navigate('/dashboard');
+        }}
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            {successState?.message || 'La cuenta y la inscripcion fueron procesadas correctamente.'}
+            La informacion fue actualizada correctamente.
           </p>
-          {successState ? (
-            <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
-              <p>
-                <span className="font-semibold">ID de inscripcion:</span>{' '}
-                {successState.registration.id}
-              </p>
-              <p>
-                <span className="font-semibold">Estado de pago:</span>{' '}
-                {translatePaymentStatus(successState.registration.paymentStatus)}
-              </p>
-              <p>
-                <span className="font-semibold">Saldo pendiente:</span>{' '}
-                {formatCurrency(successState.paymentSummary.pendingAmount)}
-              </p>
-            </div>
-          ) : null}
-          <div className="flex gap-3">
-            <Button variant="primary" onClick={() => navigate('/dashboard')}>
-              Ir al panel
-            </Button>
+          <div className="flex justify-end">
             <Button
-              variant="ghost"
-              className="border border-slate-200"
+              variant="primary"
               onClick={() => {
-                setSuccessState(null);
-                reset(defaultValues);
-                setCurrentStep(0);
+                setIsSuccessModalOpen(false);
+                navigate('/dashboard');
               }}
             >
-              Crear otro
+              Ir al panel
             </Button>
           </div>
         </div>
@@ -891,18 +867,6 @@ function DynamicCustomFields({ fields, register, errors, scope }) {
         const error = getNestedError(errors, name)?.message;
         const rules = field.isRequired ? { required: `${field.label} es obligatorio` } : {};
 
-        if (field.fieldType === 'textarea') {
-          return (
-            <TextAreaField
-              key={field.id}
-              label={field.label}
-              className="md:col-span-2"
-              error={error}
-              {...register(name, rules)}
-            />
-          );
-        }
-
         if (field.fieldType === 'select') {
           const options = Array.isArray(field.optionsJson)
             ? field.optionsJson.map((option) => ({
@@ -916,6 +880,18 @@ function DynamicCustomFields({ fields, register, errors, scope }) {
               key={field.id}
               label={field.label}
               options={options}
+              error={error}
+              {...register(name, rules)}
+            />
+          );
+        }
+
+        if (field.fieldType === 'textarea') {
+          return (
+            <TextAreaField
+              key={field.id}
+              label={field.label}
+              className="md:col-span-2"
               error={error}
               {...register(name, rules)}
             />
@@ -960,6 +936,97 @@ function SummaryRow({ label, value }) {
   );
 }
 
+function resolveMemberType({ occupation, isIeeeMember }) {
+  if (occupation === 'student') {
+    return 'student';
+  }
+
+  return isIeeeMember ? 'ieee_member' : 'non_ieee_member';
+}
+
+function deriveRegistrationCategory(registration) {
+  if (registration?.memberType === 'student') {
+    return 'student';
+  }
+
+  return 'professional';
+}
+
+function buildFormValues(user, registration, registrationFields) {
+  const customFieldValues = mapCustomFieldValues(registration?.customFieldValues);
+
+  return {
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || '',
+    phoneNumber: user?.phoneNumber || '',
+    countryId: user?.countryId ? String(user.countryId) : '',
+    city: user?.city || '',
+    address: user?.address || '',
+    birthDate: user?.birthDate || '',
+    gender: normalizeGenderValue(user?.gender),
+    docType: normalizeDocumentTypeValue(user?.docType),
+    docNumber: user?.docNumber || '',
+    affiliation: user?.affiliation || '',
+    occupation: normalizeOccupationValue(user?.occupation),
+    eventEditionId: registration?.eventEditionId ? String(registration.eventEditionId) : '',
+    participationType: registration?.participationType || 'attendee',
+    attendanceType: registration?.attendanceType || 'in_person',
+    registrationCategory: deriveRegistrationCategory(registration),
+    isIeeeMember: Boolean(registration?.isIeeeMember || registration?.memberType === 'ieee_member'),
+    membershipNumber: registration?.membershipNumber || '',
+    customFields: {
+      registration: registrationFields.reduce((accumulator, field) => {
+        accumulator[field.id] = customFieldValues[field.id] || '';
+        return accumulator;
+      }, {}),
+    },
+    papers: (registration?.papers || []).map((paper) => ({
+      existingPaperId: paper.id || null,
+      title: paper.title || '',
+      paperCode: paper.paperCode || '',
+      authorsText: Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors || '',
+      pages: paper.pages || '',
+    })),
+  };
+}
+
+function mapCustomFieldValues(values = []) {
+  return values.reduce((accumulator, item) => {
+    accumulator[item.customFieldId] = item.value;
+    return accumulator;
+  }, {});
+}
+
+function normalizeGenderValue(value) {
+  if (!value) {
+    return '';
+  }
+
+  return String(value).toLowerCase();
+}
+
+function normalizeDocumentTypeValue(value) {
+  if (!value) {
+    return '';
+  }
+
+  return String(value).toUpperCase();
+}
+
+function normalizeOccupationValue(value) {
+  if (!value) {
+    return '';
+  }
+
+  const normalized = String(value).toLowerCase();
+  if (normalized === 'professional' || normalized === 'student') {
+    return normalized;
+  }
+
+  return value;
+}
+
 function customFieldName(scope, id) {
   return `customFields.${scope}.${id}`;
 }
@@ -985,16 +1052,12 @@ function resolveInputType(fieldType) {
   }
 }
 
-function resolveMemberType({ occupation, isIeeeMember }) {
-  if (occupation === 'student') {
-    return 'student';
-  }
-
-  return isIeeeMember ? 'ieee_member' : 'non_ieee_member';
-}
-
 function labelFromOptions(value, options) {
   return options.find((option) => option.value === value)?.label || value || 'Pendiente';
+}
+
+function resolveApiError(error, fallbackMessage) {
+  return error?.response?.data?.message || error?.message || fallbackMessage;
 }
 
 function applyBackendErrors({ error, setError, setFormError, fallbackMessage }) {
@@ -1025,15 +1088,6 @@ function applyBackendErrors({ error, setError, setFormError, fallbackMessage }) 
     return;
   }
 
-  if (apiMessage?.toLowerCase().includes('email is already registered')) {
-    setError('email', {
-      type: 'server',
-      message: 'Este correo ya se encuentra registrado.',
-    });
-    setFormError('Este correo ya se encuentra registrado.');
-    return;
-  }
-
   setFormError(apiMessage || error.message || fallbackMessage);
 }
 
@@ -1041,8 +1095,6 @@ function mapBackendFieldToFormField(field) {
   const fieldMap = {
     firstName: 'firstName',
     lastName: 'lastName',
-    email: 'email',
-    password: 'password',
     countryId: 'countryId',
     city: 'city',
     address: 'address',
@@ -1063,4 +1115,4 @@ function mapBackendFieldToFormField(field) {
   return fieldMap[field] || null;
 }
 
-export default RegisterPage;
+export default EditRegistrationPage;

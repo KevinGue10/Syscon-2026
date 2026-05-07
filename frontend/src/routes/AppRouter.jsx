@@ -6,6 +6,8 @@ import RegisterPage from '../pages/RegisterPage';
 import LoginPage from '../pages/LoginPage';
 import UserDashboardPage from '../pages/UserDashboardPage';
 import AdminDashboardPage from '../pages/AdminDashboardPage';
+import RegistrationDetailsPage from '../pages/RegistrationDetailsPage';
+import EditRegistrationPage from '../pages/EditRegistrationPage';
 import NotFoundPage from '../pages/NotFoundPage';
 
 function AppRouter() {
@@ -20,6 +22,30 @@ function AppRouter() {
           element={
             <ProtectedRoute roles={['user', 'admin']}>
               <UserDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/registration-details"
+          element={
+            <ProtectedRoute roles={['user', 'admin']}>
+              <RegistrationDetailsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/registration-details/edit"
+          element={
+            <ProtectedRoute roles={['user', 'admin']}>
+              <EditRegistrationPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users/:userId/registration-details"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <RegistrationDetailsPage />
             </ProtectedRoute>
           }
         />

@@ -1,7 +1,7 @@
 const { CustomField, CustomFieldValue } = require('../models');
 const AppError = require('../utils/errors');
 
-const getActiveCustomFields = async ({ eventEditionId, appliesTo }) =>
+const getActiveCustomFields = async ({ eventEditionId, appliesTo, transaction }) =>
   CustomField.findAll({
     where: {
       eventEditionId,
@@ -9,14 +9,15 @@ const getActiveCustomFields = async ({ eventEditionId, appliesTo }) =>
       isActive: true,
     },
     order: [['displayOrder', 'ASC'], ['id', 'ASC']],
+    transaction,
   });
 
-const saveCustomFieldValues = async ({ eventEditionId, appliesTo, values = [], entityIds = {} }) => {
+const saveCustomFieldValues = async ({ eventEditionId, appliesTo, values = [], entityIds = {}, transaction }) => {
   if (!values.length) {
     return [];
   }
 
-  const customFields = await getActiveCustomFields({ eventEditionId, appliesTo });
+  const customFields = await getActiveCustomFields({ eventEditionId, appliesTo, transaction });
   const fieldsById = new Map(customFields.map((field) => [field.id, field]));
 
   for (const field of customFields) {
@@ -48,10 +49,11 @@ const saveCustomFieldValues = async ({ eventEditionId, appliesTo, values = [], e
         ...where,
         value: String(item.value ?? ''),
       },
+      transaction,
     });
 
     if (!record.isNewRecord) {
-      await record.update({ value: String(item.value ?? '') });
+      await record.update({ value: String(item.value ?? '') }, { transaction });
     }
 
     saved.push(record);

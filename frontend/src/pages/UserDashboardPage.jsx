@@ -1,13 +1,20 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Alert } from '../components/Alert';
+import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Table } from '../components/Table';
 import { useAuth } from '../hooks/useAuth';
 import { useSession } from '../hooks/useSession';
 import { dashboardService } from '../services/dashboardService';
 import { formatCurrency } from '../utils/currency';
+import {
+  translateParticipationType,
+  translatePaymentStatus,
+} from '../utils/translations';
 
 function UserDashboardPage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { session } = useSession();
   const [dashboard, setDashboard] = useState(null);
@@ -34,29 +41,36 @@ function UserDashboardPage() {
         <div className="space-y-6">
           <Card className="p-8">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-              Participant Profile
+              Perfil del participante
             </p>
             <h1 className="mt-3 text-3xl font-semibold text-slate-950">
-              {dashboard?.profile?.name || 'Conference participant'}
+              {dashboard?.profile?.name || 'Participante del evento'}
             </h1>
             <div className="mt-6 space-y-3 text-sm text-slate-600">
-              <p>Email: {dashboard?.profile?.email || 'Not provided yet'}</p>
-              <p>Organization: {dashboard?.profile?.organization || 'Not provided yet'}</p>
-              <p>Country: {dashboard?.profile?.country || 'Not provided yet'}</p>
+              <p>Email: {dashboard?.profile?.email || 'No registrado'}</p>
+              <p>Organizacion: {dashboard?.profile?.organization || 'No registrada'}</p>
+              <p>Pais: {dashboard?.profile?.country || 'No registrado'}</p>
             </div>
+            <Button
+              variant="primary"
+              className="mt-6 w-full sm:w-fit"
+              onClick={() => navigate('/registration-details')}
+            >
+              Visualizar datos de registro
+            </Button>
           </Card>
 
           <Card className="p-8">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-              Payment Status
+              Estado de pago
             </p>
             <div className="mt-5 space-y-4">
-              <Metric label="Registrations" value={`${registrations.length}`} />
+              <Metric label="Inscripciones" value={`${registrations.length}`} />
               <Metric
-                label="Registered Papers"
+                label="Articulos registrados"
                 value={`${dashboard?.metrics?.activePapers || 0}`}
               />
-              <Metric label="Pending Balance" value={formatCurrency(outstandingBalance)} />
+              <Metric label="Saldo pendiente" value={formatCurrency(outstandingBalance)} />
             </div>
           </Card>
         </div>
@@ -64,8 +78,8 @@ function UserDashboardPage() {
         <div className="space-y-6">
           {!registrations.length ? (
             <Alert
-              title="No registrations yet"
-              description="Submit the registration flow to populate this dashboard with papers and payment data."
+              title="No hay inscripciones registradas"
+              description="Completa el flujo de inscripcion para visualizar articulos y estado de pago."
               variant="warning"
             />
           ) : null}
@@ -73,30 +87,35 @@ function UserDashboardPage() {
           <Card className="p-8">
             <div className="mb-6">
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-                Registration History
+                Historial de inscripcion
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                Papers and payment overview
+                Resumen de articulos y pagos
               </h2>
             </div>
             <Table
               columns={[
-                { key: 'id', label: 'Registration ID' },
+                { key: 'id', label: 'ID de inscripcion' },
                 {
                   key: 'participantType',
-                  label: 'Type',
-                  render: (value) => value?.charAt(0).toUpperCase() + value?.slice(1),
+                  label: 'Tipo',
+                  render: (value) => translateParticipationType(value),
                 },
                 {
                   key: 'papers',
-                  label: 'Papers',
-                  render: (value) => value.length,
+                  label: 'Articulos',
+                  render: (value) => value?.length || 0,
                 },
-                { key: 'paymentStatus', label: 'Payment' },
+                {
+                  key: 'paymentStatus',
+                  label: 'Pago',
+                  render: (value) => translatePaymentStatus(value),
+                },
                 {
                   key: 'pricing',
-                  label: 'Balance',
-                  render: (value) => formatCurrency(value.balance),
+                  label: 'Saldo',
+                  render: (value, row) =>
+                    formatCurrency(value?.balance ?? row?.pendingAmount ?? 0),
                 },
               ]}
               rows={registrations}

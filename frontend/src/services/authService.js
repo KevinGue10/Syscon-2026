@@ -4,18 +4,22 @@ import { normalizeAuthUser } from '../utils/backendMappers';
 export const authService = {
   async login(credentials) {
     const { data } = await api.post('/auth/login', credentials);
+    const payload = data?.data || {};
+
     return {
-      token: data.token,
-      user: normalizeAuthUser(data.user),
+      token: payload.token,
+      user: normalizeAuthUser(payload.user),
       message: data.message,
     };
   },
 
   async register(payload) {
     const { data } = await api.post('/auth/register', payload);
+    const responsePayload = data?.data || {};
+
     return {
-      token: data.token,
-      user: normalizeAuthUser(data.user),
+      token: responsePayload.token,
+      user: normalizeAuthUser(responsePayload.user),
       message: data.message,
     };
   },

@@ -1,11 +1,18 @@
 import { Link, NavLink } from 'react-router-dom';
-import { primaryNavigation, dashboardNavigation } from '../constants/navigation';
+import {
+  authenticatedNavigation,
+  primaryNavigation,
+  dashboardNavigation,
+} from '../constants/navigation';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from './Button';
 
 export function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
   const protectedNav = isAuthenticated ? dashboardNavigation[user?.role || 'user'] || [] : [];
+  const navigationItems = isAuthenticated
+    ? [...authenticatedNavigation, ...protectedNav]
+    : primaryNavigation;
 
   const linkClass = ({ isActive }) =>
     `text-sm font-semibold transition ${
@@ -28,12 +35,7 @@ export function Navbar() {
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex">
-          {primaryNavigation.map((item) => (
-            <NavLink key={item.path} to={item.path} className={linkClass}>
-              {item.label}
-            </NavLink>
-          ))}
-          {protectedNav.map((item) => (
+          {navigationItems.map((item) => (
             <NavLink key={item.path} to={item.path} className={linkClass}>
               {item.label}
             </NavLink>

@@ -12,6 +12,12 @@ const router = express.Router();
 router.use(authMiddleware, adminMiddleware);
 
 router.get('/users', adminController.listUsers);
+router.get(
+  '/users/:userId/registration-details',
+  [param('userId').isInt({ min: 1 }).withMessage('Valid user id is required.')],
+  validationMiddleware,
+  adminController.getUserRegistrationDetails
+);
 router.get('/registrations', adminController.listRegistrations);
 router.get('/payments', adminController.listPayments);
 router.get('/papers', adminController.listPapers);

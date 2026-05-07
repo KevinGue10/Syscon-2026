@@ -33,9 +33,10 @@ const assertRegistrationAccess = (registration, currentUser) => {
   }
 };
 
-const createRegistration = async (payload, currentUser) => {
+const createRegistration = async (payload, currentUser, options = {}) => {
+  const { transaction } = options;
   const eventEdition = payload.eventEditionId
-    ? await EventEdition.findByPk(payload.eventEditionId)
+    ? await EventEdition.findByPk(payload.eventEditionId, { transaction })
     : await getActiveEventEdition();
 
   if (!eventEdition) {
@@ -51,16 +52,20 @@ const createRegistration = async (payload, currentUser) => {
     isIeeeMember: payload.isIeeeMember || false,
     membershipNumber: payload.membershipNumber || null,
     status: payload.status || REGISTRATION_STATUSES.DRAFT,
-  });
+  }, { transaction });
 
   await saveCustomFieldValues({
     eventEditionId: eventEdition.id,
     appliesTo: 'registration',
     values: payload.customFieldValues || [],
     entityIds: { registrationId: registration.id },
+    transaction,
   });
 
-  const summary = await calculateRegistrationTotals(registration.id);
+  const summary = await calculateRegistrationTotals(registration.id, {
+    transaction,
+    allowMissingPricingRule: true,
+  });
   await createAuditLog({
     userId: currentUser.id,
     action: 'create',
@@ -73,10 +78,17 @@ const createRegistration = async (payload, currentUser) => {
   return summary;
 };
 
-const updateRegistration = async (registrationId, payload, currentUser) => {
-  const registration = await Registration.findByPk(registrationId);
+const updateRegistration = async (registrationId, payload, currentUser, options = {}) => {
+  const { transaction } = options;
+  const registration = await Registration.findByPk(registrationId, { transaction });
   assertRegistrationAccess(registration, currentUser);
   const oldValue = registration.toJSON();
+
+  if (payload.isIeeeMember === true && !payload.membershipNumber && !registration.membershipNumber) {
+    throw new AppError('Revisa los campos marcados.', 422, [
+      { field: 'membershipNumber', message: 'El número de membresía es obligatorio para miembros IEEE.' },
+    ]);
+  }
 
   await registration.update({
     participationType: payload.participationType || registration.participationType,
@@ -86,16 +98,20 @@ const updateRegistration = async (registrationId, payload, currentUser) => {
     membershipNumber: payload.membershipNumber !== undefined ? payload.membershipNumber : registration.membershipNumber,
     status: payload.status || registration.status,
     eventEditionId: payload.eventEditionId || registration.eventEditionId,
-  });
+  }, { transaction });
 
   await saveCustomFieldValues({
     eventEditionId: registration.eventEditionId,
     appliesTo: 'registration',
     values: payload.customFieldValues || [],
     entityIds: { registrationId: registration.id },
+    transaction,
   });
 
-  const summary = await calculateRegistrationTotals(registration.id);
+  const summary = await calculateRegistrationTotals(registration.id, {
+    transaction,
+    allowMissingPricingRule: true,
+  });
   await createAuditLog({
     userId: currentUser.id,
     action: 'update',
@@ -106,7 +122,7 @@ const updateRegistration = async (registrationId, payload, currentUser) => {
   });
 
   if (Number(summary.registration.pendingAmount) > 0) {
-    const user = await User.findByPk(registration.userId);
+    const user = await User.findByPk(registration.userId, { transaction });
     await sendPendingPaymentReminderEmail(user, summary.registration);
   }
 
@@ -188,11 +204,28 @@ const getRegistrationById = async (registrationId, currentUser) => {
 };
 
 const getMyRegistrations = async (currentUser) => {
-  return Registration.findAll({
+  const user = await User.findByPk(currentUser.id, {
+    attributes: { exclude: ['passwordHash'] },
+    include: [
+      { association: 'country', required: false },
+      {
+        association: 'customFieldValues',
+        required: false,
+        include: [{ association: 'customField', required: false }],
+      },
+    ],
+  });
+
+  const registrations = await Registration.findAll({
     where: { userId: currentUser.id },
     include: ['eventEdition', 'papers', 'payments'],
     order: [['createdAt', 'DESC']],
   });
+
+  return {
+    user,
+    registrations,
+  };
 };
 
 module.exports = {

@@ -1,4 +1,5 @@
 const { ValidationError } = require('sequelize');
+const { sendError } = require('../utils/responseContract');
 
 const getErrorLocation = (error) => {
   if (!error || !error.stack) {
@@ -34,16 +35,22 @@ const errorMiddleware = (error, req, res, next) => {
   });
 
   if (error instanceof ValidationError) {
-    return res.status(400).json({
-      message: 'Database validation failed.',
-      errors: error.errors.map((item) => item.message),
+    return sendError(res, {
+      statusCode: 400,
+      message: 'Revisa los campos marcados.',
+      errors: error.errors.map((item) => ({
+        field: item.path || item.validatorKey || 'database',
+        message: item.message,
+      })),
     });
   }
 
   const statusCode = error.statusCode || 500;
 
-  return res.status(statusCode).json({
-    message: error.message || 'Internal server error.',
+  return sendError(res, {
+    statusCode,
+    message: error.message || 'No fue posible procesar la solicitud.',
+    errors: error.errors || undefined,
   });
 };
 

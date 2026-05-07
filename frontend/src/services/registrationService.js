@@ -1,5 +1,5 @@
 import api from './api';
-import { normalizeBackendRegistration } from '../utils/backendMappers';
+import { normalizeAuthUser, normalizeBackendRegistration } from '../utils/backendMappers';
 
 export const registrationService = {
   async createRegistration(payload) {
@@ -16,7 +16,34 @@ export const registrationService = {
 
   async addPaper(registrationId, payload) {
     const { data } = await api.post(`/registrations/${registrationId}/papers`, payload);
-    return data;
+    return {
+      raw: data,
+      paper: data.data?.paper || data.paper,
+      paymentSummary: data.data?.paymentSummary || data.paymentSummary || null,
+    };
+  },
+
+  async deletePaper(paperId) {
+    const { data } = await api.delete(`/papers/${paperId}`);
+    return {
+      raw: data,
+      registration: normalizeBackendRegistration({
+        registration: data.data?.registration || data.registration,
+        paymentSummary: data.data?.paymentSummary || data.paymentSummary,
+      }),
+    };
+  },
+
+  async updateRegistration(registrationId, payload) {
+    const { data } = await api.put(`/registrations/${registrationId}`, payload);
+    return {
+      raw: data,
+      user: normalizeAuthUser(data.data?.user || null),
+      registration: normalizeBackendRegistration({
+        registration: data.data?.registration || data.registration,
+        paymentSummary: data.data?.paymentSummary || data.paymentSummary,
+      }),
+    };
   },
 
   async getPaymentSummary(registrationId) {

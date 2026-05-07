@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card } from '../components/Card';
 import { Table } from '../components/Table';
 import { dashboardService } from '../services/dashboardService';
+import { translatePaymentStatus } from '../utils/translations';
 
 function AdminDashboardPage() {
   const [dashboard, setDashboard] = useState({
@@ -50,7 +51,11 @@ function AdminDashboardPage() {
               { key: 'participant', label: 'Participant' },
               { key: 'type', label: 'Type' },
               { key: 'papers', label: 'Papers' },
-              { key: 'paymentStatus', label: 'Payment Status' },
+              {
+                key: 'paymentStatus',
+                label: 'Payment Status',
+                render: (value) => translatePaymentStatus(value),
+              },
             ]}
             rows={dashboard.recentRegistrations}
           />
