@@ -45,6 +45,7 @@ const defaultValues = {
   attendanceType: 'in_person',
   registrationCategory: 'professional',
   isIeeeMember: false,
+  isTems: false,
   membershipNumber: '',
   papers: [],
 };
@@ -56,6 +57,8 @@ function RegisterPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [formError, setFormError] = useState('');
   const [successState, setSuccessState] = useState(null);
+  const [paymentPreview, setPaymentPreview] = useState(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [metadata, setMetadata] = useState({
     countries: [],
     eventEditions: [],
@@ -70,6 +73,7 @@ function RegisterPage() {
     control,
     register,
     handleSubmit,
+    getValues,
     reset,
     setError,
     setValue,
@@ -93,6 +97,7 @@ function RegisterPage() {
   const values = watch();
   const selectedEventEditionId = values.eventEditionId;
   const isIeeeMember = watch('isIeeeMember');
+  const isTems = watch('isTems');
   const isFinalStep = currentStep === registrationSteps.length - 1;
 
   useEffect(() => {
@@ -220,6 +225,10 @@ function RegisterPage() {
       label: 'Miembro IEEE',
       value: values.isIeeeMember ? 'Si' : 'No',
     },
+    {
+      label: 'Miembro TEMS',
+      value: isTems ? 'Si' : 'No',
+    },
   ];
 
   const guidanceItems = [
@@ -280,6 +289,26 @@ function RegisterPage() {
     const valid = await trigger(fieldsByStep[currentStep]);
 
     if (valid) {
+      if (currentStep === 2) {
+        try {
+          setIsPreviewLoading(true);
+          setFormError('');
+
+          const previewResponse = await registrationService.previewPaymentSummary(
+            buildPaymentPreviewPayload(getValues()),
+          );
+
+          setPaymentPreview(previewResponse.paymentSummary);
+        } catch (error) {
+          setFormError(
+            resolveApiError(error, 'No fue posible calcular el saldo pendiente antes de continuar.'),
+          );
+          return;
+        } finally {
+          setIsPreviewLoading(false);
+        }
+      }
+
       setCurrentStep((step) => Math.min(step + 1, registrationSteps.length - 1));
     }
   };
@@ -331,6 +360,7 @@ function RegisterPage() {
           isIeeeMember: data.isIeeeMember,
         }),
         isIeeeMember: Boolean(data.isIeeeMember),
+        isTems: Boolean(data.isTems),
         membershipNumber: data.isIeeeMember ? data.membershipNumber : '',
         status: 'submitted',
         customFieldValues: registrationCustomValues,
@@ -363,10 +393,14 @@ function RegisterPage() {
       const paymentSummaryResponse = await registrationService.getPaymentSummary(
         createdRegistration.registration.id,
       );
+      const paymentSummaryData =
+        paymentSummaryResponse.raw.data?.paymentSummary || paymentSummaryResponse.raw.paymentSummary;
+      const registrationData =
+        paymentSummaryResponse.raw.data?.registration || paymentSummaryResponse.raw.registration;
 
       const normalizedRegistration = normalizeBackendRegistration({
-        registration: paymentSummaryResponse.raw.registration,
-        paymentSummary: paymentSummaryResponse.raw.paymentSummary,
+        registration: registrationData,
+        paymentSummary: paymentSummaryData,
         papers: paperResponses,
       });
 
@@ -390,11 +424,12 @@ function RegisterPage() {
       });
       setSuccessState({
         registration: normalizedRegistration,
-        paymentSummary: paymentSummaryResponse.raw.paymentSummary,
+        paymentSummary: paymentSummaryData,
         message:
           paymentSummaryResponse.raw?.message ||
           'La cuenta y la inscripcion fueron creadas correctamente.',
       });
+      setPaymentPreview(paymentSummaryData);
     } catch (error) {
       applyBackendErrors({
         error,
@@ -615,6 +650,15 @@ function RegisterPage() {
                     </span>
                   </label>
 
+                  <label className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4">
+                    <input type="checkbox" className="mt-1 h-4 w-4" {...register('isTems')} />
+                    <span>
+                      <span className="block text-sm font-semibold text-slate-800">
+                        Confirmo que soy miembro TEMS
+                      </span>
+                    </span>
+                  </label>
+
                   {isIeeeMember ? (
                     <InputField
                       label="Numero de membresia IEEE"
@@ -750,13 +794,21 @@ function RegisterPage() {
                 <div className="space-y-6">
                   <Alert
                     title="Resumen de inscripcion"
-                    description="Revisa la informacion antes de finalizar el registro. El valor definitivo se reflejara segun la configuracion vigente del evento."
+                    description="Revisa la informacion antes de finalizar el registro. Este resumen de pago se recalculo con la informacion actual del formulario."
                     variant="info"
                   />
                   <div className="grid gap-4">
                     {summaryRows.map((row) => (
                       <SummaryRow key={row.label} label={row.label} value={row.value} />
                     ))}
+                    <SummaryRow
+                      label="Estado de pago"
+                      value={translatePaymentStatus(paymentPreview?.paymentStatus)}
+                    />
+                    <SummaryRow
+                      label="Saldo pendiente"
+                      value={formatCurrency(paymentPreview?.pendingAmount || 0)}
+                    />
                   </div>
                 </div>
               ) : null}
@@ -772,14 +824,19 @@ function RegisterPage() {
                   Atras
                 </Button>
                 {currentStep < registrationSteps.length - 1 ? (
-                  <Button type="button" variant="primary" onClick={validateStep}>
-                    Continuar
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={validateStep}
+                    disabled={isPreviewLoading}
+                  >
+                    {isPreviewLoading ? 'Calculando...' : 'Continuar'}
                   </Button>
                 ) : (
                   <Button
                     type="button"
                     variant="accent"
-                    disabled={isSubmitting || isLoadingMetadata}
+                    disabled={isSubmitting || isLoadingMetadata || isPreviewLoading}
                     onClick={submitRegistration}
                   >
                     {isSubmitting ? 'Enviando...' : 'Crear cuenta e inscripcion'}
@@ -958,6 +1015,22 @@ function SummaryRow({ label, value }) {
       <span className="text-sm font-semibold text-slate-950">{value || 'Pendiente'}</span>
     </div>
   );
+}
+
+function buildPaymentPreviewPayload(data) {
+  return {
+    eventEditionId: Number(data.eventEditionId),
+    participationType: data.participationType,
+    memberType: resolveMemberType({
+      occupation: data.registrationCategory,
+      isIeeeMember: data.isIeeeMember,
+    }),
+    isIeeeMember: Boolean(data.isIeeeMember),
+    isTems: Boolean(data.isTems),
+    papers: (data.papers || []).map((paper) => ({
+      pages: paper.pages ? Number(paper.pages) : 0,
+    })),
+  };
 }
 
 function customFieldName(scope, id) {

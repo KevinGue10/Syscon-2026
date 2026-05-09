@@ -1,7 +1,12 @@
-export function Table({ columns, rows, emptyMessage = 'No records available.' }) {
+export function Table({
+  columns,
+  rows,
+  emptyMessage = 'No records available.',
+  allowOverflow = false,
+}) {
   return (
-    <div className="overflow-hidden rounded-3xl border border-slate-200">
-      <div className="overflow-x-auto">
+    <div className={`rounded-3xl border border-slate-200 bg-white ${allowOverflow ? 'overflow-visible' : 'overflow-hidden'}`}>
+      <div className={allowOverflow ? 'overflow-x-auto overflow-y-visible' : 'overflow-x-auto'}>
         <table className="min-w-full divide-y divide-slate-200 text-left">
           <thead className="bg-slate-100/80">
             <tr>

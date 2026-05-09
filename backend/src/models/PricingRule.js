@@ -1,6 +1,6 @@
 const { DataTypes, Model } = require('sequelize');
 const sequelize = require('../config/database');
-const { PARTICIPANT_TYPES, MEMBER_TYPES, ATTENDANCE_TYPES } = require('../constants/enums');
+const { PARTICIPANT_TYPES, MEMBER_TYPES } = require('../constants/enums');
 
 class PricingRule extends Model {}
 
@@ -22,28 +22,29 @@ PricingRule.init(
     },
     participationType: {
       type: DataTypes.ENUM(...Object.values(PARTICIPANT_TYPES)),
-      allowNull: false,
+      allowNull: true,
       field: 'participation_type',
-    },
-    attendanceType: {
-      type: DataTypes.ENUM(...Object.values(ATTENDANCE_TYPES)),
-      allowNull: false,
-      field: 'attendance_type',
     },
     memberType: {
       type: DataTypes.ENUM(...Object.values(MEMBER_TYPES)),
-      allowNull: false,
+      allowNull: true,
       field: 'member_type',
+    },
+    isIeeeMember: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'is_ieee_member',
+    },
+    isTems: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'is_tems',
     },
     baseAmount: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
-    },
-    extraArticleAmount: {
-      type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
-      defaultValue: 0,
-      field: 'extra_article_amount',
     },
     startsAt: {
       type: DataTypes.DATEONLY,
@@ -54,18 +55,6 @@ PricingRule.init(
       type: DataTypes.DATEONLY,
       allowNull: true,
       field: 'ends_at',
-    },
-    lateFeeAmount: {
-      type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
-      defaultValue: 0,
-      field: 'late_fee_amount',
-    },
-    discountAmount: {
-      type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
-      defaultValue: 0,
-      field: 'discount_amount',
     },
     isActive: {
       type: DataTypes.BOOLEAN,
@@ -78,7 +67,6 @@ PricingRule.init(
     sequelize,
     modelName: 'PricingRule',
     tableName: 'pricing_rules',
-    timestamps: false,
   }
 );
 

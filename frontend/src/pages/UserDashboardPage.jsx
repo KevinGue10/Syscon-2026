@@ -7,6 +7,7 @@ import { Table } from '../components/Table';
 import { useAuth } from '../hooks/useAuth';
 import { useSession } from '../hooks/useSession';
 import { dashboardService } from '../services/dashboardService';
+import { metadataService } from '../services/metadataService';
 import { formatCurrency } from '../utils/currency';
 import {
   translateParticipationType,
@@ -18,22 +19,95 @@ function UserDashboardPage() {
   const { user } = useAuth();
   const { session } = useSession();
   const [dashboard, setDashboard] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    dashboardService.getUserDashboard({
-      user: {
-        ...session.user,
-        ...user,
-      },
-      registrations: session.registrations,
-    }).then(setDashboard);
-  }, [session, user]);
+    let isMounted = true;
+
+    async function loadDashboard() {
+      try {
+        setIsLoading(true);
+        setError('');
+
+        const sessionPayload = {
+          user: {
+            ...session.user,
+            ...user,
+          },
+          registrations: session.registrations,
+        };
+
+        const [dashboardResponse, countries] = await Promise.all([
+          dashboardService.getUserDashboard(sessionPayload),
+          metadataService.getCountries().catch(() => []),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        const normalizedProfile = {
+          ...dashboardResponse.profile,
+          country:
+            resolveCountryName(dashboardResponse.profile, countries) ||
+            dashboardResponse.profile?.country ||
+            '',
+        };
+
+        setDashboard({
+          ...dashboardResponse,
+          profile: normalizedProfile,
+        });
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setError(
+          loadError?.response?.data?.message ||
+            loadError?.message ||
+            'No fue posible cargar la informacion del panel.',
+        );
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadDashboard();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session.registrations, session.user, user]);
 
   const registrations = dashboard?.registrations || [];
   const outstandingBalance = registrations.reduce(
     (sum, item) => sum + (item.pricing?.balance || 0),
     0,
   );
+
+  if (isLoading) {
+    return (
+      <section className="container-shell py-16">
+        <Alert
+          title="Cargando panel del participante"
+          description="Consultando perfil, inscripciones, articulos y estado de pago desde el backend."
+          variant="info"
+        />
+      </section>
+    );
+  }
+
+  if (error && !dashboard) {
+    return (
+      <section className="container-shell py-16">
+        <Alert title="No fue posible cargar el panel" description={error} variant="danger" />
+      </section>
+    );
+  }
 
   return (
     <section className="container-shell py-16">
@@ -49,7 +123,7 @@ function UserDashboardPage() {
             <div className="mt-6 space-y-3 text-sm text-slate-600">
               <p>Email: {dashboard?.profile?.email || 'No registrado'}</p>
               <p>Organizacion: {dashboard?.profile?.organization || 'No registrada'}</p>
-              <p>Pais: {dashboard?.profile?.country || 'No registrado'}</p>
+              <p>Pais: {dashboard?.profile?.country || resolveCountryName(dashboard?.profile) || 'No registrado'}</p>
             </div>
             <Button
               variant="primary"
@@ -137,3 +211,19 @@ function Metric({ label, value }) {
 }
 
 export default UserDashboardPage;
+
+function resolveCountryName(profile, countries = []) {
+  if (profile?.country?.name) {
+    return profile.country.name;
+  }
+
+  if (typeof profile?.country === 'string' && profile.country.trim()) {
+    return profile.country;
+  }
+
+  if (!profile?.countryId || !countries.length) {
+    return '';
+  }
+
+  return countries.find((country) => String(country.id) === String(profile.countryId))?.name || '';
+}

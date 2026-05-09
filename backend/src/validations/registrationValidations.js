@@ -16,6 +16,7 @@ const createRegistrationValidation = [
     .isIn(Object.values(MEMBER_TYPES))
     .withMessage('memberType must be a valid member type.'),
   body('isIeeeMember').optional().isBoolean(),
+  body('isTems').optional().isBoolean(),
   body('membershipNumber').optional().isString(),
   body('customFieldValues').optional().isArray(),
   body('status')
@@ -31,6 +32,7 @@ const updateRegistrationValidation = [
   body('attendanceType').optional().isIn(Object.values(ATTENDANCE_TYPES)),
   body('memberType').optional().isIn(Object.values(MEMBER_TYPES)),
   body('isIeeeMember').optional().isBoolean(),
+  body('isTems').optional().isBoolean(),
   body('membershipNumber').optional({ nullable: true }).isString(),
   body('customFieldValues').optional().isArray(),
   body('status').optional().isIn(Object.values(REGISTRATION_STATUSES)),
@@ -45,10 +47,21 @@ const addPaperValidation = [
   body('customFieldValues').optional().isArray(),
 ];
 
+const paymentPreviewValidation = [
+  body('eventEditionId').optional().isInt({ min: 1 }).withMessage('eventEditionId must be a positive integer.'),
+  body('participationType').optional().isIn(Object.values(PARTICIPANT_TYPES)),
+  body('memberType').optional().isIn(Object.values(MEMBER_TYPES)),
+  body('isIeeeMember').optional().isBoolean(),
+  body('isTems').optional().isBoolean(),
+  body('papers').optional().isArray(),
+  body('papers.*.pages').optional().isInt({ min: 1 }),
+];
+
 module.exports = {
   registrationIdParamValidation,
   paperIdParamValidation,
   createRegistrationValidation,
   updateRegistrationValidation,
   addPaperValidation,
+  paymentPreviewValidation,
 };

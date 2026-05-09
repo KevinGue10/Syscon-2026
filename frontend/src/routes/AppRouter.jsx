@@ -9,6 +9,8 @@ import AdminDashboardPage from '../pages/AdminDashboardPage';
 import RegistrationDetailsPage from '../pages/RegistrationDetailsPage';
 import EditRegistrationPage from '../pages/EditRegistrationPage';
 import NotFoundPage from '../pages/NotFoundPage';
+import PaymentPage from '../pages/PaymentPage';
+import AdminUsersOverviewPage from '../pages/AdminUsersOverviewPage';
 
 function AppRouter() {
   return (
@@ -42,6 +44,14 @@ function AppRouter() {
           }
         />
         <Route
+          path="/payments"
+          element={
+            <ProtectedRoute roles={['user', 'admin']}>
+              <PaymentPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/admin/users/:userId/registration-details"
           element={
             <ProtectedRoute roles={['admin']}>
@@ -54,6 +64,14 @@ function AppRouter() {
           element={
             <ProtectedRoute roles={['admin']}>
               <AdminDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users-overview"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <AdminUsersOverviewPage />
             </ProtectedRoute>
           }
         />

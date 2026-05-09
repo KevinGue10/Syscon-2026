@@ -1,4 +1,4 @@
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
   authenticatedNavigation,
   primaryNavigation,
@@ -8,7 +8,9 @@ import { useAuth } from '../hooks/useAuth';
 import { Button } from './Button';
 
 export function Navbar() {
+  const location = useLocation();
   const { isAuthenticated, user, logout } = useAuth();
+  const hideAuthActionsOnLanding = isAuthenticated && location.pathname === '/';
   const protectedNav = isAuthenticated ? dashboardNavigation[user?.role || 'user'] || [] : [];
   const navigationItems = isAuthenticated
     ? [...authenticatedNavigation, ...protectedNav]
@@ -43,7 +45,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
-          {isAuthenticated ? (
+          {isAuthenticated && !hideAuthActionsOnLanding ? (
             <>
               <div className="hidden text-right sm:block">
                 <p className="text-sm font-semibold text-slate-950">{user?.name}</p>
@@ -53,14 +55,14 @@ export function Navbar() {
                 Cerrar sesion
               </Button>
             </>
-          ) : (
+          ) : !isAuthenticated ? (
             <Link
               to="/register"
               className="hidden rounded-2xl bg-accent-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-accent-300 sm:inline-flex"
             >
               Registrate ahora
             </Link>
-          )}
+          ) : null}
         </div>
       </div>
     </header>

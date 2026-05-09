@@ -38,6 +38,7 @@ const fullDetailsValidation = [
     .isIn(['ieee_member', 'non_ieee_member', 'student', 'professional'])
     .withMessage('La categoría de inscripción es inválida.'),
   body('registration.isIeeeMember').isBoolean().withMessage('El campo isIeeeMember debe ser booleano.'),
+  body('registration.isTems').optional().isBoolean().withMessage('El campo isTems debe ser booleano.'),
   body('registration.status').optional().isIn(['draft', 'submitted', 'confirmed']).withMessage('El estado es inválido.'),
   body('registration.customFieldValues').optional().isArray(),
   body('registration.membershipNumber')

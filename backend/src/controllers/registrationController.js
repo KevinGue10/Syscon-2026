@@ -1,6 +1,6 @@
 const asyncHandler = require('../utils/asyncHandler');
 const registrationService = require('../services/registrationService');
-const { calculateRegistrationTotals } = require('../services/pricingService');
+const { calculateRegistrationTotals, previewRegistrationTotals } = require('../services/pricingService');
 const { sendSuccess } = require('../utils/responseContract');
 const userService = require('../services/userService');
 const sequelize = require('../config/database');
@@ -122,6 +122,36 @@ const getPaymentSummary = asyncHandler(async (req, res) => {
   });
 });
 
+const previewPaymentSummary = asyncHandler(async (req, res) => {
+  const result = await previewRegistrationTotals(req.body, {
+    allowMissingPricingRule: true,
+  });
+
+  return sendSuccess(res, {
+    message: 'Resumen de pago previsualizado correctamente.',
+    data: {
+      registration: result.registration,
+      paymentSummary: result.breakdown,
+    },
+  });
+});
+
+const previewExistingPaymentSummary = asyncHandler(async (req, res) => {
+  const registration = await registrationService.getRegistrationById(req.params.id, req.user);
+  const result = await previewRegistrationTotals(req.body, {
+    registration,
+    allowMissingPricingRule: true,
+  });
+
+  return sendSuccess(res, {
+    message: 'Resumen de pago previsualizado correctamente.',
+    data: {
+      registration: result.registration,
+      paymentSummary: result.breakdown,
+    },
+  });
+});
+
 module.exports = {
   createRegistration,
   getMyRegistrations,
@@ -131,4 +161,6 @@ module.exports = {
   addPaper,
   deletePaper,
   getPaymentSummary,
+  previewPaymentSummary,
+  previewExistingPaymentSummary,
 };

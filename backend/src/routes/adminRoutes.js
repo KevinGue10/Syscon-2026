@@ -22,6 +22,8 @@ router.get('/registrations', adminController.listRegistrations);
 router.get('/payments', adminController.listPayments);
 router.get('/papers', adminController.listPapers);
 router.get('/dashboard', adminController.getDashboard);
+router.get('/dashboard/summary', adminController.getDashboardSummary);
+router.get('/dashboard/recent-activity', adminController.getDashboardRecentActivity);
 router.get('/pricing-rules', adminController.listPricingRules);
 router.get('/event-editions', adminController.listEventEditions);
 router.get('/countries', adminController.listCountries);

@@ -44,6 +44,7 @@ const defaultValues = {
   attendanceType: 'in_person',
   registrationCategory: 'professional',
   isIeeeMember: false,
+  isTems: false,
   membershipNumber: '',
   customFields: {
     registration: {},
@@ -57,6 +58,8 @@ function EditRegistrationPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [formError, setFormError] = useState('');
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [paymentPreview, setPaymentPreview] = useState(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [pageState, setPageState] = useState({
     isLoading: true,
     user: null,
@@ -72,6 +75,7 @@ function EditRegistrationPage() {
   const {
     register,
     handleSubmit,
+    getValues,
     reset,
     setError,
     trigger,
@@ -92,6 +96,7 @@ function EditRegistrationPage() {
 
   const values = watch();
   const isIeeeMember = watch('isIeeeMember');
+  const isTems = watch('isTems');
   const isFinalStep = currentStep === registrationSteps.length - 1;
 
   useEffect(() => {
@@ -151,6 +156,13 @@ function EditRegistrationPage() {
           user: detailsResponse.user,
           registration: activeRegistration,
         });
+        setPaymentPreview(
+          activeRegistration.paymentSummary ||
+            activeRegistration.pricing?.breakdown || {
+              pendingAmount: activeRegistration.pendingAmount || 0,
+              paymentStatus: activeRegistration.paymentStatus,
+            },
+        );
 
         reset(buildFormValues(detailsResponse.user, activeRegistration, registrationFields, articleFields));
       } catch (error) {
@@ -212,6 +224,10 @@ function EditRegistrationPage() {
       value: values.isIeeeMember ? 'Si' : 'No',
     },
     {
+      label: 'Miembro TEMS',
+      value: isTems ? 'Si' : 'No',
+    },
+    {
       label: 'Articulos registrados',
       value: `${paperFields.length || 0}`,
     },
@@ -241,24 +257,39 @@ function EditRegistrationPage() {
       ...metadata.customFields.registration.map((field) => customFieldName('registration', field.id)),
     ];
 
-    const paperFieldNames = paperFields.flatMap((paper, index) => {
-      if (paper.existingPaperId) {
-        return [];
-      }
-
-      return [
+    const paperFieldNames = paperFields.flatMap((_, index) => [
         `papers.${index}.title`,
         `papers.${index}.paperCode`,
         `papers.${index}.authorsText`,
         `papers.${index}.pages`,
         ...metadata.customFields.article.map((field) => customFieldName(`article_${index}`, field.id)),
-      ];
-    });
+      ]);
 
     const fieldsByStep = [userFieldNames, registrationFieldNames, paperFieldNames, []];
     const valid = await trigger(fieldsByStep[currentStep]);
 
     if (valid) {
+      if (currentStep === 2 && pageState.registration) {
+        try {
+          setIsPreviewLoading(true);
+          setFormError('');
+
+          const previewResponse = await registrationService.previewPaymentSummary(
+            buildPaymentPreviewPayload(getValues()),
+            pageState.registration.id,
+          );
+
+          setPaymentPreview(previewResponse.paymentSummary);
+        } catch (error) {
+          setFormError(
+            resolveApiError(error, 'No fue posible calcular el saldo pendiente antes de continuar.'),
+          );
+          return;
+        } finally {
+          setIsPreviewLoading(false);
+        }
+      }
+
       setCurrentStep((step) => Math.min(step + 1, registrationSteps.length - 1));
     }
   };
@@ -298,6 +329,7 @@ function EditRegistrationPage() {
           isIeeeMember: data.isIeeeMember,
         }),
         isIeeeMember: Boolean(data.isIeeeMember),
+        isTems: Boolean(data.isTems),
         membershipNumber: data.isIeeeMember ? data.membershipNumber : '',
         status: pageState.registration.status,
         customFieldValues: registrationCustomValues,
@@ -319,15 +351,25 @@ function EditRegistrationPage() {
 
       for (let index = 0; index < (data.papers || []).length; index += 1) {
         const paper = data.papers[index];
-
-        if (paper.existingPaperId) {
-          continue;
-        }
+        const originalPaper = (pageState.registration.papers || []).find(
+          (item) => String(item.id) === String(paper.existingPaperId),
+        );
+        const shouldReplaceExistingPaper =
+          Boolean(paper.existingPaperId) &&
+          didPaperChange(originalPaper, paper);
 
         const articleCustomValues = toCustomFieldValues(
           metadata.customFields.article,
           collectCustomFieldValues(data, `article_${index}`),
         );
+
+        if (paper.existingPaperId && !shouldReplaceExistingPaper) {
+          continue;
+        }
+
+        if (paper.existingPaperId && shouldReplaceExistingPaper) {
+          await registrationService.deletePaper(paper.existingPaperId);
+        }
 
         await registrationService.addPaper(pageState.registration.id, {
           title: paper.title,
@@ -364,11 +406,19 @@ function EditRegistrationPage() {
 
       const refreshedDetails = await dashboardService.getMyRegistrationDetails();
       setRegistrations(refreshedDetails.registrations || []);
+      const refreshedRegistration = refreshedDetails.registrations?.[0] || pageState.registration;
       setPageState((current) => ({
         ...current,
         user: refreshedDetails.user || current.user,
-        registration: refreshedDetails.registrations?.[0] || current.registration,
+        registration: refreshedRegistration,
       }));
+      setPaymentPreview(
+        refreshedRegistration?.paymentSummary ||
+          refreshedRegistration?.pricing?.breakdown || {
+            pendingAmount: refreshedRegistration?.pendingAmount || 0,
+            paymentStatus: refreshedRegistration?.paymentStatus,
+          },
+      );
       setIsSuccessModalOpen(true);
     } catch (error) {
       applyBackendErrors({
@@ -567,6 +617,13 @@ function EditRegistrationPage() {
                     </span>
                   </label>
 
+                  <label className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4">
+                    <input type="checkbox" className="mt-1 h-4 w-4" {...register('isTems')} />
+                    <span className="block text-sm font-semibold text-slate-800">
+                      Confirmo que soy miembro TEMS
+                    </span>
+                  </label>
+
                   {isIeeeMember ? (
                     <InputField
                       label="Numero de membresia IEEE"
@@ -654,25 +711,22 @@ function EditRegistrationPage() {
                             <InputField
                               label="Titulo"
                               className="md:col-span-2"
-                              readOnly={Boolean(paper.existingPaperId)}
                               error={errors.papers?.[index]?.title?.message}
                               {...register(`papers.${index}.title`, {
-                                required: paper.existingPaperId ? false : 'El titulo es obligatorio',
+                                required: 'El titulo es obligatorio',
                               })}
                             />
                             <InputField
                               label="Codigo del articulo"
-                              readOnly={Boolean(paper.existingPaperId)}
                               error={errors.papers?.[index]?.paperCode?.message}
                               {...register(`papers.${index}.paperCode`, {
-                                required: paper.existingPaperId ? false : 'El codigo es obligatorio',
+                                required: 'El codigo es obligatorio',
                               })}
                             />
                             <InputField
                               label="Paginas"
                               type="number"
                               min="1"
-                              readOnly={Boolean(paper.existingPaperId)}
                               error={errors.papers?.[index]?.pages?.message}
                               {...register(`papers.${index}.pages`, {
                                 min: {
@@ -688,34 +742,29 @@ function EditRegistrationPage() {
                             <TextAreaField
                               label="Autores"
                               className="md:col-span-2"
-                              readOnly={Boolean(paper.existingPaperId)}
                               error={errors.papers?.[index]?.authorsText?.message}
                               placeholder="Separa los autores por coma"
                               {...register(`papers.${index}.authorsText`, {
-                                required: paper.existingPaperId ? false : 'Debes ingresar al menos un autor',
+                                required: 'Debes ingresar al menos un autor',
                                 validate: (value) =>
-                                  paper.existingPaperId
+                                  value
+                                    .split(',')
+                                    .map((item) => item.trim())
+                                    .filter(Boolean).length
                                     ? true
-                                    : value
-                                        .split(',')
-                                        .map((item) => item.trim())
-                                        .filter(Boolean).length
-                                      ? true
-                                      : 'Debes ingresar al menos un autor valido',
+                                    : 'Debes ingresar al menos un autor valido',
                               })}
                             />
                           </div>
 
-                          {!paper.existingPaperId ? (
-                            <div className="mt-5">
-                              <DynamicCustomFields
-                                fields={metadata.customFields.article}
-                                register={register}
-                                errors={errors}
-                                scope={`article_${index}`}
-                              />
-                            </div>
-                          ) : null}
+                          <div className="mt-5">
+                            <DynamicCustomFields
+                              fields={metadata.customFields.article}
+                              register={register}
+                              errors={errors}
+                              scope={`article_${index}`}
+                            />
+                          </div>
                         </Card>
                       ))}
                     </div>
@@ -727,7 +776,7 @@ function EditRegistrationPage() {
                 <div className="space-y-6">
                   <Alert
                     title="Resumen de cambios"
-                    description="Verifica tu informacion antes de guardar la actualizacion de tu inscripcion."
+                    description="Verifica tu informacion antes de guardar la actualizacion. Este resumen de pago se recalculo con los cambios actuales del formulario."
                     variant="info"
                   />
                   <div className="grid gap-4">
@@ -736,15 +785,11 @@ function EditRegistrationPage() {
                     ))}
                     <SummaryRow
                       label="Saldo pendiente"
-                      value={formatCurrency(
-                        pageState.registration.paymentSummary?.pendingAmount ||
-                          pageState.registration.pricing?.balance ||
-                          pageState.registration.pendingAmount,
-                      )}
+                      value={formatCurrency(paymentPreview?.pendingAmount || 0)}
                     />
                     <SummaryRow
                       label="Estado de pago"
-                      value={translatePaymentStatus(pageState.registration.paymentStatus)}
+                      value={translatePaymentStatus(paymentPreview?.paymentStatus)}
                     />
                   </div>
                 </div>
@@ -767,14 +812,19 @@ function EditRegistrationPage() {
                   {currentStep === 0 ? 'Volver' : 'Atras'}
                 </Button>
                 {currentStep < registrationSteps.length - 1 ? (
-                  <Button type="button" variant="primary" onClick={validateStep}>
-                    Continuar
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={validateStep}
+                    disabled={isPreviewLoading}
+                  >
+                    {isPreviewLoading ? 'Calculando...' : 'Continuar'}
                   </Button>
                 ) : (
                   <Button
                     type="button"
                     variant="accent"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isPreviewLoading}
                     onClick={submitEdition}
                   >
                     {isSubmitting ? 'Guardando...' : 'Guardar cambios'}
@@ -838,7 +888,17 @@ function EditRegistrationPage() {
           <p className="text-sm text-slate-600">
             La informacion fue actualizada correctamente.
           </p>
-          <div className="flex justify-end">
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button
+              variant="ghost"
+              className="border border-slate-200"
+              onClick={() => {
+                setIsSuccessModalOpen(false);
+                navigate('/payments');
+              }}
+            >
+              Ir a pagar
+            </Button>
             <Button
               variant="primary"
               onClick={() => {
@@ -936,6 +996,49 @@ function SummaryRow({ label, value }) {
   );
 }
 
+function buildPaymentPreviewPayload(data) {
+  return {
+    eventEditionId: Number(data.eventEditionId),
+    participationType: data.participationType,
+    memberType: resolveMemberType({
+      occupation: data.registrationCategory,
+      isIeeeMember: data.isIeeeMember,
+    }),
+    isIeeeMember: Boolean(data.isIeeeMember),
+    isTems: Boolean(data.isTems),
+    papers: (data.papers || []).map((paper) => ({
+      pages: paper.pages ? Number(paper.pages) : 0,
+    })),
+  };
+}
+
+function didPaperChange(originalPaper, draftPaper) {
+  if (!originalPaper) {
+    return true;
+  }
+
+  const originalAuthors = Array.isArray(originalPaper.authors)
+    ? originalPaper.authors.join(', ')
+    : originalPaper.authors || '';
+  const normalizedOriginalAuthors = normalizeAuthorsText(originalAuthors);
+  const normalizedDraftAuthors = normalizeAuthorsText(draftPaper.authorsText || '');
+
+  return (
+    (originalPaper.title || '') !== (draftPaper.title || '') ||
+    (originalPaper.paperCode || '') !== (draftPaper.paperCode || '') ||
+    String(originalPaper.pages || '') !== String(draftPaper.pages || '') ||
+    normalizedOriginalAuthors !== normalizedDraftAuthors
+  );
+}
+
+function normalizeAuthorsText(value) {
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .join(', ');
+}
+
 function resolveMemberType({ occupation, isIeeeMember }) {
   if (occupation === 'student') {
     return 'student';
@@ -974,6 +1077,7 @@ function buildFormValues(user, registration, registrationFields) {
     attendanceType: registration?.attendanceType || 'in_person',
     registrationCategory: deriveRegistrationCategory(registration),
     isIeeeMember: Boolean(registration?.isIeeeMember || registration?.memberType === 'ieee_member'),
+    isTems: Boolean(registration?.isTems),
     membershipNumber: registration?.membershipNumber || '',
     customFields: {
       registration: registrationFields.reduce((accumulator, field) => {

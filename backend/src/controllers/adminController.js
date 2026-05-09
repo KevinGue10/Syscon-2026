@@ -10,6 +10,7 @@ const {
   DollarRate,
   CustomField,
 } = require('../models');
+const { PAPER_STATUSES, PARTICIPANT_TYPES, MEMBER_TYPES, PAYMENT_STATUSES } = require('../constants/enums');
 const asyncHandler = require('../utils/asyncHandler');
 const { buildWorkbook } = require('../services/exportService');
 const { calculateRegistrationTotals } = require('../services/pricingService');
@@ -49,6 +50,60 @@ const buildPersonalInformation = (user) => ({
   phoneNumber: user.phoneNumber,
   occupation: user.occupation,
 });
+
+const formatRecentRegistrationType = (registration) => {
+  if (registration.participationType === PARTICIPANT_TYPES.AUTHOR) {
+    return 'Autor';
+  }
+
+  if (registration.isIeeeMember) {
+    return 'Miembro IEEE';
+  }
+
+  if (registration.memberType === MEMBER_TYPES.STUDENT) {
+    return 'Estudiante';
+  }
+
+  return 'Asistente';
+};
+
+const getDashboardSummaryData = async () => {
+  const [registrationsCount, acceptedPapersCount, approvedPaymentsTotal, pendingBalancesTotal] = await Promise.all([
+    Registration.count(),
+    Paper.count({ where: { status: PAPER_STATUSES.ACCEPTED } }),
+    Payment.sum('amountUsd', { where: { status: PAYMENT_STATUSES.APPROVED } }),
+    Registration.sum('pendingAmount'),
+  ]);
+
+  return {
+    totalRegistrations: Number(registrationsCount || 0),
+    acceptedPapers: Number(acceptedPapersCount || 0),
+    revenueCollected: Number(approvedPaymentsTotal || 0),
+    pendingBalances: Number(pendingBalancesTotal || 0),
+  };
+};
+
+const getRecentActivityData = async (limit = 10) => {
+  const registrations = await Registration.findAll({
+    include: [
+      { association: 'user', required: false },
+      { association: 'papers', required: false },
+    ],
+    order: [['createdAt', 'DESC']],
+    limit,
+  });
+
+  return registrations.map((registration) => ({
+    id: `REG-${registration.id}`,
+    participant: registration.user
+      ? `${registration.user.firstName} ${registration.user.lastName}`
+      : 'Participante sin nombre',
+    type: formatRecentRegistrationType(registration),
+    papers: registration.papers?.length || 0,
+    paymentStatus: registration.paymentStatus,
+    createdAt: registration.createdAt,
+  }));
+};
 
 const listUsers = asyncHandler(async (req, res) => {
   const users = await User.findAll({
@@ -176,16 +231,18 @@ const listPapers = asyncHandler(async (req, res) => {
 });
 
 const getDashboard = asyncHandler(async (req, res) => {
-  const [usersCount, registrationsCount, papersCount, approvedPaymentsTotal, paymentStatusGroups] = await Promise.all([
+  const [usersCount, registrationsCount, papersCount, approvedPaymentsTotal, paymentStatusGroups, summary, recentActivity] = await Promise.all([
     User.count(),
     Registration.count(),
     Paper.count(),
-    Payment.sum('amountUsd', { where: { status: 'approved' } }),
+    Payment.sum('amountUsd', { where: { status: PAYMENT_STATUSES.APPROVED } }),
     Registration.findAll({
       attributes: ['paymentStatus', [fn('COUNT', col('id')), 'count']],
       group: ['paymentStatus'],
       raw: true,
     }),
+    getDashboardSummaryData(),
+    getRecentActivityData(10),
   ]);
 
   return sendSuccess(res, {
@@ -198,7 +255,29 @@ const getDashboard = asyncHandler(async (req, res) => {
       approvedPaymentsTotal: Number(approvedPaymentsTotal || 0),
       paymentStatusGroups,
       },
+      summary,
+      recentActivity,
     },
+  });
+});
+
+const getDashboardSummary = asyncHandler(async (req, res) => {
+  const summary = await getDashboardSummaryData();
+
+  return sendSuccess(res, {
+    message: 'Resumen del panel obtenido correctamente.',
+    data: { summary },
+  });
+});
+
+const getDashboardRecentActivity = asyncHandler(async (req, res) => {
+  const parsedLimit = Number(req.query.limit || 10);
+  const limit = Number.isNaN(parsedLimit) ? 10 : Math.max(1, Math.min(parsedLimit, 50));
+  const recentActivity = await getRecentActivityData(limit);
+
+  return sendSuccess(res, {
+    message: 'Actividad reciente obtenida correctamente.',
+    data: { recentActivity },
   });
 });
 
@@ -234,8 +313,10 @@ const updatePricingRule = asyncHandler(async (req, res) => {
     where: {
       eventEditionId: pricingRule.eventEditionId,
       participationType: pricingRule.participationType,
-      memberType: pricingRule.memberType,
-      attendanceType: pricingRule.attendanceType,
+      ...(pricingRule.memberType ? { memberType: pricingRule.memberType } : {}),
+      ...(pricingRule.name === 'Additional Paper' || pricingRule.name === 'Additional Page'
+        ? {}
+        : { isIeeeMember: pricingRule.isIeeeMember }),
     },
   });
 
@@ -488,6 +569,8 @@ module.exports = {
   listPayments,
   listPapers,
   getDashboard,
+  getDashboardSummary,
+  getDashboardRecentActivity,
   createPricingRule,
   updatePricingRule,
   listPricingRules,
