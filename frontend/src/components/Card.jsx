@@ -1,3 +1,7 @@
-export function Card({ children, className = '' }) {
-  return <div className={`panel p-6 ${className}`}>{children}</div>;
+export function Card({ children, className = '', ...props }) {
+  return (
+    <div className={`panel p-6 ${className}`} {...props}>
+      {children}
+    </div>
+  );
 }

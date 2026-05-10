@@ -10,6 +10,8 @@ import RegistrationDetailsPage from '../pages/RegistrationDetailsPage';
 import EditRegistrationPage from '../pages/EditRegistrationPage';
 import NotFoundPage from '../pages/NotFoundPage';
 import PaymentPage from '../pages/PaymentPage';
+import PaymentSuccess from '../pages/PaymentSuccess';
+import PaymentCancel from '../pages/PaymentCancel';
 import AdminUsersOverviewPage from '../pages/AdminUsersOverviewPage';
 
 function AppRouter() {
@@ -48,6 +50,54 @@ function AppRouter() {
           element={
             <ProtectedRoute roles={['user', 'admin']}>
               <PaymentPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payments/success"
+          element={
+            <ProtectedRoute roles={['user', 'admin']}>
+              <PaymentSuccess />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payments/cancel"
+          element={
+            <ProtectedRoute roles={['user', 'admin']}>
+              <PaymentCancel />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payments/paypal/return"
+          element={
+            <ProtectedRoute roles={['user', 'admin']}>
+              <PaymentSuccess />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payments/paypal/cancel"
+          element={
+            <ProtectedRoute roles={['user', 'admin']}>
+              <PaymentCancel />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payments/payphone/return"
+          element={
+            <ProtectedRoute roles={['user', 'admin']}>
+              <PaymentSuccess />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payments/payphone/cancel"
+          element={
+            <ProtectedRoute roles={['user', 'admin']}>
+              <PaymentCancel />
             </ProtectedRoute>
           }
         />

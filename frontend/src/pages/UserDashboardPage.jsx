@@ -146,6 +146,15 @@ function UserDashboardPage() {
               />
               <Metric label="Saldo pendiente" value={formatCurrency(outstandingBalance)} />
             </div>
+            {outstandingBalance > 0 ? (
+              <Button
+                variant="primary"
+                className="mt-6 w-full sm:w-fit"
+                onClick={() => navigate('/payments')}
+              >
+                Ir a pagos
+              </Button>
+            ) : null}
           </Card>
         </div>
 

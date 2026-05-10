@@ -6,5 +6,6 @@ const router = express.Router();
 router.get('/countries', metadataController.listCountries);
 router.get('/event-editions', metadataController.listEventEditions);
 router.get('/custom-fields', metadataController.listCustomFields);
+router.get('/bank-transfer-details', metadataController.getBankTransferDetails);
 
 module.exports = router;

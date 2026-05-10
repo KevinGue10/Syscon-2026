@@ -45,7 +45,7 @@ function AdminUsersOverviewPage() {
     isTems: '',
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const [openMenuId, setOpenMenuId] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [actionModal, setActionModal] = useState({
     isOpen: false,
     title: '',
@@ -307,38 +307,13 @@ function AdminUsersOverviewPage() {
                 key: 'actions',
                 label: 'Acciones',
                 render: (_, row) => (
-                  <div className="relative">
-                    <button
-                      type="button"
-                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-700 transition hover:bg-slate-100"
-                      onClick={() =>
-                        setOpenMenuId((current) => (current === row.id ? null : row.id))
-                      }
-                    >
-                      ...
-                    </button>
-                    {openMenuId === row.id ? (
-                      <div className="absolute bottom-full right-0 z-20 mb-2 w-52 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-                        {['Validar pago', 'Ver articulos', 'Inhabilitar usuario'].map((action) => (
-                          <button
-                            key={action}
-                            type="button"
-                            className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100"
-                            onClick={() => {
-                              setOpenMenuId(null);
-                              setActionModal({
-                                isOpen: true,
-                                title: action,
-                                user: row,
-                              });
-                            }}
-                          >
-                            {action}
-                          </button>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
+                  <button
+                    type="button"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-700 transition hover:bg-slate-100"
+                    onClick={() => setSelectedUser(row)}
+                  >
+                    ...
+                  </button>
                 ),
               },
             ]}
@@ -372,6 +347,43 @@ function AdminUsersOverviewPage() {
           </div>
         </div>
       </Card>
+
+      <Modal
+        isOpen={Boolean(selectedUser)}
+        title="Acciones disponibles"
+        onClose={() => setSelectedUser(null)}
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-slate-600">
+            Selecciona una accion para{' '}
+            <span className="font-semibold text-slate-950">
+              {selectedUser
+                ? `${selectedUser.firstName || ''} ${selectedUser.lastName || ''}`.trim()
+                : 'el participante'}
+            </span>
+            .
+          </p>
+          <div className="grid gap-2">
+            {['Validar pago', 'Ver articulos', 'Inhabilitar usuario'].map((action) => (
+              <button
+                key={action}
+                type="button"
+                className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+                onClick={() => {
+                  setSelectedUser(null);
+                  setActionModal({
+                    isOpen: true,
+                    title: action,
+                    user: selectedUser,
+                  });
+                }}
+              >
+                {action}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         isOpen={actionModal.isOpen}

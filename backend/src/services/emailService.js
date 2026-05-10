@@ -102,7 +102,7 @@ const sendPaymentConfirmationEmail = (user, payment) =>
   sendEmail({
     to: user.email,
     subject: 'Payment approved',
-    text: `Your payment ${payment.transactionReference} for ${payment.amountUsd} USD was approved.`,
+    text: `Your payment ${payment.transactionReference || payment.providerPaymentId || payment.id} for ${payment.amountUsd} USD was approved.`,
     templateName: 'payment_confirmation',
     userId: user.id,
     registrationId: payment.registrationId,

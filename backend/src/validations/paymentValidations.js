@@ -1,31 +1,61 @@
 const { body, param } = require('express-validator');
-const { PAYMENT_STATUSES } = require('../constants/enums');
 
-const createPaymentValidation = [
-  body('registrationId').isInt({ min: 1 }).withMessage('registrationId is required.'),
-  body('amount').optional().isFloat({ gt: 0 }),
-  body('amountUsd').optional().isFloat({ gt: 0 }),
-  body('amountCop').optional().isFloat({ gt: 0 }),
-  body('currency').trim().notEmpty().withMessage('currency is required.'),
-  body('paymentMethod').trim().notEmpty().withMessage('paymentMethod is required.'),
-  body('transactionReference').trim().notEmpty().withMessage('transactionReference is required.'),
-  body('status').optional().isIn(Object.values(PAYMENT_STATUSES)),
-  body('paymentDate').optional().isISO8601().withMessage('paymentDate must be a valid date.'),
-];
-
-const paymentStatusValidation = [
-  param('id').isInt({ min: 1 }).withMessage('Valid payment id is required.'),
-  body('status')
-    .isIn(Object.values(PAYMENT_STATUSES))
-    .withMessage('status must be pending, approved, or rejected.'),
+const paymentIdParamValidation = [
+  param('paymentId').isInt({ min: 1 }).withMessage('Valid payment id is required.'),
 ];
 
 const registrationPaymentsValidation = [
   param('registrationId').isInt({ min: 1 }).withMessage('Valid registration id is required.'),
 ];
 
+const amountValidation = [
+  body('amount').optional().isFloat({ gt: 0 }).withMessage('amount must be greater than 0.'),
+  body('amountUsd').optional().isFloat({ gt: 0 }).withMessage('amountUsd must be greater than 0.'),
+  body('amountCop').optional().isFloat({ gt: 0 }).withMessage('amountCop must be greater than 0.'),
+  body('currency').optional().isIn(['USD', 'COP']).withMessage('currency must be USD or COP.'),
+];
+
+const bankTransferValidation = [
+  body('registrationId').isInt({ min: 1 }).withMessage('registrationId is required.'),
+  ...amountValidation,
+  body('transactionReference').optional({ nullable: true }).isString(),
+];
+
+const paymentProofValidation = [
+  ...paymentIdParamValidation,
+  body('fileName').trim().notEmpty().withMessage('fileName is required.'),
+  body('fileContentBase64').trim().notEmpty().withMessage('fileContentBase64 is required.'),
+  body('mimeType').optional({ nullable: true }).isString(),
+];
+
+const paymentApprovalValidation = [...paymentIdParamValidation];
+
+const paymentRejectionValidation = [
+  ...paymentIdParamValidation,
+  body('rejectionReason').trim().notEmpty().withMessage('rejectionReason is required.'),
+];
+
+const paypalCreateOrderValidation = [
+  body('registrationId').isInt({ min: 1 }).withMessage('registrationId is required.'),
+  ...amountValidation,
+];
+
+const paypalCaptureOrderValidation = [
+  body('orderId').trim().notEmpty().withMessage('orderId is required.'),
+];
+
+const payphoneCreatePaymentValidation = [
+  body('registrationId').isInt({ min: 1 }).withMessage('registrationId is required.'),
+  ...amountValidation,
+];
+
 module.exports = {
-  createPaymentValidation,
-  paymentStatusValidation,
+  bankTransferValidation,
+  paymentProofValidation,
+  paymentApprovalValidation,
+  paymentRejectionValidation,
+  paypalCreateOrderValidation,
+  paypalCaptureOrderValidation,
+  payphoneCreatePaymentValidation,
   registrationPaymentsValidation,
 };

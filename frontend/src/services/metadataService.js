@@ -21,4 +21,9 @@ export const metadataService = {
 
     return data.data?.customFields || data.customFields || [];
   },
+
+  async getBankTransferDetails() {
+    const { data } = await api.get('/metadata/bank-transfer-details');
+    return data.data?.bankTransferDetails || data.data || data.bankTransferDetails || data || null;
+  },
 };

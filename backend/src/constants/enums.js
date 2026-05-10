@@ -30,6 +30,7 @@ const PAYMENT_STATUSES = {
   PENDING: 'pending',
   APPROVED: 'approved',
   REJECTED: 'rejected',
+  REFUNDED: 'refunded',
 };
 
 const REGISTRATION_PAYMENT_STATUSES = {

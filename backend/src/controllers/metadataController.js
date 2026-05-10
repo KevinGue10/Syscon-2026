@@ -1,6 +1,7 @@
 const asyncHandler = require('../utils/asyncHandler');
 const { Country, EventEdition, CustomField } = require('../models');
 const { sendSuccess } = require('../utils/responseContract');
+const env = require('../config/env');
 
 const listCountries = asyncHandler(async (req, res) => {
   const countries = await Country.findAll({ order: [['name', 'ASC']] });
@@ -40,8 +41,27 @@ const listCustomFields = asyncHandler(async (req, res) => {
   });
 });
 
+const getBankTransferDetails = asyncHandler(async (req, res) => {
+  const bankTransferDetails = Object.entries(env.bankTransfer).reduce((accumulator, [key, value]) => {
+    if (value !== '' && value !== null && value !== undefined) {
+      accumulator[key] = value;
+    }
+
+    return accumulator;
+  }, {});
+
+  return sendSuccess(res, {
+    message: 'Datos bancarios obtenidos correctamente.',
+    data: {
+      bankTransferDetails,
+      isConfigured: Object.keys(bankTransferDetails).length > 0,
+    },
+  });
+});
+
 module.exports = {
   listCountries,
   listEventEditions,
   listCustomFields,
+  getBankTransferDetails,
 };

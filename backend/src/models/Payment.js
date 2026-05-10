@@ -36,10 +36,54 @@ Payment.init(
       allowNull: false,
       field: 'payment_method',
     },
+    provider: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+      defaultValue: 'manual',
+    },
+    providerPaymentId: {
+      type: DataTypes.STRING(150),
+      allowNull: true,
+      field: 'provider_payment_id',
+    },
+    paymentUrl: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: 'payment_url',
+    },
+    paymentProofUrl: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: 'payment_proof_url',
+    },
+    paymentProofFilename: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'payment_proof_filename',
+    },
+    providerResponseJson: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      field: 'provider_response_json',
+    },
+    validatedBy: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'validated_by',
+    },
+    validatedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'validated_at',
+    },
+    rejectionReason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: 'rejection_reason',
+    },
     transactionReference: {
       type: DataTypes.STRING(150),
-      allowNull: false,
-      unique: true,
+      allowNull: true,
       field: 'transaction_reference',
     },
     status: {

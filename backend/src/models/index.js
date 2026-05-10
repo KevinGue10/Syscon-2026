@@ -3,6 +3,7 @@ const EventEdition = require('./EventEdition');
 const Registration = require('./Registration');
 const Paper = require('./Paper');
 const Payment = require('./Payment');
+const PaymentStatusHistory = require('./PaymentStatusHistory');
 const PricingRule = require('./PricingRule');
 const AuditLog = require('./AuditLog');
 const Country = require('./Country');
@@ -35,6 +36,12 @@ const initModels = () => {
 
   Registration.hasMany(Payment, { foreignKey: 'registrationId', as: 'payments', onDelete: 'CASCADE' });
   Payment.belongsTo(Registration, { foreignKey: 'registrationId', as: 'registration' });
+  Payment.hasMany(PaymentStatusHistory, { foreignKey: 'paymentId', as: 'statusHistory', onDelete: 'CASCADE' });
+  PaymentStatusHistory.belongsTo(Payment, { foreignKey: 'paymentId', as: 'payment' });
+  User.hasMany(Payment, { foreignKey: 'validatedBy', as: 'validatedPayments' });
+  Payment.belongsTo(User, { foreignKey: 'validatedBy', as: 'validator' });
+  User.hasMany(PaymentStatusHistory, { foreignKey: 'changedBy', as: 'paymentStatusChanges' });
+  PaymentStatusHistory.belongsTo(User, { foreignKey: 'changedBy', as: 'changedByUser' });
 
   User.hasMany(AuditLog, { foreignKey: 'userId', as: 'auditLogs' });
   AuditLog.belongsTo(User, { foreignKey: 'userId', as: 'user' });
@@ -64,6 +71,7 @@ module.exports = {
   Registration,
   Paper,
   Payment,
+  PaymentStatusHistory,
   PricingRule,
   AuditLog,
   Country,
