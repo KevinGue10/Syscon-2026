@@ -55,14 +55,16 @@ export function BankTransferForm({
         </div>
       )}
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="mt-6 max-w-md">
         <InputField
           label="Referencia de la transferencia"
           placeholder="Ej. TRX-2026-001"
           value={transactionReference}
           onChange={(event) => onTransactionReferenceChange(event.target.value)}
         />
+      </div>
 
+      <div className="mt-6 max-w-xl">
         <div className="flex flex-col gap-2">
           <span className="text-sm font-semibold text-slate-700">Adjuntar soporte de transferencia</span>
           <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center transition hover:border-brand-400 hover:bg-brand-50/40">

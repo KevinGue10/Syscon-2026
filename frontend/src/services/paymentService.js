@@ -19,6 +19,28 @@ export const paymentService = {
     return normalizePaymentResponse(data);
   },
 
+  async previewCoupon(payload) {
+    const { data } = await api.post('/payments/coupons/preview', payload);
+    const response = normalizePaymentResponse(data);
+    const preview = data?.data?.couponPreview || data?.data?.preview || null;
+
+    return {
+      ...response,
+      couponPreview: preview,
+      coupon: data?.data?.coupon || preview?.coupon || null,
+    };
+  },
+
+  async redeemCoupon(payload) {
+    const { data } = await api.post('/payments/coupons/redeem', payload);
+    const response = normalizePaymentResponse(data);
+
+    return {
+      ...response,
+      couponRedemption: data?.data?.couponRedemption || data?.data?.redemption || null,
+    };
+  },
+
   async createBankTransferPayment(payload) {
     const { data } = await api.post('/payments/bank-transfer', payload);
     return normalizePaymentResponse(data);

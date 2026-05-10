@@ -23,6 +23,14 @@ function PaymentPage() {
   const [includeTaxes, setIncludeTaxes] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [selectedMethod, setSelectedMethod] = useState('paypal');
+  const [couponState, setCouponState] = useState({
+    code: '',
+    isApplying: false,
+    isRedeeming: false,
+    error: '',
+    message: '',
+    applied: null,
+  });
   const [bankTransferState, setBankTransferState] = useState({
     transactionReference: '',
     supportingFile: null,
@@ -105,21 +113,41 @@ function PaymentPage() {
 
   const paymentBreakdown = useMemo(() => {
     const baseAmount = sanitizePaymentAmount(paymentAmount, registrationTotals.pendingAmount);
-    const taxesAmount = includeTaxes ? Number((baseAmount * TAX_RATE).toFixed(2)) : 0;
-    const totalAmount = Number((baseAmount + taxesAmount).toFixed(2));
+    const discountAmount = resolveCouponDiscount(couponState.applied, baseAmount);
+    const discountedBaseAmount = Number(Math.max(0, baseAmount - discountAmount).toFixed(2));
+    const taxesAmount = includeTaxes ? Number((discountedBaseAmount * TAX_RATE).toFixed(2)) : 0;
+    const totalAmount = Number(Math.max(0, discountedBaseAmount + taxesAmount).toFixed(2));
 
     return {
       baseAmount,
+      discountAmount,
+      discountedBaseAmount,
       taxesAmount,
       totalAmount,
     };
-  }, [includeTaxes, paymentAmount, registrationTotals.pendingAmount]);
+  }, [couponState.applied, includeTaxes, paymentAmount, registrationTotals.pendingAmount]);
 
   const bankDetails = useMemo(
     () => buildBankDetails(bankTransferDetails),
     [bankTransferDetails],
   );
   const latestPayment = pageState.payments?.[0] || null;
+  const canRedeemCoupon = Boolean(couponState.applied) && paymentBreakdown.totalAmount <= 0;
+
+  useEffect(() => {
+    setCouponState((current) => {
+      if (!current.applied) {
+        return current;
+      }
+
+      return {
+        ...current,
+        applied: null,
+        error: '',
+        message: 'El monto o los impuestos cambiaron. Vuelve a aplicar el cupon.',
+      };
+    });
+  }, [includeTaxes, paymentAmount]);
 
   async function refreshPaymentContext() {
     const response = await dashboardService.getMyRegistrationDetails();
@@ -135,6 +163,109 @@ function PaymentPage() {
       payments: paymentsResponse.payments || [],
     });
     setPaymentAmount(resolvePendingAmount(activeRegistration).toFixed(2));
+    setCouponState({
+      code: '',
+      isApplying: false,
+      isRedeeming: false,
+      error: '',
+      message: '',
+      applied: null,
+    });
+  }
+
+  async function handleApplyCoupon() {
+    if (!pageState.registration || !couponState.code.trim()) {
+      return;
+    }
+
+    try {
+      setCouponState((current) => ({
+        ...current,
+        isApplying: true,
+        error: '',
+        message: '',
+      }));
+
+      const response = await paymentService.previewCoupon({
+        registrationId: pageState.registration.id,
+        code: couponState.code.trim().toUpperCase(),
+        baseAmount: paymentBreakdown.baseAmount,
+        includeTaxes,
+      });
+      const preview = response.couponPreview;
+
+      if (!preview) {
+        throw new Error('El backend no devolvio el resumen del cupon.');
+      }
+
+      setCouponState((current) => ({
+        ...current,
+        code: preview.code || current.code.trim().toUpperCase(),
+        isApplying: false,
+        error: '',
+        message:
+          preview.message ||
+          (Number(preview.discountAmount || 0) > 0
+            ? 'El cupon fue validado correctamente.'
+            : 'El cupon no genera descuento para este pago.'),
+        applied: preview,
+      }));
+    } catch (error) {
+      setCouponState((current) => ({
+        ...current,
+        isApplying: false,
+        error:
+          error?.response?.data?.message ||
+          error?.message ||
+          'No fue posible validar el cupon.',
+        message: '',
+        applied: null,
+      }));
+    }
+  }
+
+  async function handleRedeemCoupon() {
+    if (!pageState.registration || !couponState.applied || !canRedeemCoupon) {
+      return;
+    }
+
+    try {
+      setCouponState((current) => ({
+        ...current,
+        isRedeeming: true,
+        error: '',
+        message: '',
+      }));
+
+      const response = await paymentService.redeemCoupon({
+        registrationId: pageState.registration.id,
+        code: couponState.applied.code || couponState.code.trim().toUpperCase(),
+        baseAmount: paymentBreakdown.baseAmount,
+        includeTaxes,
+      });
+
+      setPageState((current) => ({
+        ...current,
+        registration: response.registration || current.registration,
+      }));
+      await refreshPaymentContext();
+      setCouponState((current) => ({
+        ...current,
+        isRedeeming: false,
+        message:
+          response.message ||
+          'La deuda quedo liquidada con el cupon y el saldo pendiente se actualizo a cero.',
+      }));
+    } catch (error) {
+      setCouponState((current) => ({
+        ...current,
+        isRedeeming: false,
+        error:
+          error?.response?.data?.message ||
+          error?.message ||
+          'No fue posible liquidar la deuda con el cupon.',
+      }));
+    }
   }
 
   async function handleBankTransferSubmit() {
@@ -173,6 +304,7 @@ function PaymentPage() {
         amountUsd: paymentBreakdown.totalAmount,
         currency: 'USD',
         transactionReference: bankTransferState.transactionReference.trim() || undefined,
+        couponCode: couponState.applied?.code || undefined,
       });
 
       const createdPaymentId = createResponse.payment?.id;
@@ -220,6 +352,7 @@ function PaymentPage() {
         registrationId: pageState.registration.id,
         amountUsd: paymentBreakdown.totalAmount,
         currency: 'USD',
+        couponCode: couponState.applied?.code || undefined,
       });
 
       const approvalUrl = response.payment?.paymentUrl || response.payment?.approvalUrl || null;
@@ -258,6 +391,7 @@ function PaymentPage() {
         registrationId: pageState.registration.id,
         amountUsd: paymentBreakdown.totalAmount,
         currency: 'USD',
+        couponCode: couponState.applied?.code || undefined,
       });
 
       const paymentUrl = response.payment?.paymentUrl || null;
@@ -339,42 +473,76 @@ function PaymentPage() {
           includeTaxes={includeTaxes}
           onIncludeTaxesChange={setIncludeTaxes}
           taxesAmount={paymentBreakdown.taxesAmount}
+          discountAmount={paymentBreakdown.discountAmount}
           totalToCharge={paymentBreakdown.totalAmount}
+          couponCode={couponState.code}
+          onCouponCodeChange={(value) =>
+            setCouponState((current) => ({
+              ...current,
+              code: value,
+              applied: current.applied?.code === value.trim().toUpperCase() ? current.applied : null,
+              error: '',
+              message: '',
+            }))
+          }
+          onApplyCoupon={handleApplyCoupon}
+          couponState={couponState}
+          onRedeemCoupon={handleRedeemCoupon}
+          isRedeemingCoupon={couponState.isRedeeming}
+          canRedeemCoupon={canRedeemCoupon}
         />
 
         <div className="space-y-8">
-          <BankTransferForm
-            bankDetails={bankDetails}
-            amountToCharge={paymentBreakdown.totalAmount}
-            transactionReference={bankTransferState.transactionReference}
-            onTransactionReferenceChange={(value) =>
-              setBankTransferState((current) => ({
-                ...current,
-                transactionReference: value,
-              }))
-            }
-            supportingFile={bankTransferState.supportingFile}
-            onFileChange={(file) =>
-              setBankTransferState((current) => ({
-                ...current,
-                supportingFile: file,
-              }))
-            }
-            isSubmitting={bankTransferState.isSubmitting}
-            error={bankTransferState.error}
-            success={bankTransferState.success}
-            onSubmit={handleBankTransferSubmit}
-          />
+          {canRedeemCoupon ? (
+            <Card className="rounded-[2rem] p-8">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
+                Descuento total
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-950">
+                No necesitas procesar un pago externo
+              </h2>
+              <p className="mt-4 text-sm leading-7 text-slate-600">
+                El cupon cubre el valor completo de este pago. El siguiente paso es confirmar la
+                liquidación para que el backend deje el saldo pendiente en cero y registre la
+                trazabilidad del descuento.
+              </p>
+            </Card>
+          ) : (
+            <>
+              <BankTransferForm
+                bankDetails={bankDetails}
+                amountToCharge={paymentBreakdown.totalAmount}
+                transactionReference={bankTransferState.transactionReference}
+                onTransactionReferenceChange={(value) =>
+                  setBankTransferState((current) => ({
+                    ...current,
+                    transactionReference: value,
+                  }))
+                }
+                supportingFile={bankTransferState.supportingFile}
+                onFileChange={(file) =>
+                  setBankTransferState((current) => ({
+                    ...current,
+                    supportingFile: file,
+                  }))
+                }
+                isSubmitting={bankTransferState.isSubmitting}
+                error={bankTransferState.error}
+                success={bankTransferState.success}
+                onSubmit={handleBankTransferSubmit}
+              />
 
-          <PaymentMethods
-            selectedMethod={selectedMethod}
-            onSelectMethod={setSelectedMethod}
-            amountToCharge={paymentBreakdown.totalAmount}
-            paypalState={gatewayState.paypal}
-            payphoneState={gatewayState.payphone}
-            onPayPalClick={handlePayPalCheckout}
-            onPayPhoneClick={handlePayPhoneCheckout}
-          />
+              <PaymentMethods
+                selectedMethod={selectedMethod}
+                onSelectMethod={setSelectedMethod}
+                amountToCharge={paymentBreakdown.totalAmount}
+                paypalState={gatewayState.paypal}
+                payphoneState={gatewayState.payphone}
+                onPayPalClick={handlePayPalCheckout}
+                onPayPhoneClick={handlePayPhoneCheckout}
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -523,6 +691,22 @@ function formatProvider(value) {
   };
 
   return map[value] || value || 'No registrado';
+}
+
+function resolveCouponDiscount(appliedCoupon, baseAmount) {
+  if (!appliedCoupon || baseAmount <= 0) {
+    return 0;
+  }
+
+  if (appliedCoupon.discountAmount !== undefined && appliedCoupon.discountAmount !== null) {
+    return Number(Math.max(0, Number(appliedCoupon.discountAmount)).toFixed(2));
+  }
+
+  if (appliedCoupon.percentage !== undefined && appliedCoupon.percentage !== null) {
+    return Number(Math.max(0, (baseAmount * Number(appliedCoupon.percentage)) / 100).toFixed(2));
+  }
+
+  return 0;
 }
 
 async function toBase64Payload(file) {
