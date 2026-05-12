@@ -1,18 +1,98 @@
-const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 const AppError = require('../utils/errors');
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'pdf']);
 const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'application/pdf']);
 
-const uploadDir = path.join(process.cwd(), 'uploads', 'payment-proofs');
+const trimCrlf = (buffer) => {
+  let result = buffer;
 
-const ensureUploadDir = () => {
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+  while (result.length >= 2 && result.subarray(0, 2).equals(Buffer.from('\r\n'))) {
+    result = result.subarray(2);
   }
+
+  while (result.length >= 2 && result.subarray(result.length - 2).equals(Buffer.from('\r\n'))) {
+    result = result.subarray(0, result.length - 2);
+  }
+
+  return result;
+};
+
+const splitBuffer = (buffer, separator) => {
+  const parts = [];
+  let start = 0;
+  let index = buffer.indexOf(separator, start);
+
+  while (index !== -1) {
+    parts.push(buffer.subarray(start, index));
+    start = index + separator.length;
+    index = buffer.indexOf(separator, start);
+  }
+
+  parts.push(buffer.subarray(start));
+  return parts;
+};
+
+const parseMultipartForm = async (req) => {
+  const contentType = String(req.headers['content-type'] || '');
+  const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+
+  if (!boundaryMatch) {
+    throw new AppError('Multipart boundary not found.', 400);
+  }
+
+  const boundaryValue = boundaryMatch[1] || boundaryMatch[2];
+  const boundary = Buffer.from(`--${boundaryValue}`);
+  const chunks = [];
+
+  for await (const chunk of req) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+
+  const bodyBuffer = Buffer.concat(chunks);
+  const rawParts = splitBuffer(bodyBuffer, boundary);
+  const parsed = {
+    fields: {},
+    file: null,
+  };
+
+  rawParts.forEach((rawPart) => {
+    const part = trimCrlf(rawPart);
+    if (!part.length || part.equals(Buffer.from('--'))) {
+      return;
+    }
+
+    const headerEndIndex = part.indexOf(Buffer.from('\r\n\r\n'));
+    if (headerEndIndex === -1) {
+      return;
+    }
+
+    const headerText = part.subarray(0, headerEndIndex).toString('utf8');
+    const content = trimCrlf(part.subarray(headerEndIndex + 4));
+    const nameMatch = headerText.match(/name="([^"]+)"/i);
+    const fileNameMatch = headerText.match(/filename="([^"]*)"/i);
+    const mimeTypeMatch = headerText.match(/content-type:\s*([^\r\n]+)/i);
+
+    if (!nameMatch) {
+      return;
+    }
+
+    const fieldName = nameMatch[1];
+    if (fileNameMatch && fileNameMatch[1]) {
+      parsed.file = {
+        fieldName,
+        originalName: path.basename(fileNameMatch[1]),
+        mimeType: mimeTypeMatch ? mimeTypeMatch[1].trim() : '',
+        buffer: content,
+      };
+      return;
+    }
+
+    parsed.fields[fieldName] = content.toString('utf8');
+  });
+
+  return parsed;
 };
 
 const parseBase64File = (body = {}) => {
@@ -37,40 +117,53 @@ const parseBase64File = (body = {}) => {
   };
 };
 
-const uploadPaymentProof = (req, res, next) => {
+const buildFileDescriptor = ({ originalName, mimeType, buffer }) => {
+  const extension = path.extname(originalName).replace('.', '').toLowerCase();
+
+  if (!ALLOWED_EXTENSIONS.has(extension)) {
+    throw new AppError('Only jpg, jpeg, png and pdf files are allowed.', 400);
+  }
+
+  if (mimeType && !ALLOWED_MIME_TYPES.has(mimeType)) {
+    throw new AppError('Invalid file mime type.', 400);
+  }
+
+  if (!buffer.length || buffer.length > MAX_FILE_SIZE_BYTES) {
+    throw new AppError('The payment proof file must be smaller than 5MB.', 400);
+  }
+
+  return {
+    originalName,
+    mimeType: mimeType || null,
+    extension,
+    size: buffer.length,
+    buffer,
+  };
+};
+
+const uploadPaymentProof = async (req, res, next) => {
   try {
-    const { originalName, mimeType, buffer } = parseBase64File(req.body);
-    const extension = path.extname(originalName).replace('.', '').toLowerCase();
+    const contentType = String(req.headers['content-type'] || '');
 
-    if (!ALLOWED_EXTENSIONS.has(extension)) {
-      throw new AppError('Only jpg, jpeg, png and pdf files are allowed.', 400);
+    if (contentType.includes('multipart/form-data')) {
+      const { fields, file } = await parseMultipartForm(req);
+      req.body = {
+        ...req.body,
+        ...fields,
+      };
+
+      if (!file || file.fieldName !== 'file') {
+        throw new AppError('A file field named "file" is required.', 400);
+      }
+
+      req.uploadedFile = buildFileDescriptor(file);
+      return next();
     }
 
-    if (mimeType && !ALLOWED_MIME_TYPES.has(mimeType)) {
-      throw new AppError('Invalid file mime type.', 400);
-    }
-
-    if (!buffer.length || buffer.length > MAX_FILE_SIZE_BYTES) {
-      throw new AppError('The payment proof file must be smaller than 5MB.', 400);
-    }
-
-    ensureUploadDir();
-    const fileName = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
-    const absolutePath = path.join(uploadDir, fileName);
-    fs.writeFileSync(absolutePath, buffer);
-
-    req.uploadedFile = {
-      filename: fileName,
-      originalName,
-      mimeType: mimeType || null,
-      size: buffer.length,
-      absolutePath,
-      relativePath: path.join('uploads', 'payment-proofs', fileName),
-    };
-
-    next();
+    req.uploadedFile = buildFileDescriptor(parseBase64File(req.body));
+    return next();
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 

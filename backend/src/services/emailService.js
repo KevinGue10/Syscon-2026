@@ -2,6 +2,8 @@ const nodemailer = require('nodemailer');
 const env = require('../config/env');
 const { EmailLog } = require('../models');
 const { EMAIL_LOG_STATUSES } = require('../constants/enums');
+const { buildPasswordResetTemplate } = require('../templates/emails/passwordResetTemplate');
+const { buildWelcomeTemplate } = require('../templates/emails/welcomeTemplate');
 
 let transporter;
 
@@ -18,6 +20,9 @@ const getTransporter = () => {
       host: env.smtp.host,
       port: env.smtp.port,
       secure: Number(env.smtp.port) === 465,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
       auth: {
         user: env.smtp.user,
         pass: env.smtp.pass,
@@ -72,8 +77,16 @@ const sendEmail = async ({ to, subject, text, html, templateName, userId = null,
 const sendWelcomeEmail = (user) =>
   sendEmail({
     to: user.email,
-    subject: 'IEEE platform account created',
-    text: `Hello ${user.firstName}, your account has been created successfully.`,
+    ...buildWelcomeTemplate({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      city: user.city,
+      affiliation: user.affiliation,
+      role: user.role,
+      appBaseUrl: env.app.baseUrl,
+      logoUrl: env.app.emailLogoUrl,
+    }),
     templateName: 'welcome',
     userId: user.id,
   });
@@ -118,10 +131,24 @@ const sendPendingPaymentReminderEmail = (user, registration) =>
     registrationId: registration.id,
   });
 
+const sendPasswordResetEmail = ({ user, provisionalPassword }) =>
+  sendEmail({
+    to: user.email,
+    ...buildPasswordResetTemplate({
+      firstName: user.firstName,
+      provisionalPassword,
+      appBaseUrl: env.app.baseUrl,
+      logoUrl: env.app.emailLogoUrl,
+    }),
+    templateName: 'password_reset',
+    userId: user.id,
+  });
+
 module.exports = {
   sendWelcomeEmail,
   sendRegistrationConfirmationEmail,
   sendPaperRegistrationEmail,
   sendPaymentConfirmationEmail,
   sendPendingPaymentReminderEmail,
+  sendPasswordResetEmail,
 };

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Alert } from './Alert';
 import { Button } from './Button';
 import { Card } from './Card';
@@ -16,6 +17,19 @@ export function BankTransferForm({
   success,
   onSubmit,
 }) {
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  function handleDrop(event) {
+    event.preventDefault();
+    setIsDragOver(false);
+
+    const droppedFile = event.dataTransfer?.files?.[0] || null;
+
+    if (droppedFile && isAcceptedProofFile(droppedFile)) {
+      onFileChange(droppedFile);
+    }
+  }
+
   return (
     <Card className="rounded-[2rem] p-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -67,18 +81,42 @@ export function BankTransferForm({
       <div className="mt-6 max-w-xl">
         <div className="flex flex-col gap-2">
           <span className="text-sm font-semibold text-slate-700">Adjuntar soporte de transferencia</span>
-          <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center transition hover:border-brand-400 hover:bg-brand-50/40">
+          <label
+            className={`flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed px-4 py-5 text-center transition ${
+              isDragOver
+                ? 'border-brand-500 bg-brand-50'
+                : 'border-slate-300 bg-slate-50 hover:border-brand-400 hover:bg-brand-50/40'
+            }`}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setIsDragOver(true);
+            }}
+            onDragEnter={(event) => {
+              event.preventDefault();
+              setIsDragOver(true);
+            }}
+            onDragLeave={(event) => {
+              event.preventDefault();
+              if (event.currentTarget === event.target) {
+                setIsDragOver(false);
+              }
+            }}
+            onDrop={handleDrop}
+          >
             <span className="text-sm font-semibold text-slate-800">
               {supportingFile ? supportingFile.name : 'Seleccionar archivo'}
             </span>
             <span className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">
-              JPG, PNG o PDF
+              {isDragOver ? 'Suelta el archivo aqui' : 'JPG, PNG o PDF'}
             </span>
             <input
               type="file"
               accept=".jpg,.jpeg,.png,.pdf"
               className="hidden"
-              onChange={(event) => onFileChange(event.target.files?.[0] || null)}
+              onChange={(event) => {
+                const selectedFile = event.target.files?.[0] || null;
+                onFileChange(selectedFile && isAcceptedProofFile(selectedFile) ? selectedFile : null);
+              }}
             />
           </label>
         </div>
@@ -91,4 +129,14 @@ export function BankTransferForm({
       </div>
     </Card>
   );
+}
+
+function isAcceptedProofFile(file) {
+  const acceptedMimeTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+  const fileName = String(file?.name || '').toLowerCase();
+  const hasAcceptedExtension = ['.jpg', '.jpeg', '.png', '.pdf'].some((extension) =>
+    fileName.endsWith(extension),
+  );
+
+  return acceptedMimeTypes.includes(file?.type) || hasAcceptedExtension;
 }

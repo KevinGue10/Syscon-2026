@@ -11,8 +11,25 @@ const createBankTransferPayment = asyncHandler(async (req, res) => {
   });
 });
 
+const previewCoupon = asyncHandler(async (req, res) => {
+  const result = await paymentService.previewCoupon(req.body, req.user);
+  return sendSuccess(res, {
+    message: 'Cupon validado correctamente.',
+    data: result,
+  });
+});
+
+const redeemCoupon = asyncHandler(async (req, res) => {
+  const result = await paymentService.redeemCoupon(req.body, req.user);
+  return sendSuccess(res, {
+    message: 'Cupon aplicado correctamente.',
+    data: result,
+  });
+});
+
 const uploadPaymentProof = asyncHandler(async (req, res) => {
-  const result = await paymentService.uploadBankTransferProof(req.params.paymentId, req.uploadedFile, req.user);
+  const paymentId = req.params.paymentId || req.body.paymentId;
+  const result = await paymentService.uploadBankTransferProof(paymentId, req.uploadedFile, req.body, req.user);
   return sendSuccess(res, {
     message: 'Comprobante cargado correctamente.',
     data: result,
@@ -20,7 +37,7 @@ const uploadPaymentProof = asyncHandler(async (req, res) => {
 });
 
 const approvePayment = asyncHandler(async (req, res) => {
-  const result = await paymentService.approvePayment(req.params.paymentId, req.user);
+  const result = await paymentService.approvePayment(req.params.paymentId, req.body.reviewedAmount, req.user);
   return sendSuccess(res, {
     message: 'Pago aprobado correctamente.',
     data: result,
@@ -94,7 +111,17 @@ const listPaymentsByRegistration = asyncHandler(async (req, res) => {
   });
 });
 
+const getPaymentProofAccess = asyncHandler(async (req, res) => {
+  const result = await paymentService.getPaymentProofAccess(req.params.paymentId, req.user);
+  return sendSuccess(res, {
+    message: 'Acceso al comprobante obtenido correctamente.',
+    data: result,
+  });
+});
+
 module.exports = {
+  previewCoupon,
+  redeemCoupon,
   createBankTransferPayment,
   uploadPaymentProof,
   approvePayment,
@@ -105,4 +132,5 @@ module.exports = {
   createPayPhonePayment,
   handlePayPhoneCallback,
   listPaymentsByRegistration,
+  getPaymentProofAccess,
 };

@@ -40,6 +40,17 @@ const env = {
   },
   app: {
     baseUrl: process.env.APP_BASE_URL || 'http://localhost:5000',
+    emailLogoUrl: process.env.EMAIL_LOGO_URL || '',
+  },
+  storage: {
+    endpoint: process.env.OBJECT_STORAGE_ENDPOINT || '',
+    bucket: process.env.OBJECT_STORAGE_BUCKET || '',
+    region: process.env.OBJECT_STORAGE_REGION || 'auto',
+    accessKeyId: process.env.OBJECT_STORAGE_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.OBJECT_STORAGE_SECRET_ACCESS_KEY || '',
+    publicBaseUrl: process.env.OBJECT_STORAGE_PUBLIC_BASE_URL || '',
+    paymentProofsPrefix: process.env.OBJECT_STORAGE_PAYMENT_PROOFS_PREFIX || 'payment-proofs',
+    signedUrlExpiresInSeconds: Number(process.env.OBJECT_STORAGE_SIGNED_URL_EXPIRES_IN || 900),
   },
   paypal: {
     clientId: process.env.PAYPAL_CLIENT_ID || '',

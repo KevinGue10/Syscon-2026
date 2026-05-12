@@ -7,14 +7,13 @@ export function Footer() {
             IEEE Conference Platform
           </p>
           <p className="mt-2 max-w-md text-sm text-slate-600">
-            Scalable registration frontend prepared for future backend integration and
-            participant workflows.
+            Plataforma oficial para gestionar inscripciones, articulos y pagos del evento.
           </p>
         </div>
         <div className="md:text-right">
-          <p className="text-sm text-slate-500">Support: registrations@ieee-event.org</p>
+          <p className="text-sm text-slate-500">Soporte: registrations@ieee-event.org</p>
           <p className="mt-2 text-sm text-slate-500">
-            Built for conference coordination, payments, and paper registration.
+            Si necesitas ayuda con tu registro o tu pago, contactanos por este medio.
           </p>
         </div>
       </div>

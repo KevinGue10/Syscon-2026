@@ -41,6 +41,14 @@ const normalizeRegistrationMemberType = (memberType) => {
   return MEMBER_TYPES.PROFESSIONAL;
 };
 
+const dispatchEmailInBackground = (task, label) => {
+  Promise.resolve()
+    .then(task)
+    .catch((error) => {
+      console.error(`${label} failed:`, error.message);
+    });
+};
+
 const createRegistration = async (payload, currentUser, options = {}) => {
   const { transaction } = options;
   const eventEdition = payload.eventEditionId
@@ -82,7 +90,10 @@ const createRegistration = async (payload, currentUser, options = {}) => {
     entityId: registration.id,
     newValue: registration.toJSON(),
   });
-  await sendRegistrationConfirmationEmail(currentUser, summary.registration);
+  dispatchEmailInBackground(
+    () => sendRegistrationConfirmationEmail(currentUser, summary.registration),
+    'Registration confirmation email'
+  );
 
   return summary;
 };
@@ -136,7 +147,12 @@ const updateRegistration = async (registrationId, payload, currentUser, options 
 
   if (Number(summary.registration.pendingAmount) > 0) {
     const user = await User.findByPk(registration.userId, { transaction });
-    await sendPendingPaymentReminderEmail(user, summary.registration);
+    if (user) {
+      dispatchEmailInBackground(
+        () => sendPendingPaymentReminderEmail(user, summary.registration),
+        'Pending payment reminder email'
+      );
+    }
   }
 
   return summary;
@@ -173,7 +189,12 @@ const addPaperToRegistration = async (registrationId, payload, currentUser) => {
     entityId: paper.id,
     newValue: refreshedPaper.toJSON(),
   });
-  await sendPaperRegistrationEmail(registration.user, refreshedPaper);
+  if (registration.user) {
+    dispatchEmailInBackground(
+      () => sendPaperRegistrationEmail(registration.user, refreshedPaper),
+      'Paper registration email'
+    );
+  }
 
   return {
     paper: refreshedPaper,

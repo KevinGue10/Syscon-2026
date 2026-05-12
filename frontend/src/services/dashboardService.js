@@ -45,12 +45,16 @@ export const dashboardService = {
     ]);
 
     const summary = summaryResponse.data?.data?.summary || {};
+    const metrics = summaryResponse.data?.data?.metrics || {};
     const recentActivity = recentActivityResponse.data?.data?.recentActivity || [];
 
     return {
       metrics: [
         { label: 'Inscripciones totales', value: String(summary.totalRegistrations || 0) },
-        { label: 'Articulos aceptados', value: String(summary.acceptedPapers || 0) },
+        {
+          label: 'Articulos registrados',
+          value: String(metrics.papersCount || summary.papersCount || summary.acceptedPapers || 0),
+        },
         { label: 'Ingresos recaudados', value: formatCurrency(summary.revenueCollected || 0) },
         { label: 'Saldos pendientes', value: formatCurrency(summary.pendingBalances || 0) },
       ],

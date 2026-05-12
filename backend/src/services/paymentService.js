@@ -1,12 +1,12 @@
-const { Payment, PaymentStatusHistory, Registration, User, DollarRate } = require('../models');
+const { Payment, PaymentStatusHistory, Registration, User, DollarRate, Coupon } = require('../models');
 const { PAYMENT_STATUSES, USER_ROLES } = require('../constants/enums');
 const { calculateRegistrationTotals } = require('./pricingService');
 const { createAuditLog } = require('./auditService');
 const { sendPaymentConfirmationEmail } = require('./emailService');
 const AppError = require('../utils/errors');
-const env = require('../config/env');
 const paypalService = require('./paypalService');
 const payphoneService = require('./payphoneService');
+const { uploadPaymentProofFile, getSignedObjectUrl } = require('./objectStorageService');
 
 const PAYMENT_METHODS = {
   BANK_TRANSFER: 'bank_transfer',
@@ -18,7 +18,10 @@ const PAYMENT_PROVIDERS = {
   MANUAL: 'manual_bank_transfer',
   PAYPAL: 'paypal',
   PAYPHONE: 'payphone',
+  COUPON: 'coupon',
 };
+
+const COUPON_PAYMENT_METHOD = 'coupon';
 
 const assertRegistrationAccess = (registration, currentUser) => {
   if (!registration) {
@@ -34,6 +37,58 @@ const assertAdminAccess = (currentUser) => {
   if (!currentUser || currentUser.role !== USER_ROLES.ADMIN) {
     throw new AppError('Admin access required.', 403);
   }
+};
+
+const hasStoredPaymentProof = (payment) =>
+  Boolean(
+    payment?.paymentProofBucketKey ||
+      payment?.paymentProofUrl ||
+      payment?.paymentProofFilename
+  );
+
+const assertPaymentCanBeApproved = (payment) => {
+  const pendingAmount = Number(payment?.registration?.pendingAmount || 0);
+  const paymentAmount = Number(payment?.amountUsd || 0);
+
+  if (payment.paymentMethod === PAYMENT_METHODS.BANK_TRANSFER && !hasStoredPaymentProof(payment)) {
+    throw new AppError('Manual transfer proof is required before approval.', 409);
+  }
+
+  if (pendingAmount <= 0) {
+    throw new AppError('The registration has no pending balance to approve.', 409);
+  }
+
+  if (paymentAmount - pendingAmount > 0.01) {
+    throw new AppError('The payment amount exceeds the current pending balance.', 409);
+  }
+};
+
+const applyReviewedAmount = async (payment, reviewedAmount) => {
+  if (reviewedAmount === undefined || reviewedAmount === null || reviewedAmount === '') {
+    return payment;
+  }
+
+  const normalizedReviewedAmount = Number(reviewedAmount);
+  if (Number.isNaN(normalizedReviewedAmount) || normalizedReviewedAmount <= 0) {
+    throw new AppError('reviewedAmount must be greater than 0.', 400);
+  }
+
+  const originalAmountUsd = Number(payment.amountUsd || 0);
+  if (normalizedReviewedAmount - originalAmountUsd > 0.01) {
+    throw new AppError('The reviewed amount cannot exceed the original payment amount.', 409);
+  }
+
+  const updatePayload = {
+    amountUsd: Number(normalizedReviewedAmount.toFixed(2)),
+  };
+
+  if (payment.amountCop !== null && payment.amountCop !== undefined && originalAmountUsd > 0) {
+    const conversionRatio = Number(payment.amountCop) / originalAmountUsd;
+    updatePayload.amountCop = Number((normalizedReviewedAmount * conversionRatio).toFixed(2));
+  }
+
+  await payment.update(updatePayload);
+  return payment;
 };
 
 const resolveExchangeRate = async () => {
@@ -95,6 +150,47 @@ const resolveRequestedAmounts = async (payload, registration) => {
   });
 };
 
+const normalizeCouponCode = (code) => String(code || '').trim().toUpperCase();
+
+const getActiveCouponByCode = async (code) => {
+  const normalizedCode = normalizeCouponCode(code);
+  if (!normalizedCode) {
+    throw new AppError('Coupon code is required.', 400);
+  }
+
+  const coupon = await Coupon.findOne({
+    where: {
+      code: normalizedCode,
+      isActive: true,
+    },
+  });
+
+  if (!coupon) {
+    throw new AppError('Coupon not found or inactive.', 404);
+  }
+
+  return coupon;
+};
+
+const buildCouponPreview = ({ coupon, baseAmount }) => {
+  const normalizedBaseAmount = Number(Math.max(0, Number(baseAmount || 0)).toFixed(2));
+  const percentage = Number(coupon.percentage || 0);
+  const discountAmount = Number(Math.min(normalizedBaseAmount, normalizedBaseAmount * (percentage / 100)).toFixed(2));
+  const finalAmount = Number(Math.max(0, normalizedBaseAmount - discountAmount).toFixed(2));
+
+  return {
+    code: coupon.code,
+    percentage,
+    baseAmount: normalizedBaseAmount,
+    discountAmount,
+    finalAmount,
+    message:
+      discountAmount > 0
+        ? 'Coupon validated successfully.'
+        : 'Coupon does not generate a discount for this amount.',
+  };
+};
+
 const recordStatusHistory = async ({
   paymentId,
   previousStatus,
@@ -115,15 +211,6 @@ const recordStatusHistory = async ({
     },
     { transaction }
   );
-};
-
-const buildPublicFileUrl = (relativePath) => {
-  const normalizedBase = String(env.app.baseUrl || '').replace(/\/+$/, '');
-  const normalizedPath = String(relativePath || '')
-    .replace(/\\/g, '/')
-    .replace(/^\/+/, '');
-
-  return `${normalizedBase}/${normalizedPath}`;
 };
 
 const createPaymentRecord = async ({
@@ -277,7 +364,89 @@ const createBankTransferPayment = async (payload, currentUser) => {
   return buildPaymentResponse(payment, registration.id);
 };
 
-const uploadBankTransferProof = async (paymentId, uploadedFile, currentUser) => {
+const previewCoupon = async (payload, currentUser) => {
+  const registration = await Registration.findByPk(payload.registrationId);
+  assertRegistrationAccess(registration, currentUser);
+
+  const coupon = await getActiveCouponByCode(payload.code);
+  const couponPreview = buildCouponPreview({
+    coupon,
+    baseAmount: payload.baseAmount !== undefined ? payload.baseAmount : registration.pendingAmount,
+  });
+
+  return {
+    coupon,
+    couponPreview,
+  };
+};
+
+const redeemCoupon = async (payload, currentUser) => {
+  const registration = await Registration.findByPk(payload.registrationId);
+  assertRegistrationAccess(registration, currentUser);
+
+  const coupon = await getActiveCouponByCode(payload.code);
+  const couponPreview = buildCouponPreview({
+    coupon,
+    baseAmount: payload.baseAmount !== undefined ? payload.baseAmount : registration.pendingAmount,
+  });
+
+  if (couponPreview.finalAmount > 0) {
+    throw new AppError('The coupon does not fully cover the requested amount.', 409);
+  }
+
+  if (couponPreview.discountAmount <= 0) {
+    throw new AppError('The coupon does not apply to this payment.', 409);
+  }
+
+  const amounts = await normalizePaymentAmounts({
+    currency: 'USD',
+    amountUsd: couponPreview.discountAmount,
+  });
+
+  const payment = await createPaymentRecord({
+    registration,
+    amounts,
+    paymentMethod: COUPON_PAYMENT_METHOD,
+    provider: PAYMENT_PROVIDERS.COUPON,
+    transactionReference: `COUPON-${coupon.code}-${Date.now()}`,
+    providerResponseJson: {
+      couponCode: coupon.code,
+      percentage: Number(coupon.percentage || 0),
+      discountAmount: couponPreview.discountAmount,
+      includeTaxes: Boolean(payload.includeTaxes),
+    },
+    paymentDate: new Date(),
+    status: PAYMENT_STATUSES.APPROVED,
+  });
+
+  await recordStatusHistory({
+    paymentId: payment.id,
+    previousStatus: null,
+    newStatus: PAYMENT_STATUSES.APPROVED,
+    changedBy: currentUser.id,
+    reason: `Coupon ${coupon.code} redeemed.`,
+    providerResponseJson: payment.providerResponseJson,
+  });
+
+  await createAuditLog({
+    userId: currentUser.id,
+    action: 'redeem-coupon',
+    entity: 'payment',
+    entityId: payment.id,
+    newValue: payment.toJSON(),
+  });
+
+  return {
+    ...(await buildPaymentResponse(payment, registration.id)),
+    couponRedemption: {
+      code: coupon.code,
+      percentage: Number(coupon.percentage || 0),
+      coveredAmount: couponPreview.discountAmount,
+    },
+  };
+};
+
+const uploadBankTransferProof = async (paymentId, uploadedFile, payload, currentUser) => {
   if (!uploadedFile) {
     throw new AppError('Payment proof file is required.', 400);
   }
@@ -297,9 +466,21 @@ const uploadBankTransferProof = async (paymentId, uploadedFile, currentUser) => 
     throw new AppError('Approved payments cannot receive a new proof file.', 409);
   }
 
+  const storedFile = await uploadPaymentProofFile({
+    paymentId: payment.id,
+    originalName: uploadedFile.originalName,
+    buffer: uploadedFile.buffer,
+    mimeType: uploadedFile.mimeType || 'application/octet-stream',
+    extension: uploadedFile.extension,
+  });
+
   await payment.update({
-    paymentProofFilename: uploadedFile.filename,
-    paymentProofUrl: buildPublicFileUrl(uploadedFile.relativePath),
+    paymentProofFilename: storedFile.originalName,
+    paymentProofMimeType: storedFile.mimeType,
+    paymentProofSizeBytes: storedFile.size,
+    paymentProofBucketKey: storedFile.bucketKey,
+    paymentProofUrl: storedFile.publicUrl,
+    transactionReference: payload?.transactionReference || payment.transactionReference,
   });
 
   await createAuditLog({
@@ -307,13 +488,22 @@ const uploadBankTransferProof = async (paymentId, uploadedFile, currentUser) => 
     action: 'upload-proof',
     entity: 'payment',
     entityId: payment.id,
-    newValue: payment.toJSON(),
+    newValue: {
+      ...payment.toJSON(),
+      uploadedProof: storedFile,
+    },
   });
 
-  return buildPaymentResponse(payment, payment.registrationId);
+  return {
+    ...(await buildPaymentResponse(payment, payment.registrationId)),
+    uploadedFile: {
+      ...storedFile,
+      signedUrl: storedFile.bucketKey ? getSignedObjectUrl({ key: storedFile.bucketKey }) : null,
+    },
+  };
 };
 
-const approvePayment = async (paymentId, currentUser) => {
+const approvePayment = async (paymentId, reviewedAmount, currentUser) => {
   assertAdminAccess(currentUser);
   const payment = await getPaymentWithRegistration(paymentId);
 
@@ -325,9 +515,8 @@ const approvePayment = async (paymentId, currentUser) => {
     return buildPaymentResponse(payment, payment.registrationId);
   }
 
-  if (payment.paymentMethod === PAYMENT_METHODS.BANK_TRANSFER && !payment.paymentProofUrl) {
-    throw new AppError('Manual transfer proof is required before approval.', 409);
-  }
+  await applyReviewedAmount(payment, reviewedAmount);
+  assertPaymentCanBeApproved(payment);
 
   await updatePaymentStatus({
     payment,
@@ -453,6 +642,7 @@ const capturePayPalOrder = async ({ orderId }, currentUser) => {
   const normalizedStatus = String(captureResponse.status || '').toUpperCase();
 
   if (normalizedStatus === 'COMPLETED') {
+    assertPaymentCanBeApproved(payment);
     await updatePaymentStatus({
       payment,
       status: PAYMENT_STATUSES.APPROVED,
@@ -520,6 +710,7 @@ const handlePayPalWebhook = async ({ headers, body }) => {
   }
 
   if (eventType === 'PAYMENT.CAPTURE.COMPLETED') {
+    assertPaymentCanBeApproved(payment);
     await updatePaymentStatus({
       payment,
       status: PAYMENT_STATUSES.APPROVED,
@@ -616,6 +807,7 @@ const handlePayPhoneCallback = async ({ headers, query, body }) => {
   });
 
   if (callbackData.approved) {
+    assertPaymentCanBeApproved(payment);
     await updatePaymentStatus({
       payment,
       status: PAYMENT_STATUSES.APPROVED,
@@ -654,10 +846,36 @@ const listPaymentsByRegistration = async (registrationId, currentUser) => {
   });
 };
 
+const getPaymentProofAccess = async (paymentId, currentUser) => {
+  const payment = await getPaymentWithRegistration(paymentId);
+
+  if (!payment) {
+    throw new AppError('Payment not found.', 404);
+  }
+
+  assertRegistrationAccess(payment.registration, currentUser);
+
+  if (!payment.paymentProofBucketKey && !payment.paymentProofUrl) {
+    throw new AppError('Payment proof not found.', 404);
+  }
+
+  return {
+    paymentId: payment.id,
+    bucketKey: payment.paymentProofBucketKey || null,
+    originalName: payment.paymentProofFilename || null,
+    mimeType: payment.paymentProofMimeType || null,
+    size: payment.paymentProofSizeBytes || null,
+    signedUrl: payment.paymentProofBucketKey ? getSignedObjectUrl({ key: payment.paymentProofBucketKey }) : null,
+    publicUrl: payment.paymentProofUrl || null,
+  };
+};
+
 module.exports = {
   PAYMENT_METHODS,
   PAYMENT_PROVIDERS,
   normalizePaymentAmounts,
+  previewCoupon,
+  redeemCoupon,
   createBankTransferPayment,
   uploadBankTransferProof,
   approvePayment,
@@ -668,4 +886,5 @@ module.exports = {
   createPayPhonePayment,
   handlePayPhoneCallback,
   listPaymentsByRegistration,
+  getPaymentProofAccess,
 };

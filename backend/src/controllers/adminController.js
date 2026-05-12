@@ -68,8 +68,9 @@ const formatRecentRegistrationType = (registration) => {
 };
 
 const getDashboardSummaryData = async () => {
-  const [registrationsCount, acceptedPapersCount, approvedPaymentsTotal, pendingBalancesTotal] = await Promise.all([
+  const [registrationsCount, papersCount, acceptedPapersCount, approvedPaymentsTotal, pendingBalancesTotal] = await Promise.all([
     Registration.count(),
+    Paper.count(),
     Paper.count({ where: { status: PAPER_STATUSES.ACCEPTED } }),
     Payment.sum('amountUsd', { where: { status: PAYMENT_STATUSES.APPROVED } }),
     Registration.sum('pendingAmount'),
@@ -77,6 +78,7 @@ const getDashboardSummaryData = async () => {
 
   return {
     totalRegistrations: Number(registrationsCount || 0),
+    papersCount: Number(papersCount || 0),
     acceptedPapers: Number(acceptedPapersCount || 0),
     revenueCollected: Number(approvedPaymentsTotal || 0),
     pendingBalances: Number(pendingBalancesTotal || 0),

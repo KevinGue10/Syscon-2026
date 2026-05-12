@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Alert } from '../components/Alert';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
@@ -11,11 +11,13 @@ import { useSession } from '../hooks/useSession';
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const { setUserProfile } = useSession();
   const [error, setError] = useState('');
   const [showRecovery, setShowRecovery] = useState(false);
   const [recoveryEmail, setRecoveryEmail] = useState('');
+  const sessionExpired = searchParams.get('reason') === 'session-expired';
   const {
     register,
     handleSubmit,
@@ -53,6 +55,13 @@ function LoginPage() {
           </p>
 
           <form className="mt-8 grid gap-5" onSubmit={handleSubmit(onSubmit)}>
+            {sessionExpired ? (
+              <Alert
+                title="Sesion expirada"
+                description="Por seguridad cerramos tu sesion automaticamente. Ingresa de nuevo para continuar."
+                variant="warning"
+              />
+            ) : null}
             {error ? <Alert title="No fue posible iniciar sesion" description={error} variant="danger" /> : null}
 
             <InputField

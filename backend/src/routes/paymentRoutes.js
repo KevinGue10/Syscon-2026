@@ -5,8 +5,10 @@ const adminMiddleware = require('../middlewares/adminMiddleware');
 const validationMiddleware = require('../middlewares/validationMiddleware');
 const { uploadPaymentProof } = require('../middlewares/uploadMiddleware');
 const {
+  couponValidation,
   bankTransferValidation,
   paymentProofValidation,
+  paymentProofUploadValidation,
   paymentApprovalValidation,
   paymentRejectionValidation,
   paypalCreateOrderValidation,
@@ -22,7 +24,16 @@ router.post('/payphone/callback', paymentController.handlePayPhoneCallback);
 
 router.use(authMiddleware);
 
+router.post('/coupons/preview', couponValidation, validationMiddleware, paymentController.previewCoupon);
+router.post('/coupons/redeem', couponValidation, validationMiddleware, paymentController.redeemCoupon);
 router.post('/bank-transfer', bankTransferValidation, validationMiddleware, paymentController.createBankTransferPayment);
+router.post(
+  '/upload-proof',
+  uploadPaymentProof,
+  paymentProofUploadValidation,
+  validationMiddleware,
+  paymentController.uploadPaymentProof
+);
 router.post(
   '/:paymentId/proof',
   paymentProofValidation,
@@ -51,6 +62,12 @@ router.post(
   payphoneCreatePaymentValidation,
   validationMiddleware,
   paymentController.createPayPhonePayment
+);
+router.get(
+  '/:paymentId/proof-access',
+  paymentProofValidation,
+  validationMiddleware,
+  paymentController.getPaymentProofAccess
 );
 router.get(
   '/registration/:registrationId',

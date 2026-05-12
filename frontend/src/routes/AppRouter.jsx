@@ -13,6 +13,7 @@ import PaymentPage from '../pages/PaymentPage';
 import PaymentSuccess from '../pages/PaymentSuccess';
 import PaymentCancel from '../pages/PaymentCancel';
 import AdminUsersOverviewPage from '../pages/AdminUsersOverviewPage';
+import ChangePasswordPage from '../pages/ChangePasswordPage';
 
 function AppRouter() {
   return (
@@ -50,6 +51,14 @@ function AppRouter() {
           element={
             <ProtectedRoute roles={['user', 'admin']}>
               <PaymentPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/change-password"
+          element={
+            <ProtectedRoute roles={['user', 'admin']}>
+              <ChangePasswordPage />
             </ProtectedRoute>
           }
         />

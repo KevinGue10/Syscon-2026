@@ -61,6 +61,21 @@ Payment.init(
       allowNull: true,
       field: 'payment_proof_filename',
     },
+    paymentProofMimeType: {
+      type: DataTypes.STRING(120),
+      allowNull: true,
+      field: 'payment_proof_mime_type',
+    },
+    paymentProofSizeBytes: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'payment_proof_size_bytes',
+    },
+    paymentProofBucketKey: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      field: 'payment_proof_bucket_key',
+    },
     providerResponseJson: {
       type: DataTypes.JSON,
       allowNull: true,

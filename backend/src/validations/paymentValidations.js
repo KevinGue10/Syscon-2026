@@ -15,6 +15,13 @@ const amountValidation = [
   body('currency').optional().isIn(['USD', 'COP']).withMessage('currency must be USD or COP.'),
 ];
 
+const couponValidation = [
+  body('registrationId').isInt({ min: 1 }).withMessage('registrationId is required.'),
+  body('code').trim().notEmpty().withMessage('code is required.'),
+  body('baseAmount').optional().isFloat({ min: 0 }).withMessage('baseAmount must be 0 or greater.'),
+  body('includeTaxes').optional().isBoolean(),
+];
+
 const bankTransferValidation = [
   body('registrationId').isInt({ min: 1 }).withMessage('registrationId is required.'),
   ...amountValidation,
@@ -23,12 +30,18 @@ const bankTransferValidation = [
 
 const paymentProofValidation = [
   ...paymentIdParamValidation,
-  body('fileName').trim().notEmpty().withMessage('fileName is required.'),
-  body('fileContentBase64').trim().notEmpty().withMessage('fileContentBase64 is required.'),
-  body('mimeType').optional({ nullable: true }).isString(),
+  body('transactionReference').optional({ nullable: true }).isString(),
 ];
 
-const paymentApprovalValidation = [...paymentIdParamValidation];
+const paymentProofUploadValidation = [
+  body('paymentId').isInt({ min: 1 }).withMessage('paymentId is required.'),
+  body('transactionReference').optional({ nullable: true }).isString(),
+];
+
+const paymentApprovalValidation = [
+  ...paymentIdParamValidation,
+  body('reviewedAmount').optional().isFloat({ gt: 0 }).withMessage('reviewedAmount must be greater than 0.'),
+];
 
 const paymentRejectionValidation = [
   ...paymentIdParamValidation,
@@ -50,8 +63,10 @@ const payphoneCreatePaymentValidation = [
 ];
 
 module.exports = {
+  couponValidation,
   bankTransferValidation,
   paymentProofValidation,
+  paymentProofUploadValidation,
   paymentApprovalValidation,
   paymentRejectionValidation,
   paypalCreateOrderValidation,

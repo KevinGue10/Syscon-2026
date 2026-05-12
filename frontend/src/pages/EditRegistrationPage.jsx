@@ -78,6 +78,7 @@ function EditRegistrationPage() {
     getValues,
     reset,
     setError,
+    setValue,
     trigger,
     watch,
     control,
@@ -179,6 +180,12 @@ function EditRegistrationPage() {
 
     loadPage();
   }, [reset]);
+
+  useEffect(() => {
+    if (!isIeeeMember && isTems) {
+      setValue('isTems', false);
+    }
+  }, [isIeeeMember, isTems, setValue]);
 
   const countryOptions = useMemo(
     () =>
@@ -617,12 +624,14 @@ function EditRegistrationPage() {
                     </span>
                   </label>
 
-                  <label className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4">
-                    <input type="checkbox" className="mt-1 h-4 w-4" {...register('isTems')} />
-                    <span className="block text-sm font-semibold text-slate-800">
-                      Confirmo que soy miembro TEMS
-                    </span>
-                  </label>
+                  {isIeeeMember ? (
+                    <label className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4">
+                      <input type="checkbox" className="mt-1 h-4 w-4" {...register('isTems')} />
+                      <span className="block text-sm font-semibold text-slate-800">
+                        Confirmo que soy miembro TEMS
+                      </span>
+                    </label>
+                  ) : null}
 
                   {isIeeeMember ? (
                     <InputField

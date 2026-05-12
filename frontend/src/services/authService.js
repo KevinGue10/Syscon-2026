@@ -28,4 +28,13 @@ export const authService = {
     const { data } = await api.get('/auth/me');
     return normalizeAuthUser(data.user);
   },
+
+  async changePassword(payload) {
+    const { data } = await api.post('/auth/change-password', payload);
+    return {
+      success: data?.success ?? true,
+      message: data?.message || 'Contrasena actualizada correctamente.',
+      data: data?.data || {},
+    };
+  },
 };

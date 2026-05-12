@@ -46,8 +46,36 @@ export const paymentService = {
     return normalizePaymentResponse(data);
   },
 
+  async approvePayment(paymentId, payload = {}) {
+    const { data } = await api.patch(`/payments/${paymentId}/approve`, payload);
+    return normalizePaymentResponse(data);
+  },
+
+  async rejectPayment(paymentId, payload) {
+    const { data } = await api.patch(`/payments/${paymentId}/reject`, payload);
+    return normalizePaymentResponse(data);
+  },
+
+  async getPaymentProofAccess(paymentId) {
+    const { data } = await api.get(`/payments/${paymentId}/proof-access`, {
+      params: {
+        paymentId,
+      },
+    });
+
+    return {
+      success: data?.success ?? true,
+      message: data?.message || '',
+      proofAccess: data?.data || null,
+    };
+  },
+
   async uploadPaymentProof(paymentId, payload) {
-    const { data } = await api.post(`/payments/${paymentId}/proof`, payload);
+    const { data } = await api.post(`/payments/${paymentId}/proof`, payload, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return normalizePaymentResponse(data);
   },
 

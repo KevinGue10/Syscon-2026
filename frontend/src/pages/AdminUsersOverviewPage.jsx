@@ -7,11 +7,15 @@ import { Modal } from '../components/Modal';
 import { SelectField } from '../components/SelectField';
 import { Table } from '../components/Table';
 import { dashboardService } from '../services/dashboardService';
+import { paymentService } from '../services/paymentService';
+import { TextAreaField } from '../components/TextAreaField';
+import { formatCurrency } from '../utils/currency';
 import {
   translateAttendanceType,
   translateDocumentType,
   translateGender,
   translateOccupation,
+  translatePaymentStatus,
 } from '../utils/translations';
 
 const PAGE_SIZE = 10;
@@ -50,6 +54,29 @@ function AdminUsersOverviewPage() {
     isOpen: false,
     title: '',
     user: null,
+  });
+  const [articlesModalState, setArticlesModalState] = useState({
+    isOpen: false,
+    isLoading: false,
+    error: '',
+    user: null,
+    registration: null,
+    papers: [],
+  });
+  const [paymentReviewState, setPaymentReviewState] = useState({
+    isOpen: false,
+    isLoading: false,
+    isSubmitting: false,
+    isProofLoading: false,
+    error: '',
+    success: '',
+    user: null,
+    registration: null,
+    payments: [],
+    selectedPaymentId: null,
+    proofAccess: null,
+    reviewedAmount: '',
+    rejectionReason: '',
   });
 
   useEffect(() => {
@@ -126,6 +153,10 @@ function AdminUsersOverviewPage() {
     { value: 'true', label: 'Si' },
     { value: 'false', label: 'No' },
   ];
+  const selectedReviewedPayment = resolveSelectedPayment(paymentReviewState);
+  const isResolvedPayment = isPaymentResolved(selectedReviewedPayment);
+  const isRejectedPayment = isPaymentRejected(selectedReviewedPayment);
+  const isApprovedPayment = isPaymentApproved(selectedReviewedPayment);
 
   if (isLoading) {
     return (
@@ -369,8 +400,16 @@ function AdminUsersOverviewPage() {
                 key={action}
                 type="button"
                 className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
-                onClick={() => {
+                onClick={async () => {
                   setSelectedUser(null);
+                  if (action === 'Validar pago') {
+                    await openPaymentReviewModal(selectedUser);
+                    return;
+                  }
+                  if (action === 'Ver articulos') {
+                    await openArticlesModal(selectedUser);
+                    return;
+                  }
                   setActionModal({
                     isOpen: true,
                     title: action,
@@ -426,8 +465,571 @@ function AdminUsersOverviewPage() {
           </div>
         </div>
       </Modal>
+
+      <Modal
+        isOpen={articlesModalState.isOpen}
+        title="Ver articulos"
+        panelClassName="max-w-5xl"
+        onClose={() =>
+          setArticlesModalState({
+            isOpen: false,
+            isLoading: false,
+            error: '',
+            user: null,
+            registration: null,
+            papers: [],
+          })
+        }
+      >
+        {articlesModalState.isLoading ? (
+          <Alert
+            title="Cargando articulos"
+            description="Consultando los articulos registrados por el participante desde el backend."
+            variant="info"
+          />
+        ) : articlesModalState.error ? (
+          <Alert title="No fue posible abrir los articulos" description={articlesModalState.error} variant="danger" />
+        ) : (
+          <div className="space-y-5">
+            <p className="text-sm text-slate-600">
+              Articulos registrados por{' '}
+              <span className="font-semibold text-slate-950">
+                {articlesModalState.user
+                  ? `${articlesModalState.user.firstName || ''} ${articlesModalState.user.lastName || ''}`.trim()
+                  : 'el participante'}
+              </span>
+              .
+            </p>
+
+            {!articlesModalState.papers.length ? (
+              <Alert
+                title="Sin articulos registrados"
+                description="Este participante no tiene articulos asociados a su inscripcion."
+                variant="warning"
+              />
+            ) : (
+              <div className="space-y-4">
+                {articlesModalState.papers.map((paper, index) => (
+                  <div key={paper.id || index} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Articulo {index + 1}
+                        </p>
+                        <h3 className="mt-2 text-lg font-semibold text-slate-950">
+                          {paper.title || 'Sin titulo'}
+                        </h3>
+                      </div>
+                      <div className="rounded-2xl bg-white px-4 py-3 text-right">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Codigo
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-slate-950">
+                          {paper.paperCode || 'No registrado'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 grid gap-4 md:grid-cols-2">
+                      <ReadOnlyCard
+                        label="Autores"
+                        value={Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}
+                      />
+                      <ReadOnlyCard label="Paginas" value={paper.pages} />
+                    </div>
+
+                    {paper.customFieldValues?.length ? (
+                      <div className="mt-5 grid gap-4 md:grid-cols-2">
+                        {paper.customFieldValues.map((field) => (
+                          <ReadOnlyCard
+                            key={field.id || `${field.customFieldId}-${field.value}`}
+                            label={field.customField?.label || `Campo ${field.customFieldId}`}
+                            value={field.value}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <Button
+                variant="primary"
+                onClick={() =>
+                  setArticlesModalState({
+                    isOpen: false,
+                    isLoading: false,
+                    error: '',
+                    user: null,
+                    registration: null,
+                    papers: [],
+                  })
+                }
+              >
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={paymentReviewState.isOpen}
+        title="Validar pago"
+        panelClassName="max-w-[78rem]"
+        onClose={() =>
+          setPaymentReviewState({
+            isOpen: false,
+            isLoading: false,
+            isSubmitting: false,
+            isProofLoading: false,
+            error: '',
+            success: '',
+            user: null,
+            registration: null,
+            payments: [],
+            selectedPaymentId: null,
+            proofAccess: null,
+            reviewedAmount: '',
+            rejectionReason: '',
+          })
+        }
+      >
+        {paymentReviewState.isLoading ? (
+          <Alert
+            title="Cargando detalle del pago"
+            description="Consultando comprobantes, montos y estado actual desde el backend."
+            variant="info"
+          />
+        ) : paymentReviewState.error && !paymentReviewState.payments.length ? (
+          <Alert title="No fue posible abrir la validacion" description={paymentReviewState.error} variant="danger" />
+        ) : (
+          <div className="space-y-6">
+            <div>
+              <p className="text-sm text-slate-600">
+                Revisa el comprobante y decide si apruebas o rechazas el soporte cargado por{' '}
+                <span className="font-semibold text-slate-950">
+                  {paymentReviewState.user
+                    ? `${paymentReviewState.user.firstName || ''} ${paymentReviewState.user.lastName || ''}`.trim()
+                    : 'el participante'}
+                </span>
+                .
+              </p>
+            </div>
+
+            {paymentReviewState.error && paymentReviewState.payments.length ? (
+              <Alert title="Accion no completada" description={paymentReviewState.error} variant="danger" />
+            ) : null}
+            {paymentReviewState.success ? (
+              <Alert title="Pago actualizado" description={paymentReviewState.success} variant="success" />
+            ) : null}
+
+            {!paymentReviewState.payments.length ? (
+              <Alert
+                title="No hay pagos registrados"
+                description="Este participante no tiene pagos disponibles para validar."
+                variant="warning"
+              />
+            ) : (
+              <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+                <div className="space-y-4">
+                  <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Pagos del participante
+                    </p>
+                    <div className="mt-4 space-y-3">
+                      {paymentReviewState.payments.map((payment) => (
+                        <button
+                          key={payment.id}
+                          type="button"
+                          onClick={() =>
+                            selectPaymentForReview(payment)
+                          }
+                          className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
+                            paymentReviewState.selectedPaymentId === payment.id
+                              ? 'border-brand-300 bg-white shadow-[0_12px_30px_rgba(37,82,134,0.08)]'
+                              : 'border-slate-200 bg-white hover:bg-slate-100'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-950">
+                                Pago #{payment.id}
+                              </p>
+                              <p className="mt-1 text-sm text-slate-600">
+                                {formatMethod(payment.paymentMethod)} · {formatCurrency(payment.amountUsd || 0)}
+                              </p>
+                            </div>
+                            <span className={`rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] ${getStatusBadgeClass(payment.status)}`}>
+                              {translatePaymentStatus(payment.status)}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Resumen de revision
+                    </p>
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <ReviewItem
+                        label="Inscripcion"
+                        value={paymentReviewState.registration?.id || 'No registrada'}
+                      />
+                      <ReviewItem
+                        label="Saldo pendiente"
+                        value={formatCurrency(
+                          paymentReviewState.registration?.paymentSummary?.pendingAmount ||
+                            paymentReviewState.registration?.pendingAmount ||
+                            0,
+                        )}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Comprobante cargado
+                    </p>
+                    <div className="mt-4">
+                      <PaymentProofViewer
+                        payment={resolveSelectedPayment(paymentReviewState)}
+                        proofAccess={paymentReviewState.proofAccess}
+                        isLoading={paymentReviewState.isProofLoading}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Validacion administrativa
+                    </p>
+                    {isResolvedPayment ? (
+                      <div className="mt-4 space-y-4">
+                        {isApprovedPayment ? (
+                          <ReviewItem
+                            label="Valor aprobado"
+                            value={formatCurrency(
+                              Number(selectedReviewedPayment?.amountUsd || 0),
+                            )}
+                          />
+                        ) : null}
+                        {isRejectedPayment ? (
+                          <div className="rounded-2xl bg-rose-50 px-4 py-4">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700">
+                              Motivo de rechazo
+                            </p>
+                            <p className="mt-2 text-sm font-medium text-rose-900">
+                              {selectedReviewedPayment?.rejectionReason || 'No registrado'}
+                            </p>
+                          </div>
+                        ) : null}
+                        <p className="text-sm text-slate-500">
+                          Este pago ya tiene una decision administrativa tomada y no admite una
+                          nueva accion desde esta pantalla.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="mt-4 grid gap-4">
+                          <InputField
+                            label="Valor verificado"
+                            type="number"
+                            step="0.01"
+                            value={paymentReviewState.reviewedAmount}
+                            onChange={(event) =>
+                              setPaymentReviewState((current) => ({
+                                ...current,
+                                reviewedAmount: event.target.value,
+                              }))
+                            }
+                            helperText="Este valor queda listo para conectarse al backend si desean guardar el monto validado por el administrador."
+                          />
+                          <TextAreaField
+                            label="Motivo de rechazo"
+                            placeholder="Describe por que el comprobante no es valido o que debe corregir el participante."
+                            value={paymentReviewState.rejectionReason}
+                            onChange={(event) =>
+                              setPaymentReviewState((current) => ({
+                                ...current,
+                                rejectionReason: event.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+
+                        <div className="mt-6 flex flex-wrap justify-end gap-3">
+                          <Button
+                            variant="ghost"
+                            className="border border-slate-200"
+                            onClick={async () => {
+                              const selectedPayment = resolveSelectedPayment(paymentReviewState);
+
+                              if (!selectedPayment?.id) {
+                                return;
+                              }
+
+                              if (!paymentReviewState.rejectionReason.trim()) {
+                                setPaymentReviewState((current) => ({
+                                  ...current,
+                                  error: 'Debes escribir el motivo de rechazo antes de continuar.',
+                                  success: '',
+                                }));
+                                return;
+                              }
+
+                              try {
+                                setPaymentReviewState((current) => ({
+                                  ...current,
+                                  isSubmitting: true,
+                                  error: '',
+                                  success: '',
+                                }));
+
+                                await paymentService.rejectPayment(selectedPayment.id, {
+                                  rejectionReason: paymentReviewState.rejectionReason.trim(),
+                                  reviewedAmount: paymentReviewState.reviewedAmount
+                                    ? Number(paymentReviewState.reviewedAmount)
+                                    : undefined,
+                                });
+
+                                await openPaymentReviewModal(paymentReviewState.user);
+                                setPaymentReviewState((current) => ({
+                                  ...current,
+                                  success: 'El pago fue rechazado correctamente.',
+                                }));
+                              } catch (error) {
+                                setPaymentReviewState((current) => ({
+                                  ...current,
+                                  isSubmitting: false,
+                                  error:
+                                    error?.response?.data?.message ||
+                                    error?.message ||
+                                    'No fue posible rechazar el pago.',
+                                  success: '',
+                                }));
+                              }
+                            }}
+                            disabled={paymentReviewState.isSubmitting}
+                          >
+                            {paymentReviewState.isSubmitting ? 'Procesando...' : 'Rechazar soporte'}
+                          </Button>
+                          <Button
+                            variant="primary"
+                            onClick={async () => {
+                              const selectedPayment = resolveSelectedPayment(paymentReviewState);
+
+                              if (!selectedPayment?.id) {
+                                return;
+                              }
+
+                              try {
+                                setPaymentReviewState((current) => ({
+                                  ...current,
+                                  isSubmitting: true,
+                                  error: '',
+                                  success: '',
+                                }));
+
+                                await paymentService.approvePayment(selectedPayment.id, {
+                                  reviewedAmount: paymentReviewState.reviewedAmount
+                                    ? Number(paymentReviewState.reviewedAmount)
+                                    : undefined,
+                                });
+
+                                await openPaymentReviewModal(paymentReviewState.user);
+                                setPaymentReviewState((current) => ({
+                                  ...current,
+                                  success: 'El pago fue aprobado correctamente.',
+                                }));
+                              } catch (error) {
+                                setPaymentReviewState((current) => ({
+                                  ...current,
+                                  isSubmitting: false,
+                                  error:
+                                    error?.response?.data?.message ||
+                                    error?.message ||
+                                    'No fue posible aprobar el pago.',
+                                  success: '',
+                                }));
+                              }
+                            }}
+                            disabled={paymentReviewState.isSubmitting}
+                          >
+                            {paymentReviewState.isSubmitting ? 'Procesando...' : 'Validar pago'}
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </section>
   );
+
+  async function openPaymentReviewModal(user) {
+    if (!user?.id) {
+      return;
+    }
+
+    try {
+      setPaymentReviewState({
+        isOpen: true,
+            isLoading: true,
+            isSubmitting: false,
+            isProofLoading: false,
+            error: '',
+            success: '',
+            user,
+            registration: null,
+            payments: [],
+            selectedPaymentId: null,
+            proofAccess: null,
+            reviewedAmount: '',
+            rejectionReason: '',
+          });
+
+      const response = await dashboardService.getAdminUserRegistrationDetails(user.id);
+      const registration = response.registrations?.[0] || null;
+      const payments = [...(registration?.payments || [])].sort((a, b) => {
+        const left = new Date(b.createdAt || 0).getTime();
+        const right = new Date(a.createdAt || 0).getTime();
+        return left - right;
+      });
+      const selectedPayment = payments[0] || null;
+
+      setPaymentReviewState({
+        isOpen: true,
+        isLoading: false,
+        isSubmitting: false,
+        isProofLoading: false,
+        error: '',
+        success: '',
+        user,
+        registration,
+        payments,
+        selectedPaymentId: selectedPayment?.id || null,
+        proofAccess: null,
+        reviewedAmount: selectedPayment?.amountUsd ? String(selectedPayment.amountUsd) : '',
+        rejectionReason: '',
+      });
+      if (selectedPayment?.id) {
+        await loadPaymentProofAccess(selectedPayment.id);
+      }
+    } catch (error) {
+      setPaymentReviewState({
+        isOpen: true,
+        isLoading: false,
+        isSubmitting: false,
+        isProofLoading: false,
+        error:
+          error?.response?.data?.message ||
+          error?.message ||
+          'No fue posible cargar el detalle de pagos del participante.',
+        success: '',
+        user,
+        registration: null,
+        payments: [],
+        selectedPaymentId: null,
+        proofAccess: null,
+        reviewedAmount: '',
+        rejectionReason: '',
+      });
+    }
+  }
+
+  async function openArticlesModal(user) {
+    if (!user?.id) {
+      return;
+    }
+
+    try {
+      setArticlesModalState({
+        isOpen: true,
+        isLoading: true,
+        error: '',
+        user,
+        registration: null,
+        papers: [],
+      });
+
+      const response = await dashboardService.getAdminUserRegistrationDetails(user.id);
+      const registration = response.registrations?.[0] || null;
+
+      setArticlesModalState({
+        isOpen: true,
+        isLoading: false,
+        error: '',
+        user,
+        registration,
+        papers: registration?.papers || [],
+      });
+    } catch (error) {
+      setArticlesModalState({
+        isOpen: true,
+        isLoading: false,
+        error:
+          error?.response?.data?.message ||
+          error?.message ||
+          'No fue posible cargar los articulos del participante.',
+        user,
+        registration: null,
+        papers: [],
+      });
+    }
+  }
+
+  async function selectPaymentForReview(payment) {
+    setPaymentReviewState((current) => ({
+      ...current,
+      selectedPaymentId: payment.id,
+      proofAccess: null,
+      reviewedAmount: String(payment.amountUsd || ''),
+      rejectionReason: '',
+      error: '',
+      success: '',
+    }));
+
+    await loadPaymentProofAccess(payment.id);
+  }
+
+  async function loadPaymentProofAccess(paymentId) {
+    try {
+      setPaymentReviewState((current) => ({
+        ...current,
+        isProofLoading: true,
+        error: '',
+      }));
+
+      const response = await paymentService.getPaymentProofAccess(paymentId);
+
+      setPaymentReviewState((current) => ({
+        ...current,
+        isProofLoading: false,
+        proofAccess: response.proofAccess,
+      }));
+    } catch (error) {
+      setPaymentReviewState((current) => ({
+        ...current,
+        isProofLoading: false,
+        proofAccess: null,
+        error:
+          error?.response?.data?.message ||
+          error?.message ||
+          'No fue posible obtener el acceso al comprobante.',
+      }));
+    }
+  }
 }
 
 function updateFilter(setFilters, key, value) {
@@ -460,6 +1062,143 @@ function resolveCountryName(user) {
 
 function resolvePrimaryRegistration(user) {
   return user?.registrations?.[0] || null;
+}
+
+function resolveSelectedPayment(paymentReviewState) {
+  return (
+    paymentReviewState.payments.find(
+      (payment) => String(payment.id) === String(paymentReviewState.selectedPaymentId),
+    ) || null
+  );
+}
+
+function formatMethod(value) {
+  const map = {
+    bank_transfer: 'Transferencia bancaria',
+    paypal: 'PayPal',
+    payphone: 'PayPhone',
+  };
+
+  return map[value] || value || 'No registrado';
+}
+
+function getStatusBadgeClass(status) {
+  const normalizedStatus = String(status || '').toLowerCase();
+
+  if (['approved', 'accepted', 'paid'].includes(normalizedStatus)) {
+    return 'bg-emerald-100 text-emerald-800';
+  }
+
+  if (['pending', 'partial'].includes(normalizedStatus)) {
+    return 'bg-amber-100 text-amber-800';
+  }
+
+  if (['rejected', 'cancelled', 'canceled'].includes(normalizedStatus)) {
+    return 'bg-rose-100 text-rose-800';
+  }
+
+  return 'bg-slate-100 text-slate-600';
+}
+
+function isPaymentApproved(payment) {
+  return ['approved', 'accepted', 'paid'].includes(
+    String(payment?.status || '').toLowerCase(),
+  );
+}
+
+function isPaymentRejected(payment) {
+  return ['rejected', 'cancelled', 'canceled'].includes(
+    String(payment?.status || '').toLowerCase(),
+  );
+}
+
+function isPaymentResolved(payment) {
+  return isPaymentApproved(payment) || isPaymentRejected(payment);
+}
+
+function ReviewItem({ label, value }) {
+  return (
+    <div className="rounded-2xl bg-slate-50 px-4 py-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-slate-950">{value}</p>
+    </div>
+  );
+}
+
+function ReadOnlyCard({ label, value }) {
+  return (
+    <div className="rounded-2xl bg-white px-4 py-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
+      <p className="mt-2 text-sm font-medium text-slate-950">{value || 'No registrado'}</p>
+    </div>
+  );
+}
+
+function PaymentProofViewer({ payment, proofAccess, isLoading }) {
+  if (isLoading) {
+    return (
+      <Alert
+        title="Cargando comprobante"
+        description="Solicitando acceso temporal al archivo desde el backend."
+        variant="info"
+      />
+    );
+  }
+
+  if (!payment) {
+    return (
+      <Alert
+        title="Selecciona un pago"
+        description="Elige uno de los pagos del lado izquierdo para revisar su comprobante."
+        variant="info"
+      />
+    );
+  }
+
+  const proofUrl = proofAccess?.signedUrl || proofAccess?.publicUrl || payment.paymentProofUrl || null;
+
+  if (!proofUrl) {
+    return (
+      <Alert
+        title="No hay comprobante disponible"
+        description="Este pago no tiene un soporte cargado por el participante."
+        variant="warning"
+      />
+    );
+  }
+
+  const mimeType = proofAccess?.mimeType || payment.paymentProofMimeType || '';
+  const originalName = proofAccess?.originalName || payment.paymentProofFilename || 'comprobante';
+  const size = proofAccess?.size || null;
+  const isPdf = mimeType === 'application/pdf' || /\.pdf($|\?)/i.test(proofUrl);
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+        {isPdf ? (
+          <iframe
+            title={`Comprobante de pago ${payment.id}`}
+            src={proofUrl}
+            className="h-[28rem] w-full rounded-xl bg-white"
+          />
+        ) : (
+          <img
+            src={proofUrl}
+            alt={`Comprobante de pago ${payment.id}`}
+            className="max-h-[28rem] w-full rounded-xl object-contain bg-white"
+          />
+        )}
+      </div>
+      <a
+        href={proofUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex text-sm font-semibold text-brand-700 transition hover:text-brand-900"
+      >
+        Abrir comprobante en una pestaña nueva
+      </a>
+    </div>
+  );
 }
 
 export default AdminUsersOverviewPage;

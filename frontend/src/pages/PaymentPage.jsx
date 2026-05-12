@@ -313,7 +313,10 @@ function PaymentPage() {
         throw new Error('El backend no devolvio el identificador del pago creado.');
       }
 
-      const filePayload = await toBase64Payload(bankTransferState.supportingFile);
+      const filePayload = buildPaymentProofFormData({
+        file: bankTransferState.supportingFile,
+        transactionReference: bankTransferState.transactionReference,
+      });
       await paymentService.uploadPaymentProof(createdPaymentId, filePayload);
       await refreshPaymentContext();
 
@@ -709,22 +712,14 @@ function resolveCouponDiscount(appliedCoupon, baseAmount) {
   return 0;
 }
 
-async function toBase64Payload(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+function buildPaymentProofFormData({ file, transactionReference }) {
+  const formData = new FormData();
 
-    reader.onload = () => {
-      resolve({
-        fileName: file.name,
-        fileContentBase64: reader.result,
-        mimeType: file.type || undefined,
-      });
-    };
+  formData.append('file', file);
 
-    reader.onerror = () => {
-      reject(new Error('No fue posible leer el archivo seleccionado.'));
-    };
+  if (transactionReference?.trim()) {
+    formData.append('transactionReference', transactionReference.trim());
+  }
 
-    reader.readAsDataURL(file);
-  });
+  return formData;
 }

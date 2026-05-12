@@ -190,6 +190,12 @@ function RegisterPage() {
     reloadCustomFields();
   }, [selectedEventEditionId]);
 
+  useEffect(() => {
+    if (!isIeeeMember && isTems) {
+      setValue('isTems', false);
+    }
+  }, [isIeeeMember, isTems, setValue]);
+
   const countryOptions = useMemo(
     () =>
       metadata.countries.map((country) => ({
@@ -650,14 +656,16 @@ function RegisterPage() {
                     </span>
                   </label>
 
-                  <label className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4">
-                    <input type="checkbox" className="mt-1 h-4 w-4" {...register('isTems')} />
-                    <span>
-                      <span className="block text-sm font-semibold text-slate-800">
-                        Confirmo que soy miembro TEMS
+                  {isIeeeMember ? (
+                    <label className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4">
+                      <input type="checkbox" className="mt-1 h-4 w-4" {...register('isTems')} />
+                      <span>
+                        <span className="block text-sm font-semibold text-slate-800">
+                          Confirmo que soy miembro TEMS
+                        </span>
                       </span>
-                    </span>
-                  </label>
+                    </label>
+                  ) : null}
 
                   {isIeeeMember ? (
                     <InputField
@@ -686,8 +694,8 @@ function RegisterPage() {
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <h2 className="text-xl font-semibold text-slate-950">Articulos</h2>
-                      <p className="text-sm text-slate-500">
-                        Cada articulo se envia al backend despues de crear la inscripcion.
+                      <p className="mt-2 text-sm leading-7 text-slate-500">
+                        Agrega nuevos articulos antes de finalizar tu registro.
                       </p>
                     </div>
                     <Button
@@ -900,10 +908,6 @@ function RegisterPage() {
           </p>
           {successState ? (
             <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
-              <p>
-                <span className="font-semibold">ID de inscripcion:</span>{' '}
-                {successState.registration.id}
-              </p>
               <p>
                 <span className="font-semibold">Estado de pago:</span>{' '}
                 {translatePaymentStatus(successState.registration.paymentStatus)}

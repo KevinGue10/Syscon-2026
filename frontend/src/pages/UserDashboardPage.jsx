@@ -132,6 +132,13 @@ function UserDashboardPage() {
             >
               Visualizar datos de registro
             </Button>
+            <Button
+              variant="ghost"
+              className="mt-3 w-full border border-slate-200 sm:w-fit"
+              onClick={() => navigate('/change-password')}
+            >
+              Cambiar contrasena
+            </Button>
           </Card>
 
           <Card className="p-8">

@@ -23,7 +23,20 @@ const loginValidation = [
   body('password').notEmpty().withMessage('Password is required.'),
 ];
 
+const forgotPasswordValidation = [
+  body('email').isEmail().withMessage('Valid email is required.'),
+];
+
+const changePasswordValidation = [
+  body('currentPassword').notEmpty().withMessage('currentPassword is required.'),
+  body('newPassword')
+    .isLength({ min: 8 })
+    .withMessage('newPassword must be at least 8 characters long.'),
+];
+
 module.exports = {
   registerValidation,
   loginValidation,
+  forgotPasswordValidation,
+  changePasswordValidation,
 };
