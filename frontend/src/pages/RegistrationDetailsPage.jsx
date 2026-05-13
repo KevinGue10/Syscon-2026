@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useSession } from '../hooks/useSession';
 import { dashboardService } from '../services/dashboardService';
 import { formatCurrency } from '../utils/currency';
+import { StatusBadge } from '../utils/statusStyles.jsx';
 import {
   translateAttendanceType,
   translateDocumentType,
@@ -304,9 +305,12 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
             Estado de pago
           </p>
-          <p className="mt-2 text-sm font-semibold text-slate-950">
-            {translatePaymentStatus(registration.paymentStatus)}
-          </p>
+          <div className="mt-2 flex justify-end">
+            <StatusBadge
+              status={registration.paymentStatus}
+              label={translatePaymentStatus(registration.paymentStatus)}
+            />
+          </div>
         </div>
       </div>
 
@@ -369,7 +373,12 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
                     {
                       key: 'status',
                       label: 'Estado',
-                      render: (value) => translatePaymentStatus(value),
+                      render: (value) => (
+                        <StatusBadge
+                          status={value}
+                          label={translatePaymentStatus(value)}
+                        />
+                      ),
                     },
                     { key: 'transactionReference', label: 'Referencia' },
                   ]}

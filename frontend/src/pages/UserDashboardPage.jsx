@@ -9,6 +9,7 @@ import { useSession } from '../hooks/useSession';
 import { dashboardService } from '../services/dashboardService';
 import { metadataService } from '../services/metadataService';
 import { formatCurrency } from '../utils/currency';
+import { StatusBadge } from '../utils/statusStyles.jsx';
 import {
   translateParticipationType,
   translatePaymentStatus,
@@ -199,7 +200,12 @@ function UserDashboardPage() {
                 {
                   key: 'paymentStatus',
                   label: 'Pago',
-                  render: (value) => translatePaymentStatus(value),
+                  render: (value) => (
+                    <StatusBadge
+                      status={value}
+                      label={translatePaymentStatus(value)}
+                    />
+                  ),
                 },
                 {
                   key: 'pricing',

@@ -10,6 +10,7 @@ import { dashboardService } from '../services/dashboardService';
 import { paymentService } from '../services/paymentService';
 import { TextAreaField } from '../components/TextAreaField';
 import { formatCurrency } from '../utils/currency';
+import { StatusBadge } from '../utils/statusStyles.jsx';
 import {
   translateAttendanceType,
   translateDocumentType,
@@ -578,7 +579,7 @@ function AdminUsersOverviewPage() {
       <Modal
         isOpen={paymentReviewState.isOpen}
         title="Validar pago"
-        panelClassName="max-w-[78rem]"
+        panelClassName="w-[min(96vw,78rem)] max-w-none"
         onClose={() =>
           setPaymentReviewState({
             isOpen: false,
@@ -662,9 +663,10 @@ function AdminUsersOverviewPage() {
                                 {formatMethod(payment.paymentMethod)} · {formatCurrency(payment.amountUsd || 0)}
                               </p>
                             </div>
-                            <span className={`rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] ${getStatusBadgeClass(payment.status)}`}>
-                              {translatePaymentStatus(payment.status)}
-                            </span>
+                            <StatusBadge
+                              status={payment.status}
+                              label={translatePaymentStatus(payment.status)}
+                            />
                           </div>
                         </button>
                       ))}
@@ -1080,24 +1082,6 @@ function formatMethod(value) {
   };
 
   return map[value] || value || 'No registrado';
-}
-
-function getStatusBadgeClass(status) {
-  const normalizedStatus = String(status || '').toLowerCase();
-
-  if (['approved', 'accepted', 'paid'].includes(normalizedStatus)) {
-    return 'bg-emerald-100 text-emerald-800';
-  }
-
-  if (['pending', 'partial'].includes(normalizedStatus)) {
-    return 'bg-amber-100 text-amber-800';
-  }
-
-  if (['rejected', 'cancelled', 'canceled'].includes(normalizedStatus)) {
-    return 'bg-rose-100 text-rose-800';
-  }
-
-  return 'bg-slate-100 text-slate-600';
 }
 
 function isPaymentApproved(payment) {

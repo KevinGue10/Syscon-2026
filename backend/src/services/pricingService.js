@@ -49,8 +49,10 @@ const getPricingRule = async ({
     const started = !rule.startsAt || normalizedDate >= rule.startsAt;
     const notEnded = !rule.endsAt || normalizedDate <= rule.endsAt;
     const isDateMatch = noDates || (started && notEnded);
+    const isChargeRule = [ADDITIONAL_PAPER_RULE_NAME, ADDITIONAL_PAGE_RULE_NAME].includes(rule.name);
 
     return (
+      !isChargeRule &&
       isDateMatch &&
       matchesRuleField(rule.participationType, participantType) &&
       matchesRuleField(rule.memberType, normalizedMemberType) &&

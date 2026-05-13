@@ -8,6 +8,7 @@ import { dashboardService } from '../services/dashboardService';
 import { metadataService } from '../services/metadataService';
 import { paymentService } from '../services/paymentService';
 import { formatCurrency } from '../utils/currency';
+import { StatusBadge } from '../utils/statusStyles.jsx';
 import { translatePaymentStatus } from '../utils/translations';
 
 const TAX_RATE = 0.15;
@@ -558,9 +559,15 @@ function PaymentPage() {
             <h2 className="mt-2 text-2xl font-semibold text-slate-950">Pagos registrados</h2>
           </div>
           {latestPayment ? (
-            <span className="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-              Ultimo estado: {translatePaymentStatus(latestPayment.status)}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Ultimo estado:
+              </span>
+              <StatusBadge
+                status={latestPayment.status}
+                label={translatePaymentStatus(latestPayment.status)}
+              />
+            </div>
           ) : null}
         </div>
 
@@ -577,9 +584,10 @@ function PaymentPage() {
                       {formatCurrency(payment.amountUsd || 0)}
                     </p>
                   </div>
-                  <span className="rounded-full bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                    {translatePaymentStatus(payment.status)}
-                  </span>
+                  <StatusBadge
+                    status={payment.status}
+                    label={translatePaymentStatus(payment.status)}
+                  />
                 </div>
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">

@@ -13,26 +13,26 @@ const heroStats = [
 
 const featureCards = [
   {
-    title: 'Gestion e ingenieria',
+    title: 'Gestión e ingeniería',
     description:
-      'Explore los ultimos avances en gestion de tecnologia e ingenieria, con enfasis en estrategia, operaciones y toma de decisiones.',
+      'Explore los últimos avances en gestión de tecnología e ingeniería, con énfasis en estrategia, operaciones y toma de decisiones.',
   },
   {
-    title: 'Innovacion basada en datos',
+    title: 'Innovación basada en datos',
     description:
-      'Conecte investigacion aplicada, inteligencia artificial y modelos de negocio orientados a creacion de valor sostenible.',
+      'Conecte investigación aplicada, inteligencia artificial y modelos de negocio orientados a creación de valor sostenible.',
   },
   {
     title: 'Comunidad LATAM IEEE',
     description:
-      'Participe con investigadores, expertos de la industria y lideres de ecosistemas que construyen la agenda regional.',
+      'Participe con investigadores, expertos de la industria y líderes de ecosistemas que construyen la agenda regional.',
   },
 ];
 
 const thematicTracks = [
-  'Transformacion digital y estrategia tecnologica',
-  'Analitica, IA y toma de decisiones',
-  'Innovacion empresarial y desarrollo sostenible',
+  'Transformación digital y estrategia tecnológica',
+  'Analítica, IA y toma de decisiones',
+  'Innovación empresarial y desarrollo sostenible',
 ];
 
 const audienceHighlights = [
@@ -43,8 +43,8 @@ const audienceHighlights = [
 ];
 
 const conferenceBullets = [
-  'Conferencia oficial de la Sociedad de Gestion de Tecnologia e Ingenieria del IEEE.',
-  'Enfoque en innovacion, analitica, liderazgo tecnologico y transformacion empresarial.',
+  'Conferencia oficial de la Sociedad de Gestión de Tecnología e Ingeniería del IEEE.',
+  'Enfoque en innovación, analítica, liderazgo tecnológico y transformación empresarial.',
   'Espacio para autores, asistentes, miembros IEEE y alianzas academicas e industriales.',
 ];
 
@@ -65,10 +65,10 @@ function LandingPage() {
               IEEE TEMS LATAM
             </p>
             <h1 className="max-w-2xl text-4xl font-extrabold leading-[1.02] tracking-tight sm:text-5xl lg:text-[4.15rem]">
-              Innovando la gestion tecnologica para una region conectada
+              Innovando la gestión tecnológica para una región conectada
             </h1>
             <p className="mt-6 max-w-xl text-lg font-semibold leading-8 text-white/92 sm:text-xl">
-              Gestion de tecnologia e ingenieria en la era de la IA
+              Gestión de tecnología e ingeniería en la era de la IA
             </p>
             <p className="mt-7 text-xl font-bold text-white sm:text-2xl">
               Del 24 al 26 de junio de 2026
@@ -95,13 +95,13 @@ function LandingPage() {
                     variant="ghost"
                     className="min-w-52 rounded-xl bg-white px-7 text-[#13253d] hover:bg-slate-100"
                   >
-                    Registrate ahora
+                    Regístrate ahora
                   </Button>
                 </Link>
                 <Link to="/login">
                   <Button
                     variant="ghost"
-                    className="min-w-44 rounded-xl border border-white/30 bg-transparent text-white hover:bg-white/10"
+                    className="min-w-44 rounded-xl border border-white/35 !bg-transparent !text-white hover:!bg-white/10"
                   >
                     Ingresar
                   </Button>
@@ -151,7 +151,7 @@ function LandingPage() {
                       Call for participation
                     </p>
                     <p className="mt-3 text-3xl font-extrabold leading-tight text-white">
-                      Quito sera el punto de encuentro para ideas aplicadas, investigacion y decisiones.
+                      Quito será el punto de encuentro para ideas aplicadas, investigación y decisiones.
                     </p>
                   </div>
                   <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
@@ -173,12 +173,12 @@ function LandingPage() {
             Bienvenidos a <span className="text-[#2d3eb3]">{conferenceOverview.name}</span>
           </h2>
           <p className="mx-auto mt-6 max-w-4xl text-lg leading-9 text-slate-700">
-            Unase a nosotros en la Conferencia de la Sociedad de Gestion de Tecnologia e
-            Ingenieria del IEEE en Quito, Ecuador, del 24 al 26 de junio de 2026.
+            Únase a nosotros en la Conferencia de la Sociedad de Gestión de Tecnología e
+            Ingeniería del IEEE en Quito, Ecuador, del 24 al 26 de junio de 2026.
             <span className="font-bold text-slate-900">
               {' '}
-              Explore los ultimos avances en gestion de tecnologia e ingenieria, centrandose en la
-              innovacion basada en datos y la creacion de valor en los negocios globales en la era
+              Explore los últimos avances en gestión de tecnología e ingeniería, centrándose en la
+              innovación basada en datos y la creación de valor en los negocios globales en la era
               de la IA.
             </span>
           </p>
@@ -202,12 +202,12 @@ function LandingPage() {
               Sobre la conferencia
             </p>
             <h3 className="mt-4 text-3xl font-bold text-slate-950">
-              Un punto de encuentro para academia, industria y liderazgo tecnologico.
+              Un punto de encuentro para academia, industria y liderazgo tecnológico.
             </h3>
             <p className="mt-5 text-base leading-8 text-slate-600">
-              TEMSCON LATAM 2026 reunira a investigadores, expertos de la industria y tomadores de
-              decision para discutir gestion tecnologica, estrategia, transformacion digital,
-              analitica avanzada e innovacion empresarial en el contexto latinoamericano.
+              TEMSCON LATAM 2026 reunirá a investigadores, expertos de la industria y tomadores de
+              decisión para discutir gestión tecnológica, estrategia, transformación digital,
+              analítica avanzada e innovación empresarial en el contexto latinoamericano.
             </p>
 
             <div className="mt-8 grid gap-3">
@@ -224,7 +224,7 @@ function LandingPage() {
 
           <Card className="rounded-[2rem] border-none bg-[#13253d] p-8 text-white sm:p-10">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#ffb3b3]">
-              Lo que encontrara
+              Lo que encontrará
             </p>
             <div className="mt-6 space-y-4">
               {conferenceBullets.map((item) => (
@@ -244,10 +244,10 @@ function LandingPage() {
                 Convocatoria abierta
               </p>
               <p className="mt-2 text-2xl font-bold text-white sm:text-3xl">
-                Reserve su lugar y prepare su participacion en Quito.
+                Reserve su lugar y prepare su participación en Quito.
               </p>
               <p className="mt-3 text-sm leading-7 text-white/78 sm:text-base">
-                Registre su asistencia, gestione su participacion y avance con su proceso desde la
+                Registre su asistencia, gestione su participación y avance con su proceso desde la
                 plataforma.
               </p>
             </div>

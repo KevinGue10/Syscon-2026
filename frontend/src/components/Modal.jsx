@@ -5,7 +5,9 @@ export function Modal({ isOpen, title, children, onClose, panelClassName = '' })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6">
-      <div className={`panel max-h-[90vh] w-full max-w-lg overflow-y-auto p-6 ${panelClassName}`}>
+      <div
+        className={`panel max-h-[92vh] w-full max-w-lg overflow-x-hidden overflow-y-auto p-6 ${panelClassName}`}
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="text-xl font-semibold text-slate-950">{title}</h3>
