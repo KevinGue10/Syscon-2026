@@ -127,6 +127,8 @@ const getUserRegistrationDetails = asyncHandler(async (req, res) => {
       {
         association: 'customFieldValues',
         required: false,
+        separate: true,
+        order: [['id', 'ASC']],
         include: [{ association: 'customField', required: false }],
       },
     ],
@@ -146,29 +148,33 @@ const getUserRegistrationDetails = asyncHandler(async (req, res) => {
       {
         association: 'payments',
         required: false,
+        separate: true,
+        order: [['createdAt', 'DESC']],
       },
       {
         association: 'customFieldValues',
         required: false,
+        separate: true,
+        order: [['id', 'ASC']],
         include: [{ association: 'customField', required: false }],
       },
       {
         association: 'papers',
         required: false,
+        separate: true,
+        order: [['createdAt', 'DESC']],
         include: [
           {
             association: 'customFieldValues',
             required: false,
+            separate: true,
+            order: [['id', 'ASC']],
             include: [{ association: 'customField', required: false }],
           },
         ],
       },
     ],
-    order: [
-      ['createdAt', 'DESC'],
-      [{ model: Payment, as: 'payments' }, 'createdAt', 'DESC'],
-      [{ model: Paper, as: 'papers' }, 'createdAt', 'DESC'],
-    ],
+    order: [['createdAt', 'DESC']],
   });
 
   const data = {

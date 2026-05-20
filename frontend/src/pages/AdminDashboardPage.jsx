@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Table } from '../components/Table';
 import { dashboardService } from '../services/dashboardService';
+import { StatusBadge } from '../utils/statusStyles.jsx';
 import { translatePaymentStatus } from '../utils/translations';
 
 function AdminDashboardPage() {
@@ -113,7 +114,12 @@ function AdminDashboardPage() {
               {
                 key: 'paymentStatus',
                 label: 'Estado de pago',
-                render: (value) => translatePaymentStatus(value),
+                render: (value) => (
+                  <StatusBadge
+                    status={value}
+                    label={translatePaymentStatus(value)}
+                  />
+                ),
               },
             ]}
             rows={dashboard.recentRegistrations}

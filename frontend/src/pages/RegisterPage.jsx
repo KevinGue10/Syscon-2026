@@ -98,7 +98,11 @@ function RegisterPage() {
   const selectedEventEditionId = values.eventEditionId;
   const isIeeeMember = watch('isIeeeMember');
   const isTems = watch('isTems');
-  const isFinalStep = currentStep === registrationSteps.length - 1;
+  const shouldShowArticlesStep = values.participationType !== 'attendee';
+  const stepSequence = shouldShowArticlesStep ? [0, 1, 2, 3] : [0, 1, 3];
+  const visibleSteps = stepSequence.map((stepIndex) => registrationSteps[stepIndex]);
+  const visibleCurrentStep = Math.max(stepSequence.indexOf(currentStep), 0);
+  const isFinalStep = currentStep === stepSequence[stepSequence.length - 1];
 
   useEffect(() => {
     async function loadMetadata() {
@@ -196,6 +200,12 @@ function RegisterPage() {
     }
   }, [isIeeeMember, isTems, setValue]);
 
+  useEffect(() => {
+    if (!shouldShowArticlesStep && currentStep === 2) {
+      setCurrentStep(3);
+    }
+  }, [currentStep, shouldShowArticlesStep]);
+
   const countryOptions = useMemo(
     () =>
       metadata.countries.map((country) => ({
@@ -220,38 +230,38 @@ function RegisterPage() {
   }));
 
   const summaryRows = [
-    { label: 'Tipo de participacion', value: labelFromOptions(values.participationType, participantOptions) },
+    { label: 'Tipo de participación', value: labelFromOptions(values.participationType, participantOptions) },
     { label: 'Modalidad', value: labelFromOptions(values.attendanceType, attendanceTypes) },
     {
-      label: 'Categoria de inscripcion',
+      label: 'Categoría de inscripción',
       value: labelFromOptions(values.registrationCategory, occupationTypes),
     },
-    { label: 'Articulos preparados', value: `${paperFields.length}` },
+    { label: 'Artículos preparados', value: `${shouldShowArticlesStep ? paperFields.length : 0}` },
     {
       label: 'Miembro IEEE',
-      value: values.isIeeeMember ? 'Si' : 'No',
+      value: values.isIeeeMember ? 'Sí' : 'No',
     },
     {
       label: 'Miembro TEMS',
-      value: isTems ? 'Si' : 'No',
+      value: isTems ? 'Sí' : 'No',
     },
   ];
 
   const guidanceItems = [
     {
-      title: 'Informacion personal',
+      title: 'Información personal',
       description:
         'Ingresa los datos del participante tal como deben quedar en el registro oficial del evento.',
     },
     {
-      title: 'Datos de inscripcion',
+      title: 'Datos de inscripción',
       description:
-        'Selecciona modalidad, tipo de participacion y perfil de miembro para calcular la tarifa correspondiente.',
+        'Selecciona modalidad, tipo de participación y perfil de miembro para calcular la tarifa correspondiente.',
     },
     {
-      title: 'Articulos y soporte',
+      title: 'Artículos y soporte',
       description:
-        'Si vas a registrar ponencias o articulos, ten a mano el codigo, autores y numero de paginas.',
+        'Si vas a registrar ponencias o artículos, ten a mano el código, autores y número de páginas.',
     },
   ];
 
@@ -291,11 +301,20 @@ function RegisterPage() {
       ...metadata.customFields.article.map((field) => customFieldName(`article_${index}`, field.id)),
     ]);
 
-    const fieldsByStep = [userFieldNames, registrationFieldNames, paperFieldNames, []];
-    const valid = await trigger(fieldsByStep[currentStep]);
+    const fieldsByStep = {
+      0: userFieldNames,
+      1: registrationFieldNames,
+      2: paperFieldNames,
+      3: [],
+    };
+    const valid = await trigger(fieldsByStep[currentStep] || []);
 
     if (valid) {
-      if (currentStep === 2) {
+      const currentSequenceIndex = stepSequence.indexOf(currentStep);
+      const nextStep = stepSequence[Math.min(currentSequenceIndex + 1, stepSequence.length - 1)];
+      const shouldBuildPreview = nextStep === 3;
+
+      if (shouldBuildPreview) {
         try {
           setIsPreviewLoading(true);
           setFormError('');
@@ -315,7 +334,7 @@ function RegisterPage() {
         }
       }
 
-      setCurrentStep((step) => Math.min(step + 1, registrationSteps.length - 1));
+      setCurrentStep(nextStep);
     }
   };
 
@@ -373,10 +392,11 @@ function RegisterPage() {
       };
 
       const createdRegistration = await registrationService.createRegistration(registrationPayload);
+      const effectivePapers = shouldShowArticlesStep ? data.papers : [];
       const paperResponses = [];
 
-      for (let index = 0; index < data.papers.length; index += 1) {
-        const paper = data.papers[index];
+      for (let index = 0; index < effectivePapers.length; index += 1) {
+        const paper = effectivePapers[index];
         const articleCustomValues = toCustomFieldValues(
           metadata.customFields.article,
           collectCustomFieldValues(data, `article_${index}`),
@@ -433,7 +453,7 @@ function RegisterPage() {
         paymentSummary: paymentSummaryData,
         message:
           paymentSummaryResponse.raw?.message ||
-          'La cuenta y la inscripcion fueron creadas correctamente.',
+          'La cuenta y la inscripción fueron creadas correctamente.',
       });
       setPaymentPreview(paymentSummaryData);
     } catch (error) {
@@ -454,25 +474,25 @@ function RegisterPage() {
         <div className="space-y-6">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-              Formulario de inscripcion
+              Formulario de inscripción
             </p>
             <h1 className="mt-3 text-4xl font-semibold text-slate-950">
               Completa tu registro para participar en TEMSCON LATAM 2026
             </h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
-              Diligencia tu informacion personal, define el tipo de participacion y agrega los
-              articulos que vayas a presentar. Al finalizar, tu inscripcion quedara asociada a la
+              Diligencia tu información personal, define el tipo de participación y agrega los
+              artículos que vayas a presentar. Al finalizar, tu inscripción quedará asociada a la
               cuenta creada en la plataforma.
             </p>
           </div>
 
-          <Stepper steps={registrationSteps} currentStep={currentStep} />
+          <Stepper steps={visibleSteps} currentStep={visibleCurrentStep} />
 
           <Card className="p-8">
             {isLoadingMetadata ? (
               <Alert
                 title="Cargando metadatos"
-                description="Obteniendo paises, edicion activa y campos configurados desde el backend."
+                description="Obteniendo países, edición activa y campos configurados desde el backend."
                 variant="info"
               />
             ) : null}
@@ -509,40 +529,40 @@ function RegisterPage() {
                     {...register('lastName', { required: 'Los apellidos son obligatorios' })}
                   />
                   <InputField
-                    label="Correo electronico"
+                    label="Correo electrónico"
                     type="email"
                     error={errors.email?.message}
                     {...register('email', {
                       required: 'El correo es obligatorio',
                       pattern: {
                         value: /^\S+@\S+\.\S+$/,
-                        message: 'Ingresa un correo valido',
+                        message: 'Ingresa un correo válido',
                       },
                     })}
                   />
                   <InputField
-                    label="Contrasena"
+                    label="Contraseña"
                     type="password"
                     error={errors.password?.message}
                     helperText="Debe tener al menos 8 caracteres."
                     {...register('password', {
-                      required: 'La contrasena es obligatoria',
+                      required: 'La contraseña es obligatoria',
                       minLength: {
                         value: 8,
-                        message: 'La contrasena debe tener al menos 8 caracteres',
+                        message: 'La contraseña debe tener al menos 8 caracteres',
                       },
                     })}
                   />
                   <InputField
-                    label="Telefono"
+                    label="Teléfono"
                     error={errors.phoneNumber?.message}
-                    {...register('phoneNumber', { required: 'El telefono es obligatorio' })}
+                    {...register('phoneNumber', { required: 'El teléfono es obligatorio' })}
                   />
                   <SelectField
-                    label="Pais"
+                    label="País"
                     options={countryOptions}
                     error={errors.countryId?.message}
-                    {...register('countryId', { required: 'El pais es obligatorio' })}
+                    {...register('countryId', { required: 'El país es obligatorio' })}
                   />
                   <InputField
                     label="Ciudad"
@@ -550,9 +570,9 @@ function RegisterPage() {
                     {...register('city', { required: 'La ciudad es obligatoria' })}
                   />
                   <InputField
-                    label="Direccion"
+                    label="Dirección"
                     error={errors.address?.message}
-                    {...register('address', { required: 'La direccion es obligatoria' })}
+                    {...register('address', { required: 'La dirección es obligatoria' })}
                   />
                   <InputField
                     label="Fecha de nacimiento"
@@ -563,10 +583,10 @@ function RegisterPage() {
                     })}
                   />
                   <SelectField
-                    label="Genero"
+                    label="Género"
                     options={genderOptions}
                     error={errors.gender?.message}
-                    {...register('gender', { required: 'El genero es obligatorio' })}
+                    {...register('gender', { required: 'El género es obligatorio' })}
                   />
                   <SelectField
                     label="Tipo de documento"
@@ -577,23 +597,25 @@ function RegisterPage() {
                     })}
                   />
                   <InputField
-                    label="Numero de documento"
+                    label="Número de documento"
                     error={errors.docNumber?.message}
                     {...register('docNumber', {
-                      required: 'El numero de documento es obligatorio',
+                      required: 'El número de documento es obligatorio',
                     })}
                   />
                   <InputField
-                    label="Afiliacion"
+                    label="Afiliación"
+                    helperText="Ingresa la entidad, institución o empresa a la que estás afiliado."
                     error={errors.affiliation?.message}
-                    {...register('affiliation', { required: 'La afiliacion es obligatoria' })}
+                    {...register('affiliation', { required: 'La afiliación es obligatoria' })}
                   />
                   <InputField
-                    label="Ocupacion"
+                    label="Ocupación"
+                    helperText="Indica a qué te dedicas o cuál es tu actividad principal."
                     placeholder="Ejemplo: Engineer"
                     error={errors.occupation?.message}
                     {...register('occupation', {
-                      required: 'La ocupacion es obligatoria',
+                      required: 'La ocupación es obligatoria',
                     })}
                   />
                   <div className="md:col-span-2">
@@ -617,16 +639,16 @@ function RegisterPage() {
                           {eventEditionOptions[0]?.label || 'TEMSCON LATAM 2026'}
                         </p>
                         <p className="mt-1 text-sm text-slate-500">
-                          Esta inscripcion corresponde a la edicion activa del evento.
+                          Esta inscripción corresponde a la edición activa del evento.
                         </p>
                       </div>
                     </div>
                     <SelectField
-                      label="Tipo de participacion"
+                      label="Tipo de participación"
                       options={participantOptions}
                       error={errors.participationType?.message}
                       {...register('participationType', {
-                        required: 'El tipo de participacion es obligatorio',
+                        required: 'El tipo de participación es obligatorio',
                       })}
                     />
                     <SelectField
@@ -638,11 +660,11 @@ function RegisterPage() {
                       })}
                     />
                     <SelectField
-                      label="Categoria de inscripcion"
+                      label="Categoría de inscripción"
                       options={occupationTypes}
                       error={errors.registrationCategory?.message}
                       {...register('registrationCategory', {
-                        required: 'La categoria de inscripcion es obligatoria',
+                        required: 'La categoría de inscripción es obligatoria',
                       })}
                     />
                   </div>
@@ -669,12 +691,12 @@ function RegisterPage() {
 
                   {isIeeeMember ? (
                     <InputField
-                      label="Numero de membresia IEEE"
+                      label="Número de membresía IEEE"
                       error={errors.membershipNumber?.message}
                       {...register('membershipNumber', {
                         validate: (value) =>
                           isIeeeMember && !value
-                            ? 'El numero de membresia es obligatorio'
+                            ? 'El número de membresía es obligatorio'
                             : true,
                       })}
                     />
@@ -689,13 +711,13 @@ function RegisterPage() {
                 </div>
               ) : null}
 
-              {currentStep === 2 ? (
+              {currentStep === 2 && shouldShowArticlesStep ? (
                 <div className="space-y-6">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <h2 className="text-xl font-semibold text-slate-950">Articulos</h2>
+                      <h2 className="text-xl font-semibold text-slate-950">Artículos</h2>
                       <p className="mt-2 text-sm leading-7 text-slate-500">
-                        Agrega nuevos articulos antes de finalizar tu registro.
+                        Agrega nuevos artículos antes de finalizar tu registro.
                       </p>
                     </div>
                     <Button
@@ -710,14 +732,14 @@ function RegisterPage() {
                         })
                       }
                     >
-                      Agregar articulo
+                      Agregar artículo
                     </Button>
                   </div>
 
                   {!paperFields.length ? (
                     <Alert
-                      title="Sin articulos cargados"
-                      description="Puedes continuar sin articulos si el participante solo asistira al evento."
+                      title="Sin artículos cargados"
+                      description="Puedes continuar sin artículos si el participante solo asistirá al evento."
                       variant="info"
                     />
                   ) : null}
@@ -726,7 +748,7 @@ function RegisterPage() {
                     <Card key={paper.id} className="border border-slate-100 bg-slate-50 p-5">
                       <div className="mb-4 flex items-center justify-between gap-3">
                         <h3 className="text-lg font-semibold text-slate-950">
-                          Articulo {index + 1}
+                          Artículo {index + 1}
                         </h3>
                         <Button
                           type="button"
@@ -740,23 +762,23 @@ function RegisterPage() {
 
                       <div className="grid gap-5 md:grid-cols-2">
                         <InputField
-                          label="Titulo"
+                          label="Título"
                           className="md:col-span-2"
                           error={errors.papers?.[index]?.title?.message}
                           {...register(`papers.${index}.title`, {
-                            required: 'El titulo es obligatorio',
+                            required: 'El título es obligatorio',
                           })}
                         />
                         <InputField
-                          label="Codigo del articulo"
+                          label="Código del artículo"
                           error={errors.papers?.[index]?.paperCode?.message}
-                          helperText="Debe ser unico en backend."
+                          helperText="Debe ser único en backend."
                           {...register(`papers.${index}.paperCode`, {
-                            required: 'El codigo es obligatorio',
+                            required: 'El código es obligatorio',
                           })}
                         />
                         <InputField
-                          label="Paginas"
+                          label="Páginas"
                           type="number"
                           min="1"
                           error={errors.papers?.[index]?.pages?.message}
@@ -780,7 +802,7 @@ function RegisterPage() {
                                 .map((item) => item.trim())
                                 .filter(Boolean).length
                                 ? true
-                                : 'Debes ingresar al menos un autor valido',
+                                : 'Debes ingresar al menos un autor válido',
                           })}
                         />
                       </div>
@@ -801,8 +823,8 @@ function RegisterPage() {
               {currentStep === 3 ? (
                 <div className="space-y-6">
                   <Alert
-                    title="Resumen de inscripcion"
-                    description="Revisa la informacion antes de finalizar el registro. Este resumen de pago se recalculo con la informacion actual del formulario."
+                    title="Resumen de inscripción"
+                    description="Revisa la información antes de finalizar el registro. Este resumen de pago se recalculó con la información actual del formulario."
                     variant="info"
                   />
                   <div className="grid gap-4">
@@ -826,12 +848,16 @@ function RegisterPage() {
                   type="button"
                   variant="ghost"
                   className="border border-slate-200"
-                  onClick={() => setCurrentStep((prev) => Math.max(prev - 1, 0))}
+                  onClick={() => {
+                    const currentSequenceIndex = stepSequence.indexOf(currentStep);
+                    const previousStep = stepSequence[Math.max(currentSequenceIndex - 1, 0)];
+                    setCurrentStep(previousStep);
+                  }}
                   disabled={currentStep === 0}
                 >
-                  Atras
+                  Atrás
                 </Button>
-                {currentStep < registrationSteps.length - 1 ? (
+                {!isFinalStep ? (
                   <Button
                     type="button"
                     variant="primary"
@@ -847,7 +873,7 @@ function RegisterPage() {
                     disabled={isSubmitting || isLoadingMetadata || isPreviewLoading}
                     onClick={submitRegistration}
                   >
-                    {isSubmitting ? 'Enviando...' : 'Crear cuenta e inscripcion'}
+                    {isSubmitting ? 'Enviando...' : 'Crear cuenta e inscripción'}
                   </Button>
                 )}
               </div>
@@ -863,11 +889,11 @@ function RegisterPage() {
               Antes de continuar
             </p>
             <h2 className="mt-3 text-2xl font-semibold text-white">
-              Prepara tu informacion para agilizar el proceso
+              Prepara tu información para agilizar el proceso
             </h2>
             <p className="mt-4 text-sm leading-7 text-white/78">
               El formulario se completa por etapas. Puedes avanzar paso a paso y registrar la
-              informacion clave del participante y, si aplica, de los articulos asociados.
+              información clave del participante y, si aplica, de los artículos asociados.
             </p>
             <div className="mt-6 space-y-4">
               {guidanceItems.map((item, index) => (
@@ -885,11 +911,11 @@ function RegisterPage() {
             </div>
             <div className="mt-6 rounded-2xl border border-dashed border-[#ff6b6b]/55 bg-[#0f1d30]/70 px-5 py-4">
               <p className="text-sm font-semibold text-white">
-                Articulos agregados actualmente: {paperFields.length}
+                  Artículos agregados actualmente: {shouldShowArticlesStep ? paperFields.length : 0}
               </p>
               <p className="mt-1 text-sm text-white/72">
-                Si el participante solo asistira al evento, puedes continuar sin registrar
-                articulos.
+                Si el participante solo asistirá al evento, puedes continuar sin registrar
+                artículos.
               </p>
             </div>
             </div>
@@ -904,7 +930,7 @@ function RegisterPage() {
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            {successState?.message || 'La cuenta y la inscripcion fueron procesadas correctamente.'}
+            {successState?.message || 'La cuenta y la inscripción fueron procesadas correctamente.'}
           </p>
           {successState ? (
             <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
@@ -1022,6 +1048,8 @@ function SummaryRow({ label, value }) {
 }
 
 function buildPaymentPreviewPayload(data) {
+  const shouldIncludePapers = data.participationType !== 'attendee';
+
   return {
     eventEditionId: Number(data.eventEditionId),
     participationType: data.participationType,
@@ -1031,7 +1059,7 @@ function buildPaymentPreviewPayload(data) {
     }),
     isIeeeMember: Boolean(data.isIeeeMember),
     isTems: Boolean(data.isTems),
-    papers: (data.papers || []).map((paper) => ({
+    papers: (shouldIncludePapers ? data.papers || [] : []).map((paper) => ({
       pages: paper.pages ? Number(paper.pages) : 0,
     })),
   };

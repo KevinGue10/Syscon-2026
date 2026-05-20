@@ -24,6 +24,28 @@ const getRuleSpecificityScore = (rule) =>
     0
   );
 
+const isBaseRuleMatch = ({
+  rule,
+  normalizedDate,
+  participantType,
+  normalizedMemberType,
+  isIeeeMember,
+}) => {
+  const noDates = !rule.startsAt && !rule.endsAt;
+  const started = !rule.startsAt || normalizedDate >= rule.startsAt;
+  const notEnded = !rule.endsAt || normalizedDate <= rule.endsAt;
+  const isDateMatch = noDates || (started && notEnded);
+  const isChargeRule = [ADDITIONAL_PAPER_RULE_NAME, ADDITIONAL_PAGE_RULE_NAME].includes(rule.name);
+
+  return (
+    !isChargeRule &&
+    isDateMatch &&
+    matchesRuleField(rule.participationType, participantType) &&
+    matchesRuleField(rule.memberType, normalizedMemberType) &&
+    matchesRuleField(rule.isIeeeMember, isIeeeMember)
+  );
+};
+
 const getPricingRule = async ({
   eventEditionId,
   participantType,
@@ -44,22 +66,27 @@ const getPricingRule = async ({
     transaction,
   });
 
-  const matchingRules = rules.filter((rule) => {
-    const noDates = !rule.startsAt && !rule.endsAt;
-    const started = !rule.startsAt || normalizedDate >= rule.startsAt;
-    const notEnded = !rule.endsAt || normalizedDate <= rule.endsAt;
-    const isDateMatch = noDates || (started && notEnded);
-    const isChargeRule = [ADDITIONAL_PAPER_RULE_NAME, ADDITIONAL_PAGE_RULE_NAME].includes(rule.name);
+  let matchingRules = rules.filter((rule) =>
+    isBaseRuleMatch({
+      rule,
+      normalizedDate,
+      participantType,
+      normalizedMemberType,
+      isIeeeMember,
+    }) && matchesRuleField(rule.isTems, isTems)
+  );
 
-    return (
-      !isChargeRule &&
-      isDateMatch &&
-      matchesRuleField(rule.participationType, participantType) &&
-      matchesRuleField(rule.memberType, normalizedMemberType) &&
-      matchesRuleField(rule.isIeeeMember, isIeeeMember) &&
-      matchesRuleField(rule.isTems, isTems)
+  if (!matchingRules.length && isTems) {
+    matchingRules = rules.filter((rule) =>
+      isBaseRuleMatch({
+        rule,
+        normalizedDate,
+        participantType,
+        normalizedMemberType,
+        isIeeeMember,
+      })
     );
-  });
+  }
 
   if (!matchingRules.length) {
     throw new AppError(MISSING_PRICING_RULE_MESSAGE, 400);

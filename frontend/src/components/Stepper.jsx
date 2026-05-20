@@ -1,6 +1,11 @@
 export function Stepper({ steps, currentStep }) {
   return (
-    <div className="grid gap-4 md:grid-cols-4">
+    <div
+      className="grid gap-4"
+      style={{
+        gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))`,
+      }}
+    >
       {steps.map((step, index) => {
         const state =
           index < currentStep ? 'complete' : index === currentStep ? 'current' : 'upcoming';

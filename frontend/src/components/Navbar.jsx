@@ -1,4 +1,4 @@
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import {
   authenticatedNavigation,
   primaryNavigation,
@@ -8,9 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { Button } from './Button';
 
 export function Navbar() {
-  const location = useLocation();
   const { isAuthenticated, user, logout } = useAuth();
-  const hideAuthActionsOnLanding = isAuthenticated && location.pathname === '/';
   const protectedNav = isAuthenticated ? dashboardNavigation[user?.role || 'user'] || [] : [];
   const navigationItems = isAuthenticated
     ? [...authenticatedNavigation, ...protectedNav]
@@ -45,7 +43,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
-          {isAuthenticated && !hideAuthActionsOnLanding ? (
+          {isAuthenticated ? (
             <>
               <div className="hidden text-right sm:block">
                 <p className="text-sm font-semibold text-slate-950">{user?.name}</p>

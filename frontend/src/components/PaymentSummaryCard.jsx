@@ -63,7 +63,7 @@ export function PaymentSummaryCard({
             muted={!discountAmount}
           />
           <SummaryLine
-            label="Pago de impuestos (15%)"
+            label="Cargo por factura e impuestos (15%)"
             value={formatCurrency(taxesAmount)}
             muted={!includeTaxes}
           />
@@ -115,9 +115,10 @@ export function PaymentSummaryCard({
             onChange={(event) => onIncludeTaxesChange(event.target.checked)}
           />
           <span>
-            <span className="block text-sm font-semibold text-white">Agregar pago de impuestos</span>
+            <span className="block text-sm font-semibold text-white">Solicitar factura</span>
             <span className="mt-1 block text-sm leading-6 text-white/72">
-              Activa esta opcion para sumar un 15% adicional sobre el monto base de este pago.
+              Si deseas factura, activa esta opción. La generación de la factura aplica un cobro
+              adicional de impuestos del 15% sobre el monto base de este pago.
             </span>
           </span>
         </label>

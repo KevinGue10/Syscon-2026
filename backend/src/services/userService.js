@@ -28,6 +28,8 @@ const getUserProfile = async (userId, options = {}) => {
       {
         association: 'customFieldValues',
         required: false,
+        separate: true,
+        order: [['id', 'ASC']],
         include: [{ association: 'customField', required: false }],
       },
     ],

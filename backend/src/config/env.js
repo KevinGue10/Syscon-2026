@@ -14,7 +14,7 @@ const env = {
     syncOnStart:
       process.env.DB_SYNC_ON_START !== undefined
         ? process.env.DB_SYNC_ON_START === 'true'
-        : (process.env.NODE_ENV || 'development') === 'development',
+        : false,
   },
   jwt: {
     secret: process.env.JWT_SECRET || 'change_this_secret',

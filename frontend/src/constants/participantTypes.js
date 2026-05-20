@@ -2,19 +2,19 @@ export const participantTypes = [
   {
     id: 'attendee',
     title: 'Asistente',
-    description: 'Participacion general en sesiones, networking y agenda de conferencia.',
+    description: 'Participación general en sesiones, networking y agenda de conferencia.',
   },
   {
     id: 'author',
     title: 'Autor',
-    description: 'Registro para autores con carga de articulos y resumen de pago posterior.',
+    description: 'Registro para autores con carga de artículos y resumen de pago posterior.',
   },
 ];
 
 export const registrationSteps = [
   'Cuenta',
-  'Inscripcion',
-  'Articulos',
+  'Inscripción',
+  'Artículos',
   'Resumen',
 ];
 
@@ -35,8 +35,8 @@ export const genderOptions = [
 ];
 
 export const documentTypeOptions = [
-  { value: 'CC', label: 'Cedula de ciudadania' },
-  { value: 'CE', label: 'Cedula de extranjeria' },
+  { value: 'CC', label: 'Cédula de ciudadanía' },
+  { value: 'CE', label: 'Cédula de extranjería' },
   { value: 'TI', label: 'Tarjeta de identidad' },
   { value: 'PP', label: 'Pasaporte' },
 ];

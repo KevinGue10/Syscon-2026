@@ -23,7 +23,6 @@ function PaymentPage() {
   const [bankTransferDetails, setBankTransferDetails] = useState(null);
   const [includeTaxes, setIncludeTaxes] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
-  const [selectedMethod, setSelectedMethod] = useState('paypal');
   const [couponState, setCouponState] = useState({
     code: '',
     isApplying: false,
@@ -39,9 +38,12 @@ function PaymentPage() {
     error: '',
     success: '',
   });
-  const [gatewayState, setGatewayState] = useState({
-    paypal: { isLoading: false, error: '' },
-    payphone: { isLoading: false, error: '' },
+  const [cardPaymentRequestState, setCardPaymentRequestState] = useState({
+    reference: '',
+    supportingFile: null,
+    isSubmitting: false,
+    error: '',
+    success: '',
   });
 
   useEffect(() => {
@@ -341,80 +343,75 @@ function PaymentPage() {
     }
   }
 
-  async function handlePayPalCheckout() {
+  async function handlePayPhoneRequest() {
     if (!pageState.registration) {
       return;
     }
 
-    try {
-      setGatewayState((current) => ({
+    if (paymentBreakdown.totalAmount <= 0) {
+      setCardPaymentRequestState((current) => ({
         ...current,
-        paypal: { isLoading: true, error: '' },
+        error: 'Define un monto valido para registrar la solicitud de pago.',
+        success: '',
       }));
-
-      const response = await paymentService.createPayPalOrder({
-        registrationId: pageState.registration.id,
-        amountUsd: paymentBreakdown.totalAmount,
-        currency: 'USD',
-        couponCode: couponState.applied?.code || undefined,
-      });
-
-      const approvalUrl = response.payment?.paymentUrl || response.payment?.approvalUrl || null;
-
-      if (!approvalUrl) {
-        throw new Error('El backend no devolvio la URL de aprobacion de PayPal.');
-      }
-
-      window.location.assign(approvalUrl);
-    } catch (error) {
-      setGatewayState((current) => ({
-        ...current,
-        paypal: {
-          isLoading: false,
-          error:
-            error?.response?.data?.message ||
-            error?.message ||
-            'No fue posible iniciar el checkout de PayPal.',
-        },
-      }));
-    }
-  }
-
-  async function handlePayPhoneCheckout() {
-    if (!pageState.registration) {
       return;
     }
 
     try {
-      setGatewayState((current) => ({
+      setCardPaymentRequestState((current) => ({
         ...current,
-        payphone: { isLoading: true, error: '' },
+        isSubmitting: true,
+        error: '',
+        success: '',
       }));
 
       const response = await paymentService.createPayPhonePayment({
         registrationId: pageState.registration.id,
         amountUsd: paymentBreakdown.totalAmount,
         currency: 'USD',
+        transactionReference: cardPaymentRequestState.reference.trim() || undefined,
         couponCode: couponState.applied?.code || undefined,
       });
 
-      const paymentUrl = response.payment?.paymentUrl || null;
+      const createdPaymentId = response.payment?.id;
 
-      if (!paymentUrl) {
-        throw new Error('El backend no devolvio la URL de pago de PayPhone.');
+      if (!createdPaymentId) {
+        throw new Error('El backend no devolvio el identificador de la solicitud PayPhone.');
       }
 
-      window.location.assign(paymentUrl);
+      if (cardPaymentRequestState.supportingFile) {
+        const filePayload = buildPaymentProofFormData({
+          file: cardPaymentRequestState.supportingFile,
+          transactionReference: cardPaymentRequestState.reference,
+        });
+        await paymentService.uploadPaymentProof(createdPaymentId, filePayload);
+      }
+
+      // Flujo externo deshabilitado temporalmente por definicion operativa del cliente.
+      // const paymentUrl = response.payment?.paymentUrl || null;
+      // if (paymentUrl) {
+      //   window.location.assign(paymentUrl);
+      // }
+
+      await refreshPaymentContext();
+
+      setCardPaymentRequestState({
+        reference: '',
+        supportingFile: null,
+        isSubmitting: false,
+        error: '',
+        success:
+          'La solicitud de pago con tarjeta quedo registrada. El equipo revisara la seleccion de PayPhone y enviara el enlace de pago al correo asociado a tu cuenta.',
+      });
     } catch (error) {
-      setGatewayState((current) => ({
+      setCardPaymentRequestState((current) => ({
         ...current,
-        payphone: {
-          isLoading: false,
-          error:
-            error?.response?.data?.message ||
-            error?.message ||
-            'No fue posible iniciar el checkout de PayPhone.',
-        },
+        isSubmitting: false,
+        error:
+          error?.response?.data?.message ||
+          error?.message ||
+          'No fue posible registrar la solicitud PayPhone.',
+        success: '',
       }));
     }
   }
@@ -461,8 +458,8 @@ function PaymentPage() {
           Completa el pago de tu inscripcion
         </h1>
         <p className="mt-4 max-w-4xl text-sm leading-7 text-slate-600">
-          Esta pagina concentra el resumen del valor pendiente y los dos caminos de pago que
-          tendra la plataforma: transferencia directa y pago con tarjetas.
+          Esta pagina concentra el resumen del valor pendiente y las dos modalidades de gestion
+          disponibles: transferencia directa y solicitud de pago con tarjeta.
         </p>
       </div>
 
@@ -537,13 +534,25 @@ function PaymentPage() {
               />
 
               <PaymentMethods
-                selectedMethod={selectedMethod}
-                onSelectMethod={setSelectedMethod}
                 amountToCharge={paymentBreakdown.totalAmount}
-                paypalState={gatewayState.paypal}
-                payphoneState={gatewayState.payphone}
-                onPayPalClick={handlePayPalCheckout}
-                onPayPhoneClick={handlePayPhoneCheckout}
+                requestState={cardPaymentRequestState}
+                onReferenceChange={(value) =>
+                  setCardPaymentRequestState((current) => ({
+                    ...current,
+                    reference: value,
+                    error: '',
+                    success: '',
+                  }))
+                }
+                onFileChange={(file) =>
+                  setCardPaymentRequestState((current) => ({
+                    ...current,
+                    supportingFile: file,
+                    error: '',
+                    success: '',
+                  }))
+                }
+                onSubmit={handlePayPhoneRequest}
               />
             </>
           )}
@@ -614,7 +623,7 @@ function PaymentPage() {
           <div className="mt-6">
             <Alert
               title="Todavia no hay pagos registrados"
-              description="Cuando generes un pago por transferencia, PayPal o PayPhone, aparecera en este historial."
+              description="Cuando generes un pago por transferencia o registres una solicitud PayPhone, aparecera en este historial."
               variant="info"
             />
           </div>

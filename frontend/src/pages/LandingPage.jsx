@@ -61,10 +61,10 @@ function LandingPage() {
 
         <div className="container-shell relative grid min-h-[82vh] gap-14 py-16 lg:grid-cols-[1.02fr_0.98fr] lg:items-center lg:gap-12 lg:py-24">
           <div className="max-w-2xl">
-            <p className="mb-6 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-white/90">
+            <p className="mb-9 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-white/90">
               IEEE TEMS LATAM
             </p>
-            <h1 className="max-w-2xl text-4xl font-extrabold leading-[1.02] tracking-tight sm:text-5xl lg:text-[4.15rem]">
+            <h1 className="max-w-2xl text-4xl font-extrabold leading-[1.08] tracking-[-0.01em] sm:text-5xl lg:text-[4.15rem]">
               Innovando la gestión tecnológica para una región conectada
             </h1>
             <p className="mt-6 max-w-xl text-lg font-semibold leading-8 text-white/92 sm:text-xl">
