@@ -18,6 +18,14 @@ const PASSWORD_CHARSET = `${UPPERCASE_CHARS}${LOWERCASE_CHARS}${NUMBER_CHARS}${S
 
 const getRandomChar = (charset) => charset[crypto.randomInt(0, charset.length)];
 
+const dispatchEmailInBackground = (task, label) => {
+  Promise.resolve()
+    .then(task)
+    .catch((error) => {
+      console.error(`${label} failed:`, error.message);
+    });
+};
+
 const shuffleString = (value) => {
   const chars = value.split('');
 
@@ -89,7 +97,10 @@ const register = asyncHandler(async (req, res) => {
     entityId: user.id,
     newValue: sanitizeUser(user),
   });
-  await sendWelcomeEmail(user);
+  dispatchEmailInBackground(
+    () => sendWelcomeEmail(user),
+    'Welcome email'
+  );
 
   return sendSuccess(res, {
     statusCode: 201,
