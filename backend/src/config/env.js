@@ -35,6 +35,7 @@ const env = {
     swiftCode: process.env.BANK_TRANSFER_SWIFT_CODE || '',
     routingNumber: process.env.BANK_TRANSFER_ROUTING_NUMBER || '',
     taxId: process.env.BANK_TRANSFER_TAX_ID || '',
+    ruc: process.env.BANK_TRANSFER_RUC || process.env.BANK_TRANSFER_TAX_ID || '',
     email: process.env.BANK_TRANSFER_EMAIL || '',
     instructions: process.env.BANK_TRANSFER_INSTRUCTIONS || '',
   },

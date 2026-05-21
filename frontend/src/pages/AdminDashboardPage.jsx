@@ -89,7 +89,17 @@ function AdminDashboardPage() {
         {dashboard.metrics.map((metric) => (
           <Card key={metric.label} className="p-6">
             <p className="text-sm text-slate-500">{metric.label}</p>
-            <p className="mt-3 text-3xl font-semibold text-slate-950">{metric.value}</p>
+            <p
+              className={`mt-3 text-3xl font-semibold ${
+                metric.label === 'Ingresos recaudados'
+                  ? 'text-emerald-600'
+                  : metric.label === 'Saldos pendientes'
+                    ? 'text-rose-600'
+                    : 'text-slate-950'
+              }`}
+            >
+              {metric.value}
+            </p>
             {metric.delta ? <p className="mt-2 text-sm text-emerald-600">{metric.delta}</p> : null}
           </Card>
         ))}

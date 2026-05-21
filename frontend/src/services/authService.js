@@ -37,4 +37,13 @@ export const authService = {
       data: data?.data || {},
     };
   },
+
+  async forgotPassword(payload) {
+    const { data } = await api.post('/auth/forgot-password', payload);
+    return {
+      success: data?.success ?? true,
+      message: data?.message || 'Si el correo existe, se enviara una contrasena provisional.',
+      data: data?.data || {},
+    };
+  },
 };

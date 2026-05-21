@@ -76,6 +76,7 @@ function AdminUsersOverviewPage() {
     payments: [],
     selectedPaymentId: null,
     proofAccess: null,
+    paymentLink: '',
     reviewedAmount: '',
     rejectionReason: '',
   });
@@ -158,6 +159,10 @@ function AdminUsersOverviewPage() {
   const isResolvedPayment = isPaymentResolved(selectedReviewedPayment);
   const isRejectedPayment = isPaymentRejected(selectedReviewedPayment);
   const isApprovedPayment = isPaymentApproved(selectedReviewedPayment);
+  const isCancelledPayment = isPaymentCancelled(selectedReviewedPayment);
+  const canSendSelectedPayPhoneLink = canSendPayPhoneLink(selectedReviewedPayment);
+  const canValidateSelectedPayment = canValidatePayment(selectedReviewedPayment);
+  const canCancelSelectedPayment = canCancelPayment(selectedReviewedPayment);
 
   if (isLoading) {
     return (
@@ -620,7 +625,9 @@ function AdminUsersOverviewPage() {
               </p>
             </div>
 
-            {paymentReviewState.error && paymentReviewState.payments.length ? (
+            {paymentReviewState.error &&
+            paymentReviewState.payments.length &&
+            !isMissingPaymentProofMessage(paymentReviewState.error) ? (
               <Alert title="Accion no completada" description={paymentReviewState.error} variant="danger" />
             ) : null}
             {paymentReviewState.success ? (
@@ -732,12 +739,67 @@ function AdminUsersOverviewPage() {
                             </p>
                           </div>
                         ) : null}
+                        {isCancelledPayment ? (
+                          <div className="rounded-2xl bg-slate-100 px-4 py-4">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                              Estado final
+                            </p>
+                            <p className="mt-2 text-sm font-medium text-slate-900">
+                              Este pago fue cancelado administrativamente.
+                            </p>
+                          </div>
+                        ) : null}
                         <p className="text-sm text-slate-500">
                           Este pago ya tiene una decision administrativa tomada y no admite una
                           nueva accion desde esta pantalla.
                         </p>
+                        {canCancelSelectedPayment ? (
+                          <div className="flex justify-end">
+                            <Button
+                              variant="ghost"
+                              className="border border-rose-200 text-rose-700 hover:bg-rose-50"
+                              onClick={async () => {
+                                const selectedPayment = resolveSelectedPayment(paymentReviewState);
+
+                                if (!selectedPayment?.id) {
+                                  return;
+                                }
+
+                                try {
+                                  setPaymentReviewState((current) => ({
+                                    ...current,
+                                    isSubmitting: true,
+                                    error: '',
+                                    success: '',
+                                  }));
+
+                                  await paymentService.cancelPayment(selectedPayment.id);
+
+                                  await openPaymentReviewModal(paymentReviewState.user, selectedPayment.id);
+                                  setPaymentReviewState((current) => ({
+                                    ...current,
+                                    success: 'El pago fue cancelado correctamente.',
+                                  }));
+                                } catch (error) {
+                                  setPaymentReviewState((current) => ({
+                                    ...current,
+                                    isSubmitting: false,
+                                    error:
+                                      error?.response?.data?.message ||
+                                      error?.message ||
+                                      'No fue posible cancelar el pago.',
+                                    success: '',
+                                  }));
+                                }
+                              }}
+                              disabled={paymentReviewState.isSubmitting}
+                            >
+                              {paymentReviewState.isSubmitting ? 'Procesando...' : 'Cancelar pago'}
+                            </Button>
+                          </div>
+                        ) : null}
                       </div>
-                    ) : (
+                    ) : canValidateSelectedPayment ? (
                       <>
                         <div className="mt-4 grid gap-4">
                           <InputField
@@ -767,6 +829,47 @@ function AdminUsersOverviewPage() {
                         </div>
 
                         <div className="mt-6 flex flex-wrap justify-end gap-3">
+                          <Button
+                            variant="ghost"
+                            className="border border-rose-200 text-rose-700 hover:bg-rose-50"
+                            onClick={async () => {
+                              const selectedPayment = resolveSelectedPayment(paymentReviewState);
+
+                              if (!selectedPayment?.id) {
+                                return;
+                              }
+
+                              try {
+                                setPaymentReviewState((current) => ({
+                                  ...current,
+                                  isSubmitting: true,
+                                  error: '',
+                                  success: '',
+                                }));
+
+                                await paymentService.cancelPayment(selectedPayment.id);
+
+                                await openPaymentReviewModal(paymentReviewState.user, selectedPayment.id);
+                                setPaymentReviewState((current) => ({
+                                  ...current,
+                                  success: 'El pago fue cancelado correctamente.',
+                                }));
+                              } catch (error) {
+                                setPaymentReviewState((current) => ({
+                                  ...current,
+                                  isSubmitting: false,
+                                  error:
+                                    error?.response?.data?.message ||
+                                    error?.message ||
+                                    'No fue posible cancelar el pago.',
+                                  success: '',
+                                }));
+                              }
+                            }}
+                            disabled={paymentReviewState.isSubmitting}
+                          >
+                            {paymentReviewState.isSubmitting ? 'Procesando...' : 'Cancelar pago'}
+                          </Button>
                           <Button
                             variant="ghost"
                             className="border border-slate-200"
@@ -801,7 +904,7 @@ function AdminUsersOverviewPage() {
                                     : undefined,
                                 });
 
-                                await openPaymentReviewModal(paymentReviewState.user);
+                                await openPaymentReviewModal(paymentReviewState.user, selectedPayment.id);
                                 setPaymentReviewState((current) => ({
                                   ...current,
                                   success: 'El pago fue rechazado correctamente.',
@@ -845,7 +948,7 @@ function AdminUsersOverviewPage() {
                                     : undefined,
                                 });
 
-                                await openPaymentReviewModal(paymentReviewState.user);
+                                await openPaymentReviewModal(paymentReviewState.user, selectedPayment.id);
                                 setPaymentReviewState((current) => ({
                                   ...current,
                                   success: 'El pago fue aprobado correctamente.',
@@ -868,6 +971,140 @@ function AdminUsersOverviewPage() {
                           </Button>
                         </div>
                       </>
+                    ) : (
+                      <div className="mt-4 space-y-4">
+                        {canSendSelectedPayPhoneLink ? (
+                          <Alert
+                            title="Pendiente de envío de link"
+                            description="Este pago PayPhone fue registrado por el participante y está esperando que administración envíe el link de pago."
+                            variant="info"
+                          />
+                        ) : (
+                          <Alert
+                            title="Pendiente de pago"
+                            description="Todavía no hay un comprobante listo para validación. Cuando el participante cargue el soporte, el estado cambiará a pendiente de validación."
+                            variant="warning"
+                          />
+                        )}
+
+                        {canSendSelectedPayPhoneLink ? (
+                          <InputField
+                            label="Link de pago"
+                            placeholder="https://..."
+                            value={paymentReviewState.paymentLink}
+                            onChange={(event) =>
+                              setPaymentReviewState((current) => ({
+                                ...current,
+                                paymentLink: event.target.value,
+                                error: '',
+                                success: '',
+                              }))
+                            }
+                            helperText="Pega aqui el enlace que recibira el participante por correo."
+                          />
+                        ) : null}
+
+                        <div className="flex flex-wrap justify-end gap-3">
+                          {canSendSelectedPayPhoneLink ? (
+                            <Button
+                              variant="primary"
+                              onClick={async () => {
+                                const selectedPayment = resolveSelectedPayment(paymentReviewState);
+                                const normalizedPaymentLink = paymentReviewState.paymentLink.trim();
+
+                                if (!selectedPayment?.id) {
+                                  return;
+                                }
+
+                                if (!normalizedPaymentLink) {
+                                  setPaymentReviewState((current) => ({
+                                    ...current,
+                                    error: 'Debes pegar el link de pago antes de enviarlo.',
+                                    success: '',
+                                  }));
+                                  return;
+                                }
+
+                                try {
+                                  setPaymentReviewState((current) => ({
+                                    ...current,
+                                    isSubmitting: true,
+                                    error: '',
+                                    success: '',
+                                  }));
+
+                                  await paymentService.sendPayPhoneLink(selectedPayment.id, {
+                                    paymentLink: normalizedPaymentLink,
+                                  });
+
+                                  await openPaymentReviewModal(paymentReviewState.user, selectedPayment.id);
+                                  setPaymentReviewState((current) => ({
+                                    ...current,
+                                    success:
+                                      'El link de PayPhone fue marcado como enviado. Estado actual: pendiente de pago.',
+                                  }));
+                                } catch (error) {
+                                  setPaymentReviewState((current) => ({
+                                    ...current,
+                                    isSubmitting: false,
+                                    error:
+                                      error?.response?.data?.message ||
+                                      error?.message ||
+                                      'No fue posible marcar el envío del link PayPhone.',
+                                    success: '',
+                                  }));
+                                }
+                              }}
+                              disabled={paymentReviewState.isSubmitting}
+                            >
+                              {paymentReviewState.isSubmitting ? 'Procesando...' : 'Enviar link'}
+                            </Button>
+                          ) : null}
+                          {canCancelSelectedPayment ? (
+                            <Button
+                              variant="ghost"
+                              className="border border-rose-200 text-rose-700 hover:bg-rose-50"
+                              onClick={async () => {
+                                const selectedPayment = resolveSelectedPayment(paymentReviewState);
+
+                                if (!selectedPayment?.id) {
+                                  return;
+                                }
+
+                                try {
+                                  setPaymentReviewState((current) => ({
+                                    ...current,
+                                    isSubmitting: true,
+                                    error: '',
+                                    success: '',
+                                  }));
+
+                                  await paymentService.cancelPayment(selectedPayment.id);
+
+                                  await openPaymentReviewModal(paymentReviewState.user, selectedPayment.id);
+                                  setPaymentReviewState((current) => ({
+                                    ...current,
+                                    success: 'El pago fue cancelado correctamente.',
+                                  }));
+                                } catch (error) {
+                                  setPaymentReviewState((current) => ({
+                                    ...current,
+                                    isSubmitting: false,
+                                    error:
+                                      error?.response?.data?.message ||
+                                      error?.message ||
+                                      'No fue posible cancelar el pago.',
+                                    success: '',
+                                  }));
+                                }
+                              }}
+                              disabled={paymentReviewState.isSubmitting}
+                            >
+                              {paymentReviewState.isSubmitting ? 'Procesando...' : 'Cancelar pago'}
+                            </Button>
+                          ) : null}
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -879,7 +1116,7 @@ function AdminUsersOverviewPage() {
     </section>
   );
 
-  async function openPaymentReviewModal(user) {
+  async function openPaymentReviewModal(user, preferredPaymentId = null) {
     if (!user?.id) {
       return;
     }
@@ -897,6 +1134,7 @@ function AdminUsersOverviewPage() {
             payments: [],
             selectedPaymentId: null,
             proofAccess: null,
+            paymentLink: '',
             reviewedAmount: '',
             rejectionReason: '',
           });
@@ -908,7 +1146,10 @@ function AdminUsersOverviewPage() {
         const right = new Date(a.createdAt || 0).getTime();
         return left - right;
       });
-      const selectedPayment = payments[0] || null;
+      const selectedPayment =
+        payments.find((payment) => String(payment.id) === String(preferredPaymentId)) ||
+        payments[0] ||
+        null;
 
       setPaymentReviewState({
         isOpen: true,
@@ -922,6 +1163,7 @@ function AdminUsersOverviewPage() {
         payments,
         selectedPaymentId: selectedPayment?.id || null,
         proofAccess: null,
+        paymentLink: selectedPayment?.paymentUrl || '',
         reviewedAmount: selectedPayment?.amountUsd ? String(selectedPayment.amountUsd) : '',
         rejectionReason: '',
       });
@@ -944,6 +1186,7 @@ function AdminUsersOverviewPage() {
         payments: [],
         selectedPaymentId: null,
         proofAccess: null,
+        paymentLink: '',
         reviewedAmount: '',
         rejectionReason: '',
       });
@@ -996,6 +1239,7 @@ function AdminUsersOverviewPage() {
       ...current,
       selectedPaymentId: payment.id,
       proofAccess: null,
+      paymentLink: payment.paymentUrl || '',
       reviewedAmount: String(payment.amountUsd || ''),
       rejectionReason: '',
       error: '',
@@ -1091,13 +1335,45 @@ function isPaymentApproved(payment) {
 }
 
 function isPaymentRejected(payment) {
-  return ['rejected', 'cancelled', 'canceled'].includes(
+  return ['rejected'].includes(
     String(payment?.status || '').toLowerCase(),
   );
 }
 
+function isPaymentCancelled(payment) {
+  return ['cancelled', 'canceled'].includes(String(payment?.status || '').toLowerCase());
+}
+
 function isPaymentResolved(payment) {
-  return isPaymentApproved(payment) || isPaymentRejected(payment);
+  return isPaymentApproved(payment) || isPaymentRejected(payment) || isPaymentCancelled(payment);
+}
+
+function isPaymentPendingValidation(payment) {
+  return String(payment?.status || '').toLowerCase() === 'pending_validation';
+}
+
+function isPaymentPendingLink(payment) {
+  return (
+    String(payment?.status || '').toLowerCase() === 'pending_link' &&
+    String(payment?.paymentMethod || '').toLowerCase() === 'payphone'
+  );
+}
+
+function canSendPayPhoneLink(payment) {
+  return isPaymentPendingLink(payment);
+}
+
+function canValidatePayment(payment) {
+  return isPaymentPendingValidation(payment);
+}
+
+function canCancelPayment(payment) {
+  if (!payment) {
+    return false;
+  }
+
+  const normalizedStatus = String(payment.status || '').toLowerCase();
+  return !['approved', 'paid', 'accepted', 'cancelled', 'canceled'].includes(normalizedStatus);
 }
 
 function ReviewItem({ label, value }) {
@@ -1182,6 +1458,18 @@ function PaymentProofViewer({ payment, proofAccess, isLoading }) {
         Abrir comprobante en una pestaña nueva
       </a>
     </div>
+  );
+}
+
+function isMissingPaymentProofMessage(message) {
+  const normalizedMessage = String(message || '').toLowerCase();
+
+  return (
+    normalizedMessage.includes('payment proof not found') ||
+    normalizedMessage.includes('proof not found') ||
+    normalizedMessage.includes('no hay comprobante') ||
+    normalizedMessage.includes('comprobante no encontrado') ||
+    normalizedMessage.includes('soporte no encontrado')
   );
 }
 

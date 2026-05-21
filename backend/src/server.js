@@ -50,6 +50,35 @@ const normalizeLegacyNulls = async () => {
   }
 };
 
+const ensurePaymentStatusEnums = async () => {
+  const enumValues = [
+    'pending_link',
+    'pending_payment',
+    'pending_validation',
+    'pending',
+    'approved',
+    'rejected',
+    'cancelled',
+    'refunded',
+  ];
+  const enumDefinition = enumValues.map((value) => `'${value}'`).join(', ');
+  const alterStatements = [
+    `ALTER TABLE \`payments\` MODIFY \`status\` ENUM(${enumDefinition}) NOT NULL DEFAULT 'pending'`,
+    `ALTER TABLE \`payment_status_history\` MODIFY \`previous_status\` ENUM(${enumDefinition}) NULL`,
+    `ALTER TABLE \`payment_status_history\` MODIFY \`new_status\` ENUM(${enumDefinition}) NOT NULL`,
+  ];
+
+  for (const statement of alterStatements) {
+    try {
+      await sequelize.query(statement);
+    } catch (error) {
+      if (error?.original?.code !== 'ER_NO_SUCH_TABLE' && error?.original?.code !== 'ER_BAD_FIELD_ERROR') {
+        throw error;
+      }
+    }
+  }
+};
+
 const syncDatabaseWithRetries = async (maxAttempts = 3) => {
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
@@ -76,6 +105,7 @@ const startServer = async () => {
   try {
     initModels();
     await sequelize.authenticate();
+    await ensurePaymentStatusEnums();
     if (env.db.syncOnStart) {
       console.warn('[DB SYNC] Automatic schema sync is enabled. Use it only for disposable local databases.');
       await normalizeLegacyNulls();

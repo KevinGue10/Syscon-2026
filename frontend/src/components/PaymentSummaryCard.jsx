@@ -10,6 +10,9 @@ export function PaymentSummaryCard({
   onPaymentAmountChange,
   includeTaxes,
   onIncludeTaxesChange,
+  includeMiddleOfTheWorldTour,
+  onIncludeMiddleOfTheWorldTourChange,
+  middleOfTheWorldTourAmount,
   taxesAmount,
   discountAmount,
   totalToCharge,
@@ -63,6 +66,11 @@ export function PaymentSummaryCard({
             muted={!discountAmount}
           />
           <SummaryLine
+            label="Middle of the World Tour"
+            value={formatCurrency(middleOfTheWorldTourAmount)}
+            muted={!includeMiddleOfTheWorldTour}
+          />
+          <SummaryLine
             label="Cargo por factura e impuestos (15%)"
             value={formatCurrency(taxesAmount)}
             muted={!includeTaxes}
@@ -108,6 +116,24 @@ export function PaymentSummaryCard({
         </div>
 
         <label className="mt-6 flex items-start gap-3 rounded-2xl border border-white/10 bg-white/10 p-4">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4"
+            checked={includeMiddleOfTheWorldTour}
+            onChange={(event) => onIncludeMiddleOfTheWorldTourChange(event.target.checked)}
+          />
+          <span>
+            <span className="block text-sm font-semibold text-white">
+              Asistir al Middle of the World Tour
+            </span>
+            <span className="mt-1 block text-sm leading-6 text-white/72">
+              Si seleccionas esta opción, se sumarán {formatCurrency(10)} al valor total de esta
+              factura.
+            </span>
+          </span>
+        </label>
+
+        <label className="mt-4 flex items-start gap-3 rounded-2xl border border-white/10 bg-white/10 p-4">
           <input
             type="checkbox"
             className="mt-1 h-4 w-4"

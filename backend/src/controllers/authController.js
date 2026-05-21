@@ -143,6 +143,9 @@ const forgotPassword = asyncHandler(async (req, res) => {
   }
 
   const provisionalPassword = generateSecureTemporaryPassword();
+  const passwordHash = await bcrypt.hash(provisionalPassword, 10);
+  await user.update({ passwordHash });
+
   const emailResult = await sendPasswordResetEmail({
     user,
     provisionalPassword,
@@ -154,9 +157,6 @@ const forgotPassword = asyncHandler(async (req, res) => {
       503
     );
   }
-
-  const passwordHash = await bcrypt.hash(provisionalPassword, 10);
-  await user.update({ passwordHash });
 
   await createAuditLog({
     userId: user.id,

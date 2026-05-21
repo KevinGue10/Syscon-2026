@@ -12,6 +12,7 @@ import { StatusBadge } from '../utils/statusStyles.jsx';
 import { translatePaymentStatus } from '../utils/translations';
 
 const TAX_RATE = 0.15;
+const MIDDLE_OF_THE_WORLD_TOUR_FEE = 10;
 
 function PaymentPage() {
   const [pageState, setPageState] = useState({
@@ -22,6 +23,7 @@ function PaymentPage() {
   });
   const [bankTransferDetails, setBankTransferDetails] = useState(null);
   const [includeTaxes, setIncludeTaxes] = useState(false);
+  const [includeMiddleOfTheWorldTour, setIncludeMiddleOfTheWorldTour] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [couponState, setCouponState] = useState({
     code: '',
@@ -118,23 +120,44 @@ function PaymentPage() {
     const baseAmount = sanitizePaymentAmount(paymentAmount, registrationTotals.pendingAmount);
     const discountAmount = resolveCouponDiscount(couponState.applied, baseAmount);
     const discountedBaseAmount = Number(Math.max(0, baseAmount - discountAmount).toFixed(2));
+    const middleOfTheWorldTourAmount = includeMiddleOfTheWorldTour
+      ? MIDDLE_OF_THE_WORLD_TOUR_FEE
+      : 0;
     const taxesAmount = includeTaxes ? Number((discountedBaseAmount * TAX_RATE).toFixed(2)) : 0;
-    const totalAmount = Number(Math.max(0, discountedBaseAmount + taxesAmount).toFixed(2));
+    const totalAmount = Number(
+      Math.max(0, discountedBaseAmount + middleOfTheWorldTourAmount + taxesAmount).toFixed(2),
+    );
 
     return {
       baseAmount,
       discountAmount,
       discountedBaseAmount,
+      middleOfTheWorldTourAmount,
       taxesAmount,
       totalAmount,
     };
-  }, [couponState.applied, includeTaxes, paymentAmount, registrationTotals.pendingAmount]);
+  }, [
+    couponState.applied,
+    includeMiddleOfTheWorldTour,
+    includeTaxes,
+    paymentAmount,
+    registrationTotals.pendingAmount,
+  ]);
 
   const bankDetails = useMemo(
     () => buildBankDetails(bankTransferDetails),
     [bankTransferDetails],
   );
   const latestPayment = pageState.payments?.[0] || null;
+  const pendingPayPhonePayment = useMemo(
+    () =>
+      (pageState.payments || []).find(
+        (payment) =>
+          String(payment?.paymentMethod || '').toLowerCase() === 'payphone' &&
+          String(payment?.status || '').toLowerCase() === 'pending_payment',
+      ) || null,
+    [pageState.payments],
+  );
   const canRedeemCoupon = Boolean(couponState.applied) && paymentBreakdown.totalAmount <= 0;
 
   useEffect(() => {
@@ -150,7 +173,7 @@ function PaymentPage() {
         message: 'El monto o los impuestos cambiaron. Vuelve a aplicar el cupon.',
       };
     });
-  }, [includeTaxes, paymentAmount]);
+  }, [includeMiddleOfTheWorldTour, includeTaxes, paymentAmount]);
 
   async function refreshPaymentContext() {
     const response = await dashboardService.getMyRegistrationDetails();
@@ -306,6 +329,7 @@ function PaymentPage() {
         registrationId: pageState.registration.id,
         amountUsd: paymentBreakdown.totalAmount,
         currency: 'USD',
+        includesTour: includeMiddleOfTheWorldTour,
         transactionReference: bankTransferState.transactionReference.trim() || undefined,
         couponCode: couponState.applied?.code || undefined,
       });
@@ -328,7 +352,7 @@ function PaymentPage() {
         supportingFile: null,
         isSubmitting: false,
         error: '',
-        success: 'El pago quedo registrado y el soporte fue enviado. Estado actual: pendiente de validacion.',
+        success: 'El pago quedó registrado y el soporte fue enviado. Estado actual: pendiente de validación.',
       });
     } catch (error) {
       setBankTransferState((current) => ({
@@ -345,6 +369,15 @@ function PaymentPage() {
 
   async function handlePayPhoneRequest() {
     if (!pageState.registration) {
+      return;
+    }
+
+    if (pendingPayPhonePayment && !cardPaymentRequestState.supportingFile) {
+      setCardPaymentRequestState((current) => ({
+        ...current,
+        error: 'Debes adjuntar el comprobante para el pago PayPhone pendiente.',
+        success: '',
+      }));
       return;
     }
 
@@ -365,18 +398,23 @@ function PaymentPage() {
         success: '',
       }));
 
-      const response = await paymentService.createPayPhonePayment({
-        registrationId: pageState.registration.id,
-        amountUsd: paymentBreakdown.totalAmount,
-        currency: 'USD',
-        transactionReference: cardPaymentRequestState.reference.trim() || undefined,
-        couponCode: couponState.applied?.code || undefined,
-      });
+      let paymentIdToUpload = pendingPayPhonePayment?.id || null;
 
-      const createdPaymentId = response.payment?.id;
+      if (!paymentIdToUpload) {
+        const response = await paymentService.createPayPhonePayment({
+          registrationId: pageState.registration.id,
+          amountUsd: paymentBreakdown.totalAmount,
+          currency: 'USD',
+          includesTour: includeMiddleOfTheWorldTour,
+          transactionReference: cardPaymentRequestState.reference.trim() || undefined,
+          couponCode: couponState.applied?.code || undefined,
+        });
 
-      if (!createdPaymentId) {
-        throw new Error('El backend no devolvio el identificador de la solicitud PayPhone.');
+        paymentIdToUpload = response.payment?.id;
+
+        if (!paymentIdToUpload) {
+          throw new Error('El backend no devolvio el identificador de la solicitud PayPhone.');
+        }
       }
 
       if (cardPaymentRequestState.supportingFile) {
@@ -384,7 +422,7 @@ function PaymentPage() {
           file: cardPaymentRequestState.supportingFile,
           transactionReference: cardPaymentRequestState.reference,
         });
-        await paymentService.uploadPaymentProof(createdPaymentId, filePayload);
+        await paymentService.uploadPaymentProof(paymentIdToUpload, filePayload);
       }
 
       // Flujo externo deshabilitado temporalmente por definicion operativa del cliente.
@@ -400,8 +438,9 @@ function PaymentPage() {
         supportingFile: null,
         isSubmitting: false,
         error: '',
-        success:
-          'La solicitud de pago con tarjeta quedo registrada. El equipo revisara la seleccion de PayPhone y enviara el enlace de pago al correo asociado a tu cuenta.',
+        success: cardPaymentRequestState.supportingFile
+          ? 'La solicitud PayPhone quedó registrada con comprobante. Estado actual: pendiente de validación.'
+          : 'La solicitud de pago con tarjeta quedó registrada. Estado actual: pendiente de link hasta que administración lo envíe.',
       });
     } catch (error) {
       setCardPaymentRequestState((current) => ({
@@ -473,6 +512,9 @@ function PaymentPage() {
           onPaymentAmountChange={setPaymentAmount}
           includeTaxes={includeTaxes}
           onIncludeTaxesChange={setIncludeTaxes}
+          includeMiddleOfTheWorldTour={includeMiddleOfTheWorldTour}
+          onIncludeMiddleOfTheWorldTourChange={setIncludeMiddleOfTheWorldTour}
+          middleOfTheWorldTourAmount={paymentBreakdown.middleOfTheWorldTourAmount}
           taxesAmount={paymentBreakdown.taxesAmount}
           discountAmount={paymentBreakdown.discountAmount}
           totalToCharge={paymentBreakdown.totalAmount}
@@ -536,6 +578,7 @@ function PaymentPage() {
               <PaymentMethods
                 amountToCharge={paymentBreakdown.totalAmount}
                 requestState={cardPaymentRequestState}
+                pendingPayPhonePayment={pendingPayPhonePayment}
                 onReferenceChange={(value) =>
                   setCardPaymentRequestState((current) => ({
                     ...current,
@@ -659,6 +702,10 @@ function buildBankDetails(bankTransferDetails) {
     {
       label: 'Numero de cuenta',
       value: bankTransferDetails.accountNumber || '',
+    },
+    {
+      label: 'RUC',
+      value: bankTransferDetails.ruc || bankTransferDetails.taxId || bankTransferDetails.taxIdentificationNumber || '',
     },
     { label: 'Codigo SWIFT', value: bankTransferDetails.swiftCode || bankTransferDetails.swift || '' },
     {

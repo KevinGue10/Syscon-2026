@@ -101,6 +101,12 @@ Payment.init(
       allowNull: true,
       field: 'transaction_reference',
     },
+    includesTour: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'includes_tour',
+    },
     status: {
       type: DataTypes.ENUM(...Object.values(PAYMENT_STATUSES)),
       allowNull: false,

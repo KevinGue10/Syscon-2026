@@ -10,6 +10,8 @@ const {
   paymentProofValidation,
   paymentProofUploadValidation,
   paymentApprovalValidation,
+  payphoneSendLinkValidation,
+  paymentCancellationValidation,
   paymentRejectionValidation,
   paypalCreateOrderValidation,
   paypalCaptureOrderValidation,
@@ -42,6 +44,13 @@ router.post(
   paymentController.uploadPaymentProof
 );
 router.patch(
+  '/:paymentId/send-link',
+  adminMiddleware,
+  payphoneSendLinkValidation,
+  validationMiddleware,
+  paymentController.sendPayPhoneLink
+);
+router.patch(
   '/:paymentId/approve',
   adminMiddleware,
   paymentApprovalValidation,
@@ -54,6 +63,13 @@ router.patch(
   paymentRejectionValidation,
   validationMiddleware,
   paymentController.rejectPayment
+);
+router.patch(
+  '/:paymentId/cancel',
+  adminMiddleware,
+  paymentCancellationValidation,
+  validationMiddleware,
+  paymentController.cancelPayment
 );
 router.post('/paypal/create-order', paypalCreateOrderValidation, validationMiddleware, paymentController.createPayPalOrder);
 router.post('/paypal/capture-order', paypalCaptureOrderValidation, validationMiddleware, paymentController.capturePayPalOrder);

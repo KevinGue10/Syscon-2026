@@ -20,12 +20,14 @@ const couponValidation = [
   body('code').trim().notEmpty().withMessage('code is required.'),
   body('baseAmount').optional().isFloat({ min: 0 }).withMessage('baseAmount must be 0 or greater.'),
   body('includeTaxes').optional().isBoolean(),
+  body('includesTour').optional().isBoolean().withMessage('includesTour must be boolean.'),
 ];
 
 const bankTransferValidation = [
   body('registrationId').isInt({ min: 1 }).withMessage('registrationId is required.'),
   ...amountValidation,
   body('transactionReference').optional({ nullable: true }).isString(),
+  body('includesTour').optional().isBoolean().withMessage('includesTour must be boolean.'),
 ];
 
 const paymentProofValidation = [
@@ -43,6 +45,13 @@ const paymentApprovalValidation = [
   body('reviewedAmount').optional().isFloat({ gt: 0 }).withMessage('reviewedAmount must be greater than 0.'),
 ];
 
+const payphoneSendLinkValidation = [
+  ...paymentIdParamValidation,
+  body('paymentLink').trim().notEmpty().withMessage('paymentLink is required.').isURL().withMessage('paymentLink must be a valid URL.'),
+];
+
+const paymentCancellationValidation = [...paymentIdParamValidation];
+
 const paymentRejectionValidation = [
   ...paymentIdParamValidation,
   body('rejectionReason').trim().notEmpty().withMessage('rejectionReason is required.'),
@@ -51,6 +60,7 @@ const paymentRejectionValidation = [
 const paypalCreateOrderValidation = [
   body('registrationId').isInt({ min: 1 }).withMessage('registrationId is required.'),
   ...amountValidation,
+  body('includesTour').optional().isBoolean().withMessage('includesTour must be boolean.'),
 ];
 
 const paypalCaptureOrderValidation = [
@@ -60,6 +70,10 @@ const paypalCaptureOrderValidation = [
 const payphoneCreatePaymentValidation = [
   body('registrationId').isInt({ min: 1 }).withMessage('registrationId is required.'),
   ...amountValidation,
+  body('transactionReference').optional({ nullable: true }).isString(),
+  body('comment').optional({ nullable: true }).isString(),
+  body('notes').optional({ nullable: true }).isString(),
+  body('includesTour').optional().isBoolean().withMessage('includesTour must be boolean.'),
 ];
 
 module.exports = {
@@ -68,6 +82,8 @@ module.exports = {
   paymentProofValidation,
   paymentProofUploadValidation,
   paymentApprovalValidation,
+  payphoneSendLinkValidation,
+  paymentCancellationValidation,
   paymentRejectionValidation,
   paypalCreateOrderValidation,
   paypalCaptureOrderValidation,

@@ -56,6 +56,16 @@ export const paymentService = {
     return normalizePaymentResponse(data);
   },
 
+  async cancelPayment(paymentId) {
+    const { data } = await api.patch(`/payments/${paymentId}/cancel`);
+    return normalizePaymentResponse(data);
+  },
+
+  async sendPayPhoneLink(paymentId, payload) {
+    const { data } = await api.patch(`/payments/${paymentId}/send-link`, payload);
+    return normalizePaymentResponse(data);
+  },
+
   async getPaymentProofAccess(paymentId) {
     const { data } = await api.get(`/payments/${paymentId}/proof-access`, {
       params: {

@@ -1,19 +1,35 @@
 export function getStatusBadgeStyle(status) {
   const normalizedStatus = String(status || '').toLowerCase();
 
+  if (['pending_link', 'pendinglink'].includes(normalizedStatus)) {
+    return {
+      backgroundColor: '#dbeafe',
+      color: '#1d4ed8',
+      border: '1px solid #bfdbfe',
+    };
+  }
+
+  if (['pending_validation', 'pendingvalidation'].includes(normalizedStatus)) {
+    return {
+      backgroundColor: '#ffedd5',
+      color: '#c2410c',
+      border: '1px solid #fdba74',
+    };
+  }
+
+  if (['pending_payment', 'pendingpayment', 'pending', 'partial', 'pendiente'].includes(normalizedStatus)) {
+    return {
+      backgroundColor: '#fef3c7',
+      color: '#92400e',
+      border: '1px solid #fde68a',
+    };
+  }
+
   if (['approved', 'accepted', 'paid', 'aprobado'].includes(normalizedStatus)) {
     return {
       backgroundColor: '#d1fae5',
       color: '#065f46',
       border: '1px solid #a7f3d0',
-    };
-  }
-
-  if (['pending', 'partial', 'pendiente'].includes(normalizedStatus)) {
-    return {
-      backgroundColor: '#fef3c7',
-      color: '#92400e',
-      border: '1px solid #fde68a',
     };
   }
 

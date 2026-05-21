@@ -39,12 +39,18 @@ export function translateRegistrationStatus(value) {
 
 export function translatePaymentStatus(value) {
   const map = {
+    pending_link: 'Pendiente de link',
+    pending_payment: 'Pendiente de pago',
+    pending_validation: 'Pendiente de validación',
     pending: 'Pendiente',
     partial: 'Parcial',
     paid: 'Pagado',
     cancelled: 'Cancelado',
     approved: 'Aprobado',
     rejected: 'Rechazado',
+    pendingLink: 'Pendiente de link',
+    pendingPayment: 'Pendiente de pago',
+    pendingValidation: 'Pendiente de validación',
     Partial: 'Parcial',
     Paid: 'Pagado',
     Pending: 'Pendiente',

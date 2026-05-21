@@ -2,10 +2,9 @@ const { Payment, PaymentStatusHistory, Registration, User, DollarRate, Coupon } 
 const { PAYMENT_STATUSES, USER_ROLES } = require('../constants/enums');
 const { calculateRegistrationTotals } = require('./pricingService');
 const { createAuditLog } = require('./auditService');
-const { sendPaymentConfirmationEmail } = require('./emailService');
+const { sendPaymentConfirmationEmail, sendPayPhoneLinkEmail } = require('./emailService');
 const AppError = require('../utils/errors');
 const paypalService = require('./paypalService');
-const payphoneService = require('./payphoneService');
 const { uploadPaymentProofFile, getSignedObjectUrl } = require('./objectStorageService');
 
 const PAYMENT_METHODS = {
@@ -17,7 +16,7 @@ const PAYMENT_METHODS = {
 const PAYMENT_PROVIDERS = {
   MANUAL: 'manual_bank_transfer',
   PAYPAL: 'paypal',
-  PAYPHONE: 'payphone',
+  PAYPHONE: 'manual_payphone_request',
   COUPON: 'coupon',
 };
 
@@ -46,12 +45,19 @@ const hasStoredPaymentProof = (payment) =>
       payment?.paymentProofFilename
   );
 
+const requiresProofValidation = (payment) =>
+  [PAYMENT_METHODS.BANK_TRANSFER, PAYMENT_METHODS.PAYPHONE].includes(payment?.paymentMethod);
+
 const assertPaymentCanBeApproved = (payment) => {
   const pendingAmount = Number(payment?.registration?.pendingAmount || 0);
   const paymentAmount = Number(payment?.amountUsd || 0);
 
-  if (payment.paymentMethod === PAYMENT_METHODS.BANK_TRANSFER && !hasStoredPaymentProof(payment)) {
-    throw new AppError('Manual transfer proof is required before approval.', 409);
+  if (requiresProofValidation(payment) && payment.status !== PAYMENT_STATUSES.PENDING_VALIDATION) {
+    throw new AppError('This payment is not ready for administrative validation yet.', 409);
+  }
+
+  if (requiresProofValidation(payment) && !hasStoredPaymentProof(payment)) {
+    throw new AppError('Payment proof is required before approval.', 409);
   }
 
   if (pendingAmount <= 0) {
@@ -151,6 +157,18 @@ const resolveRequestedAmounts = async (payload, registration) => {
 };
 
 const normalizeCouponCode = (code) => String(code || '').trim().toUpperCase();
+const resolveIncludesTour = (payload = {}) =>
+  Boolean(
+    payload.includesTour !== undefined
+      ? payload.includesTour
+      : payload.goToTour !== undefined
+        ? payload.goToTour
+        : payload.isTour !== undefined
+          ? payload.isTour
+          : false
+  );
+
+const normalizePaymentLink = (paymentLink) => String(paymentLink || '').trim();
 
 const getActiveCouponByCode = async (code) => {
   const normalizedCode = normalizeCouponCode(code);
@@ -218,6 +236,7 @@ const createPaymentRecord = async ({
   amounts,
   paymentMethod,
   provider,
+  includesTour = false,
   transactionReference = null,
   providerPaymentId = null,
   paymentUrl = null,
@@ -232,6 +251,7 @@ const createPaymentRecord = async ({
     currency: amounts.currency,
     paymentMethod,
     provider,
+    includesTour: Boolean(includesTour),
     transactionReference,
     providerPaymentId,
     paymentUrl,
@@ -296,6 +316,19 @@ const updatePaymentStatus = async ({
     providerResponseJson: providerResponseJson || payment.providerResponseJson,
   };
 
+  if (
+    [
+      PAYMENT_STATUSES.PENDING_LINK,
+      PAYMENT_STATUSES.PENDING_PAYMENT,
+      PAYMENT_STATUSES.PENDING_VALIDATION,
+      PAYMENT_STATUSES.PENDING,
+    ].includes(status)
+  ) {
+    updatePayload.validatedBy = null;
+    updatePayload.validatedAt = null;
+    updatePayload.rejectionReason = null;
+  }
+
   if (status === PAYMENT_STATUSES.APPROVED) {
     updatePayload.validatedBy = validatedBy;
     updatePayload.validatedAt = new Date();
@@ -342,7 +375,9 @@ const createBankTransferPayment = async (payload, currentUser) => {
     amounts,
     paymentMethod: PAYMENT_METHODS.BANK_TRANSFER,
     provider: PAYMENT_PROVIDERS.MANUAL,
+    includesTour: resolveIncludesTour(payload),
     transactionReference: payload.transactionReference || null,
+    status: PAYMENT_STATUSES.PENDING_PAYMENT,
   });
 
   await createAuditLog({
@@ -356,7 +391,7 @@ const createBankTransferPayment = async (payload, currentUser) => {
   await recordStatusHistory({
     paymentId: payment.id,
     previousStatus: null,
-    newStatus: PAYMENT_STATUSES.PENDING,
+    newStatus: PAYMENT_STATUSES.PENDING_PAYMENT,
     changedBy: currentUser.id,
     reason: 'Manual bank transfer created.',
   });
@@ -408,6 +443,7 @@ const redeemCoupon = async (payload, currentUser) => {
     amounts,
     paymentMethod: COUPON_PAYMENT_METHOD,
     provider: PAYMENT_PROVIDERS.COUPON,
+    includesTour: resolveIncludesTour(payload),
     transactionReference: `COUPON-${coupon.code}-${Date.now()}`,
     providerResponseJson: {
       couponCode: coupon.code,
@@ -446,7 +482,7 @@ const redeemCoupon = async (payload, currentUser) => {
   };
 };
 
-const uploadBankTransferProof = async (paymentId, uploadedFile, payload, currentUser) => {
+const uploadPaymentProof = async (paymentId, uploadedFile, payload, currentUser) => {
   if (!uploadedFile) {
     throw new AppError('Payment proof file is required.', 400);
   }
@@ -458,8 +494,8 @@ const uploadBankTransferProof = async (paymentId, uploadedFile, payload, current
 
   assertRegistrationAccess(payment.registration, currentUser);
 
-  if (payment.paymentMethod !== PAYMENT_METHODS.BANK_TRANSFER) {
-    throw new AppError('Proof upload is only available for bank transfer payments.', 400);
+  if (![PAYMENT_METHODS.BANK_TRANSFER, PAYMENT_METHODS.PAYPHONE].includes(payment.paymentMethod)) {
+    throw new AppError('Proof upload is only available for bank transfer or PayPhone payments.', 400);
   }
 
   if (payment.status === PAYMENT_STATUSES.APPROVED) {
@@ -492,6 +528,16 @@ const uploadBankTransferProof = async (paymentId, uploadedFile, payload, current
       ...payment.toJSON(),
       uploadedProof: storedFile,
     },
+  });
+
+  await updatePaymentStatus({
+    payment,
+    status: PAYMENT_STATUSES.PENDING_VALIDATION,
+    changedBy: currentUser.id,
+    reason:
+      payment.paymentMethod === PAYMENT_METHODS.PAYPHONE
+        ? 'Payment proof uploaded for PayPhone request.'
+        : 'Payment proof uploaded for bank transfer.',
   });
 
   return {
@@ -550,6 +596,10 @@ const rejectPayment = async (paymentId, rejectionReason, currentUser) => {
     throw new AppError('Approved payments cannot be rejected.', 409);
   }
 
+  if (requiresProofValidation(payment) && payment.status !== PAYMENT_STATUSES.PENDING_VALIDATION) {
+    throw new AppError('This payment is not ready for administrative validation yet.', 409);
+  }
+
   await updatePaymentStatus({
     payment,
     status: PAYMENT_STATUSES.REJECTED,
@@ -561,6 +611,41 @@ const rejectPayment = async (paymentId, rejectionReason, currentUser) => {
   await createAuditLog({
     userId: currentUser.id,
     action: 'reject',
+    entity: 'payment',
+    entityId: payment.id,
+    newValue: payment.toJSON(),
+  });
+
+  return buildPaymentResponse(payment, payment.registrationId);
+};
+
+const cancelPayment = async (paymentId, currentUser) => {
+  assertAdminAccess(currentUser);
+  const payment = await getPaymentWithRegistration(paymentId);
+
+  if (!payment) {
+    throw new AppError('Payment not found.', 404);
+  }
+
+  if (payment.status === PAYMENT_STATUSES.APPROVED) {
+    throw new AppError('Approved payments cannot be cancelled.', 409);
+  }
+
+  if (payment.status === PAYMENT_STATUSES.CANCELLED) {
+    return buildPaymentResponse(payment, payment.registrationId);
+  }
+
+  await updatePaymentStatus({
+    payment,
+    status: PAYMENT_STATUSES.CANCELLED,
+    changedBy: currentUser.id,
+    reason: 'Payment cancelled manually.',
+    validatedBy: currentUser.id,
+  });
+
+  await createAuditLog({
+    userId: currentUser.id,
+    action: 'cancel',
     entity: 'payment',
     entityId: payment.id,
     newValue: payment.toJSON(),
@@ -584,6 +669,7 @@ const createPayPalOrder = async (payload, currentUser) => {
     amounts,
     paymentMethod: PAYMENT_METHODS.PAYPAL,
     provider: PAYMENT_PROVIDERS.PAYPAL,
+    includesTour: resolveIncludesTour(payload),
   });
 
   const order = await paypalService.createOrder({
@@ -755,19 +841,15 @@ const createPayPhonePayment = async (payload, currentUser) => {
     amounts,
     paymentMethod: PAYMENT_METHODS.PAYPHONE,
     provider: PAYMENT_PROVIDERS.PAYPHONE,
-  });
-
-  const providerPayment = await payphoneService.createPayment({
-    paymentId: payment.id,
-    registrationId: registration.id,
-    amountUsd: amounts.amountUsd,
-    currency: amounts.currency,
-  });
-
-  await payment.update({
-    providerPaymentId: providerPayment.providerPaymentId,
-    paymentUrl: providerPayment.paymentUrl,
-    providerResponseJson: providerPayment.raw,
+    includesTour: resolveIncludesTour(payload),
+    transactionReference: payload.transactionReference || null,
+    providerResponseJson: {
+      requestType: 'manual_payphone_request',
+      comment: payload.comment || payload.notes || null,
+      createdByUserId: currentUser.id,
+      createdAt: new Date().toISOString(),
+    },
+    status: PAYMENT_STATUSES.PENDING_LINK,
   });
 
   await createAuditLog({
@@ -781,58 +863,86 @@ const createPayPhonePayment = async (payload, currentUser) => {
   await recordStatusHistory({
     paymentId: payment.id,
     previousStatus: null,
-    newStatus: PAYMENT_STATUSES.PENDING,
+    newStatus: PAYMENT_STATUSES.PENDING_LINK,
     changedBy: currentUser.id,
-    reason: 'PayPhone payment link created.',
-    providerResponseJson: providerPayment.raw,
+    reason: 'Manual PayPhone payment request created.',
+    providerResponseJson: payment.providerResponseJson,
   });
 
   return buildPaymentResponse(payment, registration.id);
 };
 
-const handlePayPhoneCallback = async ({ headers, query, body }) => {
-  payphoneService.validateCallbackRequest({ headers, query });
-  const callbackData = payphoneService.normalizeCallbackPayload(body);
-  const payment = await Payment.findByPk(callbackData.paymentId, {
-    include: [{ association: 'registration' }],
-  });
+const sendPayPhoneLink = async (paymentId, paymentLink, currentUser) => {
+  assertAdminAccess(currentUser);
+  const payment = await getPaymentWithRegistration(paymentId);
+  const normalizedPaymentLink = normalizePaymentLink(paymentLink);
 
-  if (!payment || payment.provider !== PAYMENT_PROVIDERS.PAYPHONE) {
-    return { received: true, ignored: true };
+  if (!payment) {
+    throw new AppError('Payment not found.', 404);
   }
 
+  if (!normalizedPaymentLink) {
+    throw new AppError('paymentLink is required.', 400);
+  }
+
+  if (payment.paymentMethod !== PAYMENT_METHODS.PAYPHONE) {
+    throw new AppError('This action is only available for PayPhone payments.', 400);
+  }
+
+  if (payment.status !== PAYMENT_STATUSES.PENDING_LINK) {
+    throw new AppError('The PayPhone link can only be marked as sent from pending link status.', 409);
+  }
+
+  const providerResponseJson = {
+    ...(payment.providerResponseJson || {}),
+    paymentLink: normalizedPaymentLink,
+    payphoneLinkSentAt: new Date().toISOString(),
+    payphoneLinkSentByUserId: currentUser.id,
+  };
+
   await payment.update({
-    providerPaymentId: callbackData.providerPaymentId || payment.providerPaymentId,
-    providerResponseJson: body,
+    paymentUrl: normalizedPaymentLink,
+  });
+  await payment.reload();
+
+  await updatePaymentStatus({
+    payment,
+    status: PAYMENT_STATUSES.PENDING_PAYMENT,
+    changedBy: currentUser.id,
+    reason: 'PayPhone link sent by administrator.',
+    providerResponseJson,
+    validatedBy: null,
   });
 
-  if (callbackData.approved) {
-    assertPaymentCanBeApproved(payment);
-    await updatePaymentStatus({
+  const participant = payment.registration?.userId
+    ? await User.findByPk(payment.registration.userId)
+    : null;
+
+  if (participant?.email) {
+    await sendPayPhoneLinkEmail({
+      user: participant,
       payment,
-      status: PAYMENT_STATUSES.APPROVED,
-      reason: 'PayPhone callback confirmed payment.',
-      providerResponseJson: body,
-    });
-    await maybeSendApprovalEmail(payment, payment.registration);
-  } else if (callbackData.rejected) {
-    await updatePaymentStatus({
-      payment,
-      status: PAYMENT_STATUSES.REJECTED,
-      reason: callbackData.reason || 'PayPhone callback rejected payment.',
-      providerResponseJson: body,
+      paymentLink: payment.paymentUrl,
     });
   }
 
   await createAuditLog({
-    userId: payment.registration.userId,
-    action: 'payphone-callback',
+    userId: currentUser.id,
+    action: 'send-payphone-link',
     entity: 'payment',
     entityId: payment.id,
     newValue: payment.toJSON(),
   });
 
-  return { received: true };
+  return buildPaymentResponse(payment, payment.registrationId);
+};
+
+const handlePayPhoneCallback = async () => {
+  return {
+    received: true,
+    ignored: true,
+    message: 'PayPhone callbacks are disabled because payments are now registered manually.',
+  };
 };
 
 const listPaymentsByRegistration = async (registrationId, currentUser) => {
@@ -877,9 +987,11 @@ module.exports = {
   previewCoupon,
   redeemCoupon,
   createBankTransferPayment,
-  uploadBankTransferProof,
+  uploadPaymentProof,
   approvePayment,
   rejectPayment,
+  cancelPayment,
+  sendPayPhoneLink,
   createPayPalOrder,
   capturePayPalOrder,
   handlePayPalWebhook,

@@ -3,6 +3,8 @@ const env = require('../config/env');
 const { EmailLog } = require('../models');
 const { EMAIL_LOG_STATUSES } = require('../constants/enums');
 const { buildPasswordResetTemplate } = require('../templates/emails/passwordResetTemplate');
+const { buildPaymentApprovedTemplate } = require('../templates/emails/paymentApprovedTemplate');
+const { buildPayPhoneLinkTemplate } = require('../templates/emails/payPhoneLinkTemplate');
 const { buildWelcomeTemplate } = require('../templates/emails/welcomeTemplate');
 
 let transporter;
@@ -114,8 +116,14 @@ const sendPaperRegistrationEmail = (user, paper) =>
 const sendPaymentConfirmationEmail = (user, payment) =>
   sendEmail({
     to: user.email,
-    subject: 'Payment approved',
-    text: `Your payment ${payment.transactionReference || payment.providerPaymentId || payment.id} for ${payment.amountUsd} USD was approved.`,
+    ...buildPaymentApprovedTemplate({
+      firstName: user.firstName,
+      amountUsd: payment.amountUsd,
+      transactionReference: payment.transactionReference || payment.providerPaymentId,
+      paymentMethod: payment.paymentMethod,
+      appBaseUrl: env.app.baseUrl,
+      logoUrl: env.app.emailLogoUrl,
+    }),
     templateName: 'payment_confirmation',
     userId: user.id,
     registrationId: payment.registrationId,
@@ -144,6 +152,21 @@ const sendPasswordResetEmail = ({ user, provisionalPassword }) =>
     userId: user.id,
   });
 
+const sendPayPhoneLinkEmail = ({ user, payment, paymentLink }) =>
+  sendEmail({
+    to: user.email,
+    ...buildPayPhoneLinkTemplate({
+      firstName: user.firstName,
+      amountUsd: payment.amountUsd,
+      paymentLink,
+      appBaseUrl: env.app.baseUrl,
+      logoUrl: env.app.emailLogoUrl,
+    }),
+    templateName: 'payphone_link',
+    userId: user.id,
+    registrationId: payment.registrationId,
+  });
+
 module.exports = {
   sendWelcomeEmail,
   sendRegistrationConfirmationEmail,
@@ -151,4 +174,5 @@ module.exports = {
   sendPaymentConfirmationEmail,
   sendPendingPaymentReminderEmail,
   sendPasswordResetEmail,
+  sendPayPhoneLinkEmail,
 };

@@ -29,7 +29,7 @@ const redeemCoupon = asyncHandler(async (req, res) => {
 
 const uploadPaymentProof = asyncHandler(async (req, res) => {
   const paymentId = req.params.paymentId || req.body.paymentId;
-  const result = await paymentService.uploadBankTransferProof(paymentId, req.uploadedFile, req.body, req.user);
+  const result = await paymentService.uploadPaymentProof(paymentId, req.uploadedFile, req.body, req.user);
   return sendSuccess(res, {
     message: 'Comprobante cargado correctamente.',
     data: result,
@@ -48,6 +48,22 @@ const rejectPayment = asyncHandler(async (req, res) => {
   const result = await paymentService.rejectPayment(req.params.paymentId, req.body.rejectionReason, req.user);
   return sendSuccess(res, {
     message: 'Pago rechazado correctamente.',
+    data: result,
+  });
+});
+
+const cancelPayment = asyncHandler(async (req, res) => {
+  const result = await paymentService.cancelPayment(req.params.paymentId, req.user);
+  return sendSuccess(res, {
+    message: 'Pago cancelado correctamente.',
+    data: result,
+  });
+});
+
+const sendPayPhoneLink = asyncHandler(async (req, res) => {
+  const result = await paymentService.sendPayPhoneLink(req.params.paymentId, req.body.paymentLink, req.user);
+  return sendSuccess(res, {
+    message: 'El enlace de PayPhone fue marcado como enviado correctamente.',
     data: result,
   });
 });
@@ -85,7 +101,7 @@ const createPayPhonePayment = asyncHandler(async (req, res) => {
   const result = await paymentService.createPayPhonePayment(req.body, req.user);
   return sendSuccess(res, {
     statusCode: 201,
-    message: 'Pago de PayPhone creado correctamente.',
+    message: 'Solicitud de pago con tarjeta registrada correctamente.',
     data: result,
   });
 });
@@ -98,7 +114,7 @@ const handlePayPhoneCallback = asyncHandler(async (req, res) => {
   });
 
   return sendSuccess(res, {
-    message: 'Callback de PayPhone recibido correctamente.',
+    message: 'Callback de PayPhone ignorado.',
     data: result,
   });
 });
@@ -126,6 +142,8 @@ module.exports = {
   uploadPaymentProof,
   approvePayment,
   rejectPayment,
+  cancelPayment,
+  sendPayPhoneLink,
   createPayPalOrder,
   capturePayPalOrder,
   handlePayPalWebhook,

@@ -27,9 +27,13 @@ const REGISTRATION_STATUSES = {
 };
 
 const PAYMENT_STATUSES = {
+  PENDING_LINK: 'pending_link',
+  PENDING_PAYMENT: 'pending_payment',
+  PENDING_VALIDATION: 'pending_validation',
   PENDING: 'pending',
   APPROVED: 'approved',
   REJECTED: 'rejected',
+  CANCELLED: 'cancelled',
   REFUNDED: 'refunded',
 };
 

@@ -25,7 +25,7 @@ function AppRouter() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute roles={['user', 'admin']}>
+            <ProtectedRoute roles={['user']}>
               <UserDashboardPage />
             </ProtectedRoute>
           }
@@ -33,7 +33,7 @@ function AppRouter() {
         <Route
           path="/registration-details"
           element={
-            <ProtectedRoute roles={['user', 'admin']}>
+            <ProtectedRoute roles={['user']}>
               <RegistrationDetailsPage />
             </ProtectedRoute>
           }
@@ -41,7 +41,7 @@ function AppRouter() {
         <Route
           path="/registration-details/edit"
           element={
-            <ProtectedRoute roles={['user', 'admin']}>
+            <ProtectedRoute roles={['user']}>
               <EditRegistrationPage />
             </ProtectedRoute>
           }
@@ -49,7 +49,7 @@ function AppRouter() {
         <Route
           path="/payments"
           element={
-            <ProtectedRoute roles={['user', 'admin']}>
+            <ProtectedRoute roles={['user']}>
               <PaymentPage />
             </ProtectedRoute>
           }
@@ -57,7 +57,7 @@ function AppRouter() {
         <Route
           path="/change-password"
           element={
-            <ProtectedRoute roles={['user', 'admin']}>
+            <ProtectedRoute roles={['user']}>
               <ChangePasswordPage />
             </ProtectedRoute>
           }
@@ -65,7 +65,7 @@ function AppRouter() {
         <Route
           path="/payments/success"
           element={
-            <ProtectedRoute roles={['user', 'admin']}>
+            <ProtectedRoute roles={['user']}>
               <PaymentSuccess />
             </ProtectedRoute>
           }
@@ -73,7 +73,7 @@ function AppRouter() {
         <Route
           path="/payments/cancel"
           element={
-            <ProtectedRoute roles={['user', 'admin']}>
+            <ProtectedRoute roles={['user']}>
               <PaymentCancel />
             </ProtectedRoute>
           }
@@ -81,7 +81,7 @@ function AppRouter() {
         <Route
           path="/payments/paypal/return"
           element={
-            <ProtectedRoute roles={['user', 'admin']}>
+            <ProtectedRoute roles={['user']}>
               <PaymentSuccess />
             </ProtectedRoute>
           }
@@ -89,7 +89,7 @@ function AppRouter() {
         <Route
           path="/payments/paypal/cancel"
           element={
-            <ProtectedRoute roles={['user', 'admin']}>
+            <ProtectedRoute roles={['user']}>
               <PaymentCancel />
             </ProtectedRoute>
           }
@@ -97,7 +97,7 @@ function AppRouter() {
         <Route
           path="/payments/payphone/return"
           element={
-            <ProtectedRoute roles={['user', 'admin']}>
+            <ProtectedRoute roles={['user']}>
               <PaymentSuccess />
             </ProtectedRoute>
           }
@@ -105,7 +105,7 @@ function AppRouter() {
         <Route
           path="/payments/payphone/cancel"
           element={
-            <ProtectedRoute roles={['user', 'admin']}>
+            <ProtectedRoute roles={['user']}>
               <PaymentCancel />
             </ProtectedRoute>
           }
