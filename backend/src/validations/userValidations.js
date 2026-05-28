@@ -39,6 +39,9 @@ const fullDetailsValidation = [
     .withMessage('La categoría de inscripción es inválida.'),
   body('registration.isIeeeMember').isBoolean().withMessage('El campo isIeeeMember debe ser booleano.'),
   body('registration.isTems').optional().isBoolean().withMessage('El campo isTems debe ser booleano.'),
+  body('registration.includesTour').optional().isBoolean().withMessage('El campo includesTour debe ser booleano.'),
+  body('registration.requiresInvoice').optional().isBoolean().withMessage('El campo requiresInvoice debe ser booleano.'),
+  body('registration.includeTaxes').optional().isBoolean().withMessage('El campo includeTaxes debe ser booleano.'),
   body('registration.status').optional().isIn(['draft', 'submitted', 'confirmed']).withMessage('El estado es inválido.'),
   body('registration.customFieldValues').optional().isArray(),
   body('registration.membershipNumber')

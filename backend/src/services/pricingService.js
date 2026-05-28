@@ -7,6 +7,8 @@ const MISSING_PRICING_RULE_MESSAGE = 'No active pricing rule found for the selec
 const ADDITIONAL_PAPER_RULE_NAME = 'Additional Paper';
 const ADDITIONAL_PAGE_RULE_NAME = 'Additional Page';
 const INCLUDED_PAGES_PER_PAPER = 6;
+const TOUR_PRICE_USD = 10;
+const INVOICE_TAX_RATE = 0.15;
 
 const normalizePricingMemberType = (memberType) => {
   if (memberType === MEMBER_TYPES.STUDENT) {
@@ -116,6 +118,16 @@ const getChargeRuleByName = async ({ eventEditionId, name, transaction }) => {
   });
 };
 
+const resolveIncludesTour = (payload = {}, fallback = false) =>
+  payload.includesTour !== undefined ? Boolean(payload.includesTour) : Boolean(fallback);
+
+const resolveRequiresInvoice = (payload = {}, fallback = false) =>
+  payload.requiresInvoice !== undefined
+    ? Boolean(payload.requiresInvoice)
+    : payload.includeTaxes !== undefined
+      ? Boolean(payload.includeTaxes)
+      : Boolean(fallback);
+
 const buildFallbackSummary = (registration) => {
   const papersCount = registration.papers.length;
   const additionalPapersCount = Math.max(0, papersCount - 1);
@@ -161,6 +173,8 @@ const buildPricingBreakdown = async ({
   memberType,
   isIeeeMember,
   isTems = false,
+  includesTour = false,
+  requiresInvoice = false,
   papers = [],
   paidAmount = 0,
   totalAmount = 0,
@@ -217,7 +231,10 @@ const buildPricingBreakdown = async ({
     0
   );
   const extraPagesTotal = additionalPagesCount * extraPageAmount;
-  const computedTotalAmount = Math.max(0, baseAmount + extraPapersTotal + extraPagesTotal);
+  const subtotalAmount = Math.max(0, baseAmount + extraPapersTotal + extraPagesTotal);
+  const tourAmount = includesTour ? TOUR_PRICE_USD : 0;
+  const invoiceTaxAmount = requiresInvoice ? Number((subtotalAmount * INVOICE_TAX_RATE).toFixed(2)) : 0;
+  const computedTotalAmount = Math.max(0, subtotalAmount + tourAmount + invoiceTaxAmount);
   const normalizedPaidAmount = toNumber(paidAmount);
   const pendingAmount = Math.max(0, computedTotalAmount - normalizedPaidAmount);
 
@@ -241,6 +258,11 @@ const buildPricingBreakdown = async ({
       additionalPagesCount,
       extraPapersTotal,
       extraPagesTotal,
+      includesTour: Boolean(includesTour),
+      requiresInvoice: Boolean(requiresInvoice),
+      subtotalAmount,
+      tourAmount,
+      invoiceTaxAmount,
       totalAmount: computedTotalAmount,
       paidAmount: normalizedPaidAmount,
       pendingAmount,
@@ -269,6 +291,8 @@ const calculateRegistrationTotals = async (registrationId, options = {}) => {
     memberType: registration.memberType,
     isIeeeMember: Boolean(registration.isIeeeMember),
     isTems: Boolean(registration.isTems),
+    includesTour: Boolean(registration.includesTour),
+    requiresInvoice: Boolean(registration.requiresInvoice),
     papers: registration.papers,
     paidAmount: registration.payments.reduce((sum, payment) => sum + toNumber(payment.amountUsd), 0),
     totalAmount: registration.totalAmount,
@@ -328,6 +352,8 @@ const previewRegistrationTotals = async (payload = {}, options = {}) => {
         ? payload.isIeeeMember
         : Boolean(registration?.isIeeeMember),
     isTems: payload.isTems !== undefined ? payload.isTems : Boolean(registration?.isTems),
+    includesTour: resolveIncludesTour(payload, registration?.includesTour),
+    requiresInvoice: resolveRequiresInvoice(payload, registration?.requiresInvoice),
     papers: previewPapers,
     paidAmount:
       registration?.payments?.reduce(
@@ -356,6 +382,8 @@ const previewRegistrationTotals = async (payload = {}, options = {}) => {
             payload.isTems !== undefined
               ? payload.isTems
               : Boolean(registration.isTems),
+          includesTour: resolveIncludesTour(payload, registration.includesTour),
+          requiresInvoice: resolveRequiresInvoice(payload, registration.requiresInvoice),
           totalAmount: result.breakdown.totalAmount,
           paidAmount: result.breakdown.paidAmount,
           pendingAmount: result.breakdown.pendingAmount,
@@ -371,4 +399,6 @@ module.exports = {
   getPricingRule,
   calculateRegistrationTotals,
   previewRegistrationTotals,
+  resolveIncludesTour,
+  resolveRequiresInvoice,
 };

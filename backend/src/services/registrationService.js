@@ -5,10 +5,10 @@ const { createAuditLog } = require('./auditService');
 const {
   sendPaperRegistrationEmail,
   sendPendingPaymentReminderEmail,
-  sendRegistrationConfirmationEmail,
 } = require('./emailService');
 const { saveCustomFieldValues } = require('./customFieldService');
 const AppError = require('../utils/errors');
+const { resolveIncludesTour, resolveRequiresInvoice } = require('./pricingService');
 
 const getActiveEventEdition = async () => {
   const eventEdition = await EventEdition.findOne({
@@ -67,6 +67,8 @@ const createRegistration = async (payload, currentUser, options = {}) => {
     memberType: normalizeRegistrationMemberType(payload.memberType),
     isIeeeMember: payload.isIeeeMember || false,
     isTems: payload.isTems || false,
+    includesTour: resolveIncludesTour(payload),
+    requiresInvoice: resolveRequiresInvoice(payload),
     membershipNumber: payload.membershipNumber || null,
     status: payload.status || REGISTRATION_STATUSES.DRAFT,
   }, { transaction });
@@ -90,10 +92,6 @@ const createRegistration = async (payload, currentUser, options = {}) => {
     entityId: registration.id,
     newValue: registration.toJSON(),
   });
-  dispatchEmailInBackground(
-    () => sendRegistrationConfirmationEmail(currentUser, summary.registration),
-    'Registration confirmation email'
-  );
 
   return summary;
 };
@@ -119,6 +117,14 @@ const updateRegistration = async (registrationId, payload, currentUser, options 
         : registration.memberType,
     isIeeeMember: payload.isIeeeMember !== undefined ? payload.isIeeeMember : registration.isIeeeMember,
     isTems: payload.isTems !== undefined ? payload.isTems : registration.isTems,
+    includesTour:
+      payload.includesTour !== undefined
+        ? payload.includesTour
+        : registration.includesTour,
+    requiresInvoice:
+      payload.requiresInvoice !== undefined || payload.includeTaxes !== undefined
+        ? resolveRequiresInvoice(payload)
+        : registration.requiresInvoice,
     membershipNumber: payload.membershipNumber !== undefined ? payload.membershipNumber : registration.membershipNumber,
     status: payload.status || registration.status,
     eventEditionId: payload.eventEditionId || registration.eventEditionId,

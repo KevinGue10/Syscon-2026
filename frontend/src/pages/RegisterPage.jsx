@@ -1108,10 +1108,15 @@ function applyBackendErrors({ error, setError, setFormError, fallbackMessage }) 
 
   if (Array.isArray(validationErrors) && validationErrors.length) {
     let hasFieldErrors = false;
+    const collectedMessages = [];
 
     validationErrors.forEach((item) => {
       const fieldPath = mapBackendFieldToFormField(item.field);
       const message = item.message || item.msg;
+
+      if (message) {
+        collectedMessages.push(message);
+      }
 
       if (fieldPath) {
         setError(fieldPath, {
@@ -1122,10 +1127,12 @@ function applyBackendErrors({ error, setError, setFormError, fallbackMessage }) 
       }
     });
 
+    const specificMessage = collectedMessages.find(Boolean);
+
     setFormError(
       hasFieldErrors
-        ? apiMessage || 'Revisa los campos marcados para continuar.'
-        : validationErrors.map((item) => item.message || item.msg).join(' '),
+        ? specificMessage || apiMessage || 'Revisa los campos marcados para continuar.'
+        : collectedMessages.join(' '),
     );
     return;
   }

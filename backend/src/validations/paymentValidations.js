@@ -28,6 +28,8 @@ const bankTransferValidation = [
   ...amountValidation,
   body('transactionReference').optional({ nullable: true }).isString(),
   body('includesTour').optional().isBoolean().withMessage('includesTour must be boolean.'),
+  body('requiresInvoice').optional().isBoolean().withMessage('requiresInvoice must be boolean.'),
+  body('includeTaxes').optional().isBoolean().withMessage('includeTaxes must be boolean.'),
 ];
 
 const paymentProofValidation = [
@@ -61,6 +63,8 @@ const paypalCreateOrderValidation = [
   body('registrationId').isInt({ min: 1 }).withMessage('registrationId is required.'),
   ...amountValidation,
   body('includesTour').optional().isBoolean().withMessage('includesTour must be boolean.'),
+  body('requiresInvoice').optional().isBoolean().withMessage('requiresInvoice must be boolean.'),
+  body('includeTaxes').optional().isBoolean().withMessage('includeTaxes must be boolean.'),
 ];
 
 const paypalCaptureOrderValidation = [
@@ -74,6 +78,8 @@ const payphoneCreatePaymentValidation = [
   body('comment').optional({ nullable: true }).isString(),
   body('notes').optional({ nullable: true }).isString(),
   body('includesTour').optional().isBoolean().withMessage('includesTour must be boolean.'),
+  body('requiresInvoice').optional().isBoolean().withMessage('requiresInvoice must be boolean.'),
+  body('includeTaxes').optional().isBoolean().withMessage('includeTaxes must be boolean.'),
 ];
 
 module.exports = {

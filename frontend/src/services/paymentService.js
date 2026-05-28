@@ -10,6 +10,8 @@ function normalizePaymentResponse(data) {
     registration: payload.registration || null,
     paymentSummary: payload.paymentSummary || null,
     payments: payload.payments || [],
+    reusedExistingPayment:
+      payload.reusedExistingPayment ?? data?.reusedExistingPayment ?? false,
   };
 }
 

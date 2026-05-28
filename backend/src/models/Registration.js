@@ -59,6 +59,18 @@ Registration.init(
       allowNull: true,
       field: 'membership_number',
     },
+    includesTour: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'includes_tour',
+    },
+    requiresInvoice: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'requires_invoice',
+    },
     totalAmount: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,

@@ -271,6 +271,9 @@ function RegistrationDetailsPage() {
 }
 
 function RegistrationSection({ registration, isAdminRemoteView }) {
+  const requiresInvoice = resolveInvoiceRequirement(registration);
+  const willAttendTour = resolveTourAttendance(registration);
+
   const registrationRows = [
     { label: 'Conferencia', value: registration.eventEdition?.name || 'TEMSCON LATAM 2026' },
     {
@@ -282,6 +285,8 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
     { label: 'Numero de membresia', value: registration.membershipNumber || 'No aplica' },
     { label: 'Estado de inscripcion', value: translateRegistrationStatus(registration.status) },
     { label: 'Estado de pago', value: translatePaymentStatus(registration.paymentStatus) },
+    { label: 'Requiere factura', value: formatBooleanPreference(requiresInvoice) },
+    { label: 'Asistencia al tour', value: formatBooleanPreference(willAttendTour) },
     {
       label: 'Saldo pendiente',
       value: formatCurrency(
@@ -475,6 +480,111 @@ function resolveCountry(profile) {
   }
 
   return 'No registrado';
+}
+
+function resolveInvoiceRequirement(registration) {
+  const directValue = firstDefinedValue([
+    registration?.requiresInvoice,
+    registration?.invoiceRequired,
+    registration?.needsInvoice,
+    registration?.requestInvoice,
+    registration?.billingRequested,
+    registration?.includeTaxes,
+    registration?.paymentSummary?.requiresInvoice,
+    registration?.paymentSummary?.includeTaxes,
+  ]);
+
+  if (directValue !== undefined) {
+    return normalizeBooleanPreference(directValue);
+  }
+
+  return resolveCustomFieldBoolean(
+    registration?.customFieldValues,
+    ['factura', 'invoice', 'billing', 'impuestos', 'tax'],
+  );
+}
+
+function resolveTourAttendance(registration) {
+  const directValue = firstDefinedValue([
+    registration?.willAttendTour,
+    registration?.tourAttendance,
+    registration?.attendTour,
+    registration?.includeMiddleOfTheWorldTour,
+    registration?.middleOfTheWorldTour,
+    registration?.requiresTour,
+    registration?.paymentSummary?.includeMiddleOfTheWorldTour,
+  ]);
+
+  if (directValue !== undefined) {
+    return normalizeBooleanPreference(directValue);
+  }
+
+  return resolveCustomFieldBoolean(
+    registration?.customFieldValues,
+    ['tour', 'mitad del mundo', 'middle of the world'],
+  );
+}
+
+function resolveCustomFieldBoolean(customFieldValues, keywords) {
+  const matchedField = (customFieldValues || []).find((field) => {
+    const label = normalizeText(
+      field?.customField?.label || field?.label || field?.customField?.name || '',
+    );
+
+    return keywords.some((keyword) => label.includes(normalizeText(keyword)));
+  });
+
+  if (!matchedField) {
+    return undefined;
+  }
+
+  return normalizeBooleanPreference(matchedField.value);
+}
+
+function normalizeBooleanPreference(value) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+
+  const normalizedValue = normalizeText(String(value));
+
+  if (['true', '1', 'si', 'sí', 'yes', 'y', 'requiere', 'solicita'].includes(normalizedValue)) {
+    return true;
+  }
+
+  if (['false', '0', 'no', 'n', 'not'].includes(normalizedValue)) {
+    return false;
+  }
+
+  return undefined;
+}
+
+function formatBooleanPreference(value) {
+  if (value === true) {
+    return 'Si';
+  }
+
+  if (value === false) {
+    return 'No';
+  }
+
+  return 'No registrado';
+}
+
+function firstDefinedValue(values) {
+  return values.find((value) => value !== undefined && value !== null);
+}
+
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
 }
 
 export default RegistrationDetailsPage;

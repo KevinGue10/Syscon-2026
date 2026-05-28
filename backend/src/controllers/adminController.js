@@ -190,6 +190,8 @@ const getUserRegistrationDetails = asyncHandler(async (req, res) => {
         paidAmount: registration.paidAmount,
         pendingAmount: registration.pendingAmount,
         paymentStatus: registration.paymentStatus,
+        includesTour: registration.includesTour,
+        requiresInvoice: registration.requiresInvoice,
       },
       customFieldValues: normalizeCustomFieldValues(registration.customFieldValues),
       papers: (registration.papers || []).map((paper) => ({

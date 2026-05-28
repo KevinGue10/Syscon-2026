@@ -3,6 +3,7 @@ export function Table({
   rows,
   emptyMessage = 'No records available.',
   allowOverflow = false,
+  getRowClassName,
 }) {
   return (
     <div className={`rounded-3xl border border-slate-200 bg-white ${allowOverflow ? 'overflow-visible' : 'overflow-hidden'}`}>
@@ -23,7 +24,7 @@ export function Table({
           <tbody className="divide-y divide-slate-100 bg-white">
             {rows.length ? (
               rows.map((row) => (
-                <tr key={row.id || row.title}>
+                <tr key={row.id || row.title} className={getRowClassName ? getRowClassName(row) : ''}>
                   {columns.map((column) => (
                     <td key={column.key} className="px-5 py-4 text-sm text-slate-700">
                       {column.render ? column.render(row[column.key], row) : row[column.key]}

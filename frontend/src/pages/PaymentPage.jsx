@@ -15,6 +15,9 @@ const TAX_RATE = 0.15;
 const MIDDLE_OF_THE_WORLD_TOUR_FEE = 10;
 
 function PaymentPage() {
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const [submittingPaymentFlow, setSubmittingPaymentFlow] = useState('');
+  const [highlightedPaymentId, setHighlightedPaymentId] = useState(null);
   const [pageState, setPageState] = useState({
     isLoading: true,
     error: '',
@@ -36,14 +39,12 @@ function PaymentPage() {
   const [bankTransferState, setBankTransferState] = useState({
     transactionReference: '',
     supportingFile: null,
-    isSubmitting: false,
     error: '',
     success: '',
   });
   const [cardPaymentRequestState, setCardPaymentRequestState] = useState({
     reference: '',
     supportingFile: null,
-    isSubmitting: false,
     error: '',
     success: '',
   });
@@ -110,8 +111,12 @@ function PaymentPage() {
     const paymentSummary = registration?.paymentSummary || registration?.pricing?.breakdown || null;
 
     return {
-      totalAmount: Number(paymentSummary?.totalAmount || registration?.pricing?.total || registration?.totalAmount || 0),
-      paidAmount: Number(paymentSummary?.paidAmount || registration?.pricing?.paid || registration?.paidAmount || 0),
+      totalAmount: Number(
+        paymentSummary?.totalAmount || registration?.pricing?.total || registration?.totalAmount || 0,
+      ),
+      paidAmount: Number(
+        paymentSummary?.paidAmount || registration?.pricing?.paid || registration?.paidAmount || 0,
+      ),
       pendingAmount: resolvePendingAmount(registration),
     };
   }, [pageState.registration]);
@@ -144,10 +149,7 @@ function PaymentPage() {
     registrationTotals.pendingAmount,
   ]);
 
-  const bankDetails = useMemo(
-    () => buildBankDetails(bankTransferDetails),
-    [bankTransferDetails],
-  );
+  const bankDetails = useMemo(() => buildBankDetails(bankTransferDetails), [bankTransferDetails]);
   const latestPayment = pageState.payments?.[0] || null;
   const pendingPayPhonePayment = useMemo(
     () =>
@@ -175,20 +177,27 @@ function PaymentPage() {
     });
   }, [includeMiddleOfTheWorldTour, includeTaxes, paymentAmount]);
 
-  async function refreshPaymentContext() {
+  async function refreshPaymentContext(preferredPaymentId = null) {
     const response = await dashboardService.getMyRegistrationDetails();
     const activeRegistration = response.registrations?.[0] || null;
     const paymentsResponse = activeRegistration
       ? await paymentService.getRegistrationPayments(activeRegistration.id)
       : { payments: [] };
+    const refreshedPayments = paymentsResponse.payments || [];
 
     setPageState({
       isLoading: false,
       error: '',
       registration: activeRegistration,
-      payments: paymentsResponse.payments || [],
+      payments: refreshedPayments,
     });
     setPaymentAmount(resolvePendingAmount(activeRegistration).toFixed(2));
+    setHighlightedPaymentId(
+      preferredPaymentId &&
+        refreshedPayments.some((payment) => String(payment.id) === String(preferredPaymentId))
+        ? preferredPaymentId
+        : null,
+    );
     setCouponState({
       code: '',
       isApplying: false,
@@ -295,7 +304,7 @@ function PaymentPage() {
   }
 
   async function handleBankTransferSubmit() {
-    if (!pageState.registration) {
+    if (!pageState.registration || isSubmittingPayment) {
       return;
     }
 
@@ -318,14 +327,16 @@ function PaymentPage() {
     }
 
     try {
+      setIsSubmittingPayment(true);
+      setSubmittingPaymentFlow('bank_transfer');
       setBankTransferState((current) => ({
         ...current,
-        isSubmitting: true,
         error: '',
         success: '',
       }));
 
-      const createResponse = await paymentService.createBankTransferPayment({
+      const existingPayments = pageState.payments || [];
+      const response = await paymentService.createBankTransferPayment({
         registrationId: pageState.registration.id,
         amountUsd: paymentBreakdown.totalAmount,
         currency: 'USD',
@@ -334,50 +345,48 @@ function PaymentPage() {
         couponCode: couponState.applied?.code || undefined,
       });
 
-      const createdPaymentId = createResponse.payment?.id;
+      const paymentId = response.payment?.id;
 
-      if (!createdPaymentId) {
+      if (!paymentId) {
         throw new Error('El backend no devolvio el identificador del pago creado.');
       }
+
+      const reusedExistingPayment =
+        response.reusedExistingPayment ||
+        existingPayments.some((payment) => String(payment.id) === String(paymentId));
 
       const filePayload = buildPaymentProofFormData({
         file: bankTransferState.supportingFile,
         transactionReference: bankTransferState.transactionReference,
       });
-      await paymentService.uploadPaymentProof(createdPaymentId, filePayload);
-      await refreshPaymentContext();
+      await paymentService.uploadPaymentProof(paymentId, filePayload);
+      await refreshPaymentContext(paymentId);
 
       setBankTransferState({
         transactionReference: '',
         supportingFile: null,
-        isSubmitting: false,
         error: '',
-        success: 'El pago quedó registrado y el soporte fue enviado. Estado actual: pendiente de validación.',
+        success: reusedExistingPayment
+          ? 'Ya existia un pago pendiente con ese mismo valor. Continuaremos con ese registro y el comprobante fue cargado correctamente.'
+          : 'El pago fue registrado y el soporte fue enviado. Estado actual: pendiente de validacion.',
       });
     } catch (error) {
       setBankTransferState((current) => ({
         ...current,
-        isSubmitting: false,
         error:
           error?.response?.data?.message ||
           error?.message ||
           'No fue posible registrar la transferencia.',
         success: '',
       }));
+    } finally {
+      setIsSubmittingPayment(false);
+      setSubmittingPaymentFlow('');
     }
   }
 
   async function handlePayPhoneRequest() {
-    if (!pageState.registration) {
-      return;
-    }
-
-    if (pendingPayPhonePayment && !cardPaymentRequestState.supportingFile) {
-      setCardPaymentRequestState((current) => ({
-        ...current,
-        error: 'Debes adjuntar el comprobante para el pago PayPhone pendiente.',
-        success: '',
-      }));
+    if (!pageState.registration || isSubmittingPayment) {
       return;
     }
 
@@ -391,67 +400,65 @@ function PaymentPage() {
     }
 
     try {
+      setIsSubmittingPayment(true);
+      setSubmittingPaymentFlow('payphone');
       setCardPaymentRequestState((current) => ({
         ...current,
-        isSubmitting: true,
         error: '',
         success: '',
       }));
 
-      let paymentIdToUpload = pendingPayPhonePayment?.id || null;
+      const existingPayments = pageState.payments || [];
+      const response = await paymentService.createPayPhonePayment({
+        registrationId: pageState.registration.id,
+        amountUsd: paymentBreakdown.totalAmount,
+        currency: 'USD',
+        includesTour: includeMiddleOfTheWorldTour,
+        transactionReference: cardPaymentRequestState.reference.trim() || undefined,
+        couponCode: couponState.applied?.code || undefined,
+      });
 
-      if (!paymentIdToUpload) {
-        const response = await paymentService.createPayPhonePayment({
-          registrationId: pageState.registration.id,
-          amountUsd: paymentBreakdown.totalAmount,
-          currency: 'USD',
-          includesTour: includeMiddleOfTheWorldTour,
-          transactionReference: cardPaymentRequestState.reference.trim() || undefined,
-          couponCode: couponState.applied?.code || undefined,
-        });
+      const paymentId = response.payment?.id;
 
-        paymentIdToUpload = response.payment?.id;
-
-        if (!paymentIdToUpload) {
-          throw new Error('El backend no devolvio el identificador de la solicitud PayPhone.');
-        }
+      if (!paymentId) {
+        throw new Error('El backend no devolvio el identificador de la solicitud PayPhone.');
       }
+
+      const reusedExistingPayment =
+        response.reusedExistingPayment ||
+        existingPayments.some((payment) => String(payment.id) === String(paymentId));
 
       if (cardPaymentRequestState.supportingFile) {
         const filePayload = buildPaymentProofFormData({
           file: cardPaymentRequestState.supportingFile,
           transactionReference: cardPaymentRequestState.reference,
         });
-        await paymentService.uploadPaymentProof(paymentIdToUpload, filePayload);
+        await paymentService.uploadPaymentProof(paymentId, filePayload);
       }
 
-      // Flujo externo deshabilitado temporalmente por definicion operativa del cliente.
-      // const paymentUrl = response.payment?.paymentUrl || null;
-      // if (paymentUrl) {
-      //   window.location.assign(paymentUrl);
-      // }
-
-      await refreshPaymentContext();
+      await refreshPaymentContext(paymentId);
 
       setCardPaymentRequestState({
         reference: '',
         supportingFile: null,
-        isSubmitting: false,
         error: '',
-        success: cardPaymentRequestState.supportingFile
-          ? 'La solicitud PayPhone quedó registrada con comprobante. Estado actual: pendiente de validación.'
-          : 'La solicitud de pago con tarjeta quedó registrada. Estado actual: pendiente de link hasta que administración lo envíe.',
+        success: buildPayPhoneSuccessMessage({
+          reusedExistingPayment,
+          hasSupportingFile: Boolean(cardPaymentRequestState.supportingFile),
+        }),
       });
     } catch (error) {
       setCardPaymentRequestState((current) => ({
         ...current,
-        isSubmitting: false,
         error:
           error?.response?.data?.message ||
           error?.message ||
           'No fue posible registrar la solicitud PayPhone.',
         success: '',
       }));
+    } finally {
+      setIsSubmittingPayment(false);
+      setSubmittingPaymentFlow('');
     }
   }
 
@@ -470,7 +477,11 @@ function PaymentPage() {
   if (pageState.error) {
     return (
       <section className="container-shell py-16">
-        <Alert title="No fue posible cargar la pagina de pagos" description={pageState.error} variant="danger" />
+        <Alert
+          title="No fue posible cargar la pagina de pagos"
+          description={pageState.error}
+          variant="danger"
+        />
       </section>
     );
   }
@@ -523,7 +534,8 @@ function PaymentPage() {
             setCouponState((current) => ({
               ...current,
               code: value,
-              applied: current.applied?.code === value.trim().toUpperCase() ? current.applied : null,
+              applied:
+                current.applied?.code === value.trim().toUpperCase() ? current.applied : null,
               error: '',
               message: '',
             }))
@@ -546,7 +558,7 @@ function PaymentPage() {
               </h2>
               <p className="mt-4 text-sm leading-7 text-slate-600">
                 El cupon cubre el valor completo de este pago. El siguiente paso es confirmar la
-                liquidación para que el backend deje el saldo pendiente en cero y registre la
+                liquidacion para que el backend deje el saldo pendiente en cero y registre la
                 trazabilidad del descuento.
               </p>
             </Card>
@@ -560,6 +572,8 @@ function PaymentPage() {
                   setBankTransferState((current) => ({
                     ...current,
                     transactionReference: value,
+                    error: '',
+                    success: '',
                   }))
                 }
                 supportingFile={bankTransferState.supportingFile}
@@ -567,9 +581,13 @@ function PaymentPage() {
                   setBankTransferState((current) => ({
                     ...current,
                     supportingFile: file,
+                    error: '',
+                    success: '',
                   }))
                 }
-                isSubmitting={bankTransferState.isSubmitting}
+                isSubmitting={
+                  isSubmittingPayment && submittingPaymentFlow === 'bank_transfer'
+                }
                 error={bankTransferState.error}
                 success={bankTransferState.success}
                 onSubmit={handleBankTransferSubmit}
@@ -579,6 +597,7 @@ function PaymentPage() {
                 amountToCharge={paymentBreakdown.totalAmount}
                 requestState={cardPaymentRequestState}
                 pendingPayPhonePayment={pendingPayPhonePayment}
+                isSubmitting={isSubmittingPayment && submittingPaymentFlow === 'payphone'}
                 onReferenceChange={(value) =>
                   setCardPaymentRequestState((current) => ({
                     ...current,
@@ -626,7 +645,14 @@ function PaymentPage() {
         {pageState.payments.length ? (
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
             {pageState.payments.map((payment) => (
-              <div key={payment.id} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+              <div
+                key={payment.id}
+                className={`rounded-[1.5rem] border bg-slate-50 p-5 ${
+                  String(highlightedPaymentId) === String(payment.id)
+                    ? 'border-brand-400 shadow-[0_20px_50px_rgba(37,82,134,0.12)]'
+                    : 'border-slate-200'
+                }`}
+              >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -645,8 +671,14 @@ function PaymentPage() {
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   <PaymentMeta label="Metodo" value={formatMethod(payment.paymentMethod)} />
                   <PaymentMeta label="Proveedor" value={formatProvider(payment.provider)} />
-                  <PaymentMeta label="Referencia" value={payment.transactionReference || 'No registrada'} />
-                  <PaymentMeta label="Comprobante" value={payment.paymentProofUrl ? 'Disponible' : 'No cargado'} />
+                  <PaymentMeta
+                    label="Referencia"
+                    value={payment.transactionReference || 'No registrada'}
+                  />
+                  <PaymentMeta
+                    label="Comprobante"
+                    value={payment.paymentProofUrl ? 'Disponible' : 'No cargado'}
+                  />
                 </div>
 
                 {payment.paymentProofUrl ? (
@@ -694,7 +726,10 @@ function buildBankDetails(bankTransferDetails) {
 
   const items = [
     { label: 'Banco', value: bankTransferDetails.bankName || bankTransferDetails.bank || '' },
-    { label: 'Titular', value: bankTransferDetails.accountHolder || bankTransferDetails.holder || '' },
+    {
+      label: 'Titular',
+      value: bankTransferDetails.accountHolder || bankTransferDetails.holder || '',
+    },
     {
       label: 'Tipo de cuenta',
       value: bankTransferDetails.accountType || '',
@@ -705,7 +740,11 @@ function buildBankDetails(bankTransferDetails) {
     },
     {
       label: 'RUC',
-      value: bankTransferDetails.ruc || bankTransferDetails.taxId || bankTransferDetails.taxIdentificationNumber || '',
+      value:
+        bankTransferDetails.ruc ||
+        bankTransferDetails.taxId ||
+        bankTransferDetails.taxIdentificationNumber ||
+        '',
     },
     { label: 'Codigo SWIFT', value: bankTransferDetails.swiftCode || bankTransferDetails.swift || '' },
     {
@@ -770,7 +809,9 @@ function resolveCouponDiscount(appliedCoupon, baseAmount) {
   }
 
   if (appliedCoupon.percentage !== undefined && appliedCoupon.percentage !== null) {
-    return Number(Math.max(0, (baseAmount * Number(appliedCoupon.percentage)) / 100).toFixed(2));
+    return Number(
+      Math.max(0, (baseAmount * Number(appliedCoupon.percentage)) / 100).toFixed(2),
+    );
   }
 
   return 0;
@@ -786,4 +827,20 @@ function buildPaymentProofFormData({ file, transactionReference }) {
   }
 
   return formData;
+}
+
+function buildPayPhoneSuccessMessage({ reusedExistingPayment, hasSupportingFile }) {
+  if (reusedExistingPayment && hasSupportingFile) {
+    return 'Ya existia un pago pendiente con ese mismo valor. Continuaremos con ese registro y el comprobante fue cargado correctamente.';
+  }
+
+  if (reusedExistingPayment) {
+    return 'Ya existia un pago pendiente con ese mismo valor. Continuaremos con ese registro.';
+  }
+
+  if (hasSupportingFile) {
+    return 'La solicitud PayPhone fue registrada y el comprobante quedo asociado al pago retornado por backend.';
+  }
+
+  return 'La solicitud de pago con tarjeta fue registrada. El equipo administrativo enviara el link de pago al correo asociado a tu cuenta.';
 }

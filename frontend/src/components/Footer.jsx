@@ -11,7 +11,7 @@ export function Footer() {
           </p>
         </div>
         <div className="md:text-right">
-          <p className="text-sm text-slate-500">Soporte: registrations@ieee-event.org</p>
+          <p className="text-sm text-slate-500">Soporte: Alejandra.orellana@ieee.org</p>
           <p className="mt-2 text-sm text-slate-500">
             Si necesitas ayuda con tu registro o tu pago, contactanos por este medio.
           </p>

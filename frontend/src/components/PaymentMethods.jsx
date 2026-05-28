@@ -9,6 +9,7 @@ export function PaymentMethods({
   amountToCharge,
   requestState,
   pendingPayPhonePayment,
+  isSubmitting,
   onReferenceChange,
   onFileChange,
   onSubmit,
@@ -186,9 +187,9 @@ export function PaymentMethods({
         <Button
           variant="primary"
           onClick={onSubmit}
-          disabled={requestState.isSubmitting || (!hasPendingPayPhonePayment && amountToCharge <= 0)}
+          disabled={isSubmitting || (!hasPendingPayPhonePayment && amountToCharge <= 0)}
         >
-          {requestState.isSubmitting
+          {isSubmitting
             ? hasPendingPayPhonePayment
               ? 'Adjuntando comprobante...'
               : 'Registrando solicitud...'

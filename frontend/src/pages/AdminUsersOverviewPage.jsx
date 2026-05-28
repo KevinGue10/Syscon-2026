@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Alert } from '../components/Alert';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
@@ -22,6 +23,7 @@ import {
 const PAGE_SIZE = 10;
 
 function AdminUsersOverviewPage() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -280,6 +282,11 @@ function AdminUsersOverviewPage() {
         <div className="mt-6">
           <Table
             allowOverflow
+            getRowClassName={(row) =>
+              hasAdministrativePendingPayment(row)
+                ? 'bg-amber-50/70'
+                : ''
+            }
             columns={[
               { key: 'id', label: 'ID' },
               {
@@ -401,13 +408,19 @@ function AdminUsersOverviewPage() {
             .
           </p>
           <div className="grid gap-2">
-            {['Validar pago', 'Ver articulos', 'Inhabilitar usuario'].map((action) => (
+            {['Ver detalle del usuario', 'Validar pago', 'Ver articulos', 'Inhabilitar usuario'].map((action) => (
               <button
                 key={action}
                 type="button"
                 className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
                 onClick={async () => {
                   setSelectedUser(null);
+                  if (action === 'Ver detalle del usuario') {
+                    if (selectedUser?.id) {
+                      navigate(`/admin/users/${selectedUser.id}/registration-details`);
+                    }
+                    return;
+                  }
                   if (action === 'Validar pago') {
                     await openPaymentReviewModal(selectedUser);
                     return;
@@ -1308,6 +1321,14 @@ function resolveCountryName(user) {
 
 function resolvePrimaryRegistration(user) {
   return user?.registrations?.[0] || null;
+}
+
+function hasAdministrativePendingPayment(user) {
+  const payments = resolvePrimaryRegistration(user)?.payments || [];
+
+  return payments.some(
+    (payment) => isPaymentPendingValidation(payment) || isPaymentPendingLink(payment),
+  );
 }
 
 function resolveSelectedPayment(paymentReviewState) {

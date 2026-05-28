@@ -1,6 +1,10 @@
 const { Payment, PaymentStatusHistory, Registration, User, DollarRate, Coupon } = require('../models');
 const { PAYMENT_STATUSES, USER_ROLES } = require('../constants/enums');
-const { calculateRegistrationTotals } = require('./pricingService');
+const {
+  calculateRegistrationTotals,
+  resolveIncludesTour,
+  resolveRequiresInvoice,
+} = require('./pricingService');
 const { createAuditLog } = require('./auditService');
 const { sendPaymentConfirmationEmail, sendPayPhoneLinkEmail } = require('./emailService');
 const AppError = require('../utils/errors');
@@ -21,6 +25,14 @@ const PAYMENT_PROVIDERS = {
 };
 
 const COUPON_PAYMENT_METHOD = 'coupon';
+
+const dispatchEmailInBackground = (task, label) => {
+  Promise.resolve()
+    .then(task)
+    .catch((error) => {
+      console.error(`${label} failed:`, error.message);
+    });
+};
 
 const assertRegistrationAccess = (registration, currentUser) => {
   if (!registration) {
@@ -157,7 +169,7 @@ const resolveRequestedAmounts = async (payload, registration) => {
 };
 
 const normalizeCouponCode = (code) => String(code || '').trim().toUpperCase();
-const resolveIncludesTour = (payload = {}) =>
+const resolvePaymentIncludesTour = (payload = {}) =>
   Boolean(
     payload.includesTour !== undefined
       ? payload.includesTour
@@ -167,6 +179,40 @@ const resolveIncludesTour = (payload = {}) =>
           ? payload.isTour
           : false
   );
+
+const syncRegistrationPaymentPreferences = async (registration, payload = {}) => {
+  if (!registration) {
+    return registration;
+  }
+
+  const shouldUpdateIncludesTour =
+    payload.includesTour !== undefined ||
+    payload.goToTour !== undefined ||
+    payload.isTour !== undefined;
+  const shouldUpdateRequiresInvoice =
+    payload.requiresInvoice !== undefined ||
+    payload.includeTaxes !== undefined;
+
+  if (!shouldUpdateIncludesTour && !shouldUpdateRequiresInvoice) {
+    return registration;
+  }
+
+  await registration.update({
+    includesTour: shouldUpdateIncludesTour
+      ? resolvePaymentIncludesTour(payload)
+      : registration.includesTour,
+    requiresInvoice: shouldUpdateRequiresInvoice
+      ? resolveRequiresInvoice(payload)
+      : registration.requiresInvoice,
+  });
+
+  await calculateRegistrationTotals(registration.id, {
+    allowMissingPricingRule: true,
+  });
+
+  await registration.reload();
+  return registration;
+};
 
 const normalizePaymentLink = (paymentLink) => String(paymentLink || '').trim();
 
@@ -258,6 +304,31 @@ const createPaymentRecord = async ({
     providerResponseJson,
     status,
     paymentDate,
+  });
+};
+
+const findReusablePendingPayment = async ({
+  registrationId,
+  paymentMethod,
+  amountUsd,
+  currency,
+}) => {
+  const normalizedAmountUsd = Number(Number(amountUsd || 0).toFixed(2));
+
+  return Payment.findOne({
+    where: {
+      registrationId,
+      paymentMethod,
+      currency,
+      amountUsd: normalizedAmountUsd,
+      status: [
+        PAYMENT_STATUSES.PENDING_LINK,
+        PAYMENT_STATUSES.PENDING_PAYMENT,
+        PAYMENT_STATUSES.PENDING_VALIDATION,
+        PAYMENT_STATUSES.PENDING,
+      ],
+    },
+    order: [['createdAt', 'DESC']],
   });
 };
 
@@ -368,14 +439,26 @@ const getPaymentWithRegistration = async (paymentId) => {
 const createBankTransferPayment = async (payload, currentUser) => {
   const registration = await Registration.findByPk(payload.registrationId);
   assertRegistrationAccess(registration, currentUser);
+  await syncRegistrationPaymentPreferences(registration, payload);
 
   const amounts = await resolveRequestedAmounts(payload, registration);
+  const reusablePayment = await findReusablePendingPayment({
+    registrationId: registration.id,
+    paymentMethod: PAYMENT_METHODS.BANK_TRANSFER,
+    amountUsd: amounts.amountUsd,
+    currency: amounts.currency,
+  });
+
+  if (reusablePayment) {
+    return buildPaymentResponse(reusablePayment, registration.id);
+  }
+
   const payment = await createPaymentRecord({
     registration,
     amounts,
     paymentMethod: PAYMENT_METHODS.BANK_TRANSFER,
     provider: PAYMENT_PROVIDERS.MANUAL,
-    includesTour: resolveIncludesTour(payload),
+    includesTour: resolvePaymentIncludesTour(payload),
     transactionReference: payload.transactionReference || null,
     status: PAYMENT_STATUSES.PENDING_PAYMENT,
   });
@@ -402,6 +485,7 @@ const createBankTransferPayment = async (payload, currentUser) => {
 const previewCoupon = async (payload, currentUser) => {
   const registration = await Registration.findByPk(payload.registrationId);
   assertRegistrationAccess(registration, currentUser);
+  await syncRegistrationPaymentPreferences(registration, payload);
 
   const coupon = await getActiveCouponByCode(payload.code);
   const couponPreview = buildCouponPreview({
@@ -443,13 +527,13 @@ const redeemCoupon = async (payload, currentUser) => {
     amounts,
     paymentMethod: COUPON_PAYMENT_METHOD,
     provider: PAYMENT_PROVIDERS.COUPON,
-    includesTour: resolveIncludesTour(payload),
+    includesTour: resolvePaymentIncludesTour(payload),
     transactionReference: `COUPON-${coupon.code}-${Date.now()}`,
     providerResponseJson: {
       couponCode: coupon.code,
       percentage: Number(coupon.percentage || 0),
       discountAmount: couponPreview.discountAmount,
-      includeTaxes: Boolean(payload.includeTaxes),
+      includeTaxes: resolveRequiresInvoice(payload),
     },
     paymentDate: new Date(),
     status: PAYMENT_STATUSES.APPROVED,
@@ -657,6 +741,7 @@ const cancelPayment = async (paymentId, currentUser) => {
 const createPayPalOrder = async (payload, currentUser) => {
   const registration = await Registration.findByPk(payload.registrationId);
   assertRegistrationAccess(registration, currentUser);
+  await syncRegistrationPaymentPreferences(registration, payload);
 
   const amounts = await resolveRequestedAmounts(payload, registration);
   const pendingAmount = Number(registration.pendingAmount || 0);
@@ -664,12 +749,23 @@ const createPayPalOrder = async (payload, currentUser) => {
     throw new AppError('The registration has no pending balance.', 409);
   }
 
+  const reusablePayment = await findReusablePendingPayment({
+    registrationId: registration.id,
+    paymentMethod: PAYMENT_METHODS.PAYPAL,
+    amountUsd: amounts.amountUsd,
+    currency: amounts.currency,
+  });
+
+  if (reusablePayment) {
+    return buildPaymentResponse(reusablePayment, registration.id);
+  }
+
   const payment = await createPaymentRecord({
     registration,
     amounts,
     paymentMethod: PAYMENT_METHODS.PAYPAL,
     provider: PAYMENT_PROVIDERS.PAYPAL,
-    includesTour: resolveIncludesTour(payload),
+    includesTour: resolvePaymentIncludesTour(payload),
   });
 
   const order = await paypalService.createOrder({
@@ -829,6 +925,7 @@ const handlePayPalWebhook = async ({ headers, body }) => {
 const createPayPhonePayment = async (payload, currentUser) => {
   const registration = await Registration.findByPk(payload.registrationId);
   assertRegistrationAccess(registration, currentUser);
+  await syncRegistrationPaymentPreferences(registration, payload);
 
   const amounts = await resolveRequestedAmounts(payload, registration);
   const pendingAmount = Number(registration.pendingAmount || 0);
@@ -836,12 +933,23 @@ const createPayPhonePayment = async (payload, currentUser) => {
     throw new AppError('The registration has no pending balance.', 409);
   }
 
+  const reusablePayment = await findReusablePendingPayment({
+    registrationId: registration.id,
+    paymentMethod: PAYMENT_METHODS.PAYPHONE,
+    amountUsd: amounts.amountUsd,
+    currency: amounts.currency,
+  });
+
+  if (reusablePayment) {
+    return buildPaymentResponse(reusablePayment, registration.id);
+  }
+
   const payment = await createPaymentRecord({
     registration,
     amounts,
     paymentMethod: PAYMENT_METHODS.PAYPHONE,
     provider: PAYMENT_PROVIDERS.PAYPHONE,
-    includesTour: resolveIncludesTour(payload),
+    includesTour: resolvePaymentIncludesTour(payload),
     transactionReference: payload.transactionReference || null,
     providerResponseJson: {
       requestType: 'manual_payphone_request',
@@ -919,11 +1027,15 @@ const sendPayPhoneLink = async (paymentId, paymentLink, currentUser) => {
     : null;
 
   if (participant?.email) {
-    await sendPayPhoneLinkEmail({
-      user: participant,
-      payment,
-      paymentLink: payment.paymentUrl,
-    });
+    dispatchEmailInBackground(
+      () =>
+        sendPayPhoneLinkEmail({
+          user: participant,
+          payment,
+          paymentLink: payment.paymentUrl,
+        }),
+      'PayPhone link email'
+    );
   }
 
   await createAuditLog({
