@@ -5,13 +5,33 @@ const adminMiddleware = require('../middlewares/adminMiddleware');
 const validationMiddleware = require('../middlewares/validationMiddleware');
 const { pricingRuleBodyValidation } = require('../validations/pricingRuleValidations');
 const { customFieldBodyValidation } = require('../validations/customFieldValidations');
-const { param } = require('express-validator');
+const { body, param, query } = require('express-validator');
 
 const router = express.Router();
 
 router.use(authMiddleware, adminMiddleware);
 
-router.get('/users', adminController.listUsers);
+router.get(
+  '/users',
+  [
+    query('active')
+      .optional()
+      .isIn(['0', '1', 'true', 'false'])
+      .withMessage('The active query parameter must be 0, 1, true or false.'),
+  ],
+  validationMiddleware,
+  adminController.listUsers
+);
+router.patch(
+  '/users/:userId/active',
+  [
+    param('userId').isInt({ min: 1 }).withMessage('Valid user id is required.'),
+    param('userId').toInt(),
+    body('active').isBoolean().withMessage('The active field must be boolean.'),
+  ],
+  validationMiddleware,
+  adminController.updateUserActiveStatus
+);
 router.get(
   '/users/:userId/registration-details',
   [param('userId').isInt({ min: 1 }).withMessage('Valid user id is required.')],

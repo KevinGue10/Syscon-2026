@@ -127,7 +127,7 @@ export function PaymentSummaryCard({
               Asistir al Middle of the World Tour
             </span>
             <span className="mt-1 block text-sm leading-6 text-white/72">
-              Si seleccionas esta opción, se sumarán {formatCurrency(10)} al valor total de esta
+              Si seleccionas esta opcion, se sumaran {formatCurrency(10)} al valor total de esta
               factura.
             </span>
           </span>
@@ -143,7 +143,7 @@ export function PaymentSummaryCard({
           <span>
             <span className="block text-sm font-semibold text-white">Solicitar factura</span>
             <span className="mt-1 block text-sm leading-6 text-white/72">
-              Si deseas factura, activa esta opción. La generación de la factura aplica un cobro
+              Si deseas factura, activa esta opcion. La generacion de la factura aplica un cobro
               adicional de impuestos del 15% sobre el monto base de este pago.
             </span>
           </span>
@@ -177,7 +177,11 @@ export function PaymentSummaryCard({
 
 function MetricCard({ label, value, accent = false }) {
   return (
-    <div className={`rounded-2xl border px-4 py-4 ${accent ? 'border-[#6db7ff]/35 bg-[#6db7ff]/10' : 'border-white/10 bg-white/10'}`}>
+    <div
+      className={`rounded-2xl border px-4 py-4 ${
+        accent ? 'border-[#6db7ff]/35 bg-[#6db7ff]/10' : 'border-white/10 bg-white/10'
+      }`}
+    >
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">{label}</p>
       <p className="mt-2 text-xl font-semibold text-white">{value}</p>
     </div>
@@ -187,10 +191,18 @@ function MetricCard({ label, value, accent = false }) {
 function SummaryLine({ label, value, emphasized = false, muted = false }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className={`text-sm ${emphasized ? 'font-semibold text-white' : muted ? 'text-white/55' : 'text-white/80'}`}>
+      <span
+        className={`text-sm ${
+          emphasized ? 'font-semibold text-white' : muted ? 'text-white/55' : 'text-white/80'
+        }`}
+      >
         {label}
       </span>
-      <span className={`${emphasized ? 'text-2xl font-bold text-white' : 'text-base font-semibold text-white'}`}>
+      <span
+        className={`${
+          emphasized ? 'text-2xl font-bold text-white' : 'text-base font-semibold text-white'
+        }`}
+      >
         {value}
       </span>
     </div>

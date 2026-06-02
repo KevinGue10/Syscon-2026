@@ -7,6 +7,7 @@ const {
   sendPendingPaymentReminderEmail,
 } = require('./emailService');
 const { saveCustomFieldValues } = require('./customFieldService');
+const { ensureUserIsActive } = require('./userService');
 const AppError = require('../utils/errors');
 const { resolveIncludesTour, resolveRequiresInvoice } = require('./pricingService');
 
@@ -51,6 +52,7 @@ const dispatchEmailInBackground = (task, label) => {
 
 const createRegistration = async (payload, currentUser, options = {}) => {
   const { transaction } = options;
+  ensureUserIsActive(currentUser);
   const eventEdition = payload.eventEditionId
     ? await EventEdition.findByPk(payload.eventEditionId, { transaction })
     : await getActiveEventEdition();
@@ -98,6 +100,7 @@ const createRegistration = async (payload, currentUser, options = {}) => {
 
 const updateRegistration = async (registrationId, payload, currentUser, options = {}) => {
   const { transaction } = options;
+  ensureUserIsActive(currentUser);
   const registration = await Registration.findByPk(registrationId, { transaction });
   assertRegistrationAccess(registration, currentUser);
   const oldValue = registration.toJSON();
@@ -165,6 +168,7 @@ const updateRegistration = async (registrationId, payload, currentUser, options 
 };
 
 const addPaperToRegistration = async (registrationId, payload, currentUser) => {
+  ensureUserIsActive(currentUser);
   const registration = await Registration.findByPk(registrationId, {
     include: [{ association: 'user' }],
   });
@@ -209,6 +213,7 @@ const addPaperToRegistration = async (registrationId, payload, currentUser) => {
 };
 
 const removePaper = async (paperId, currentUser) => {
+  ensureUserIsActive(currentUser);
   const paper = await Paper.findByPk(paperId, {
     include: [{ association: 'registration' }],
   });
@@ -236,6 +241,7 @@ const removePaper = async (paperId, currentUser) => {
 };
 
 const getRegistrationById = async (registrationId, currentUser) => {
+  ensureUserIsActive(currentUser);
   const registration = await Registration.findByPk(registrationId, {
     include: ['user', 'eventEdition', 'papers', 'payments'],
   });
@@ -244,6 +250,7 @@ const getRegistrationById = async (registrationId, currentUser) => {
 };
 
 const getMyRegistrations = async (currentUser) => {
+  ensureUserIsActive(currentUser);
   const user = await User.findByPk(currentUser.id, {
     attributes: { exclude: ['passwordHash'] },
     include: [

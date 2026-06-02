@@ -69,19 +69,30 @@ function PaymentPage() {
             ? paymentService.getRegistrationPayments(activeRegistration.id)
             : Promise.resolve({ payments: [] }),
         ]);
+        const resolvedPayments = paymentsResponse.payments || [];
+        const hydratedRegistration = activeRegistration
+          ? {
+              ...activeRegistration,
+              payments: resolvedPayments,
+            }
+          : null;
 
         if (!isMounted) {
           return;
         }
 
+        const selectionDefaults = resolvePaymentOptionDefaults(hydratedRegistration);
+
         setPageState({
           isLoading: false,
           error: '',
-          registration: activeRegistration,
-          payments: paymentsResponse.payments || [],
+          registration: hydratedRegistration,
+          payments: resolvedPayments,
         });
         setBankTransferDetails(bankDetailsResponse);
-        setPaymentAmount(resolvePendingAmount(activeRegistration).toFixed(2));
+        setIncludeTaxes(selectionDefaults.includeTaxes);
+        setIncludeMiddleOfTheWorldTour(selectionDefaults.includeMiddleOfTheWorldTour);
+        setPaymentAmount(selectionDefaults.baseAmount.toFixed(2));
       } catch (error) {
         if (!isMounted) {
           return;
@@ -109,26 +120,42 @@ function PaymentPage() {
   const registrationTotals = useMemo(() => {
     const registration = pageState.registration;
     const paymentSummary = registration?.paymentSummary || registration?.pricing?.breakdown || null;
+    const latestPendingPayment = resolveLatestPendingPayment(registration);
+    const displayedPendingAmount = resolveDisplayedPendingAmount(registration);
 
     return {
       totalAmount: Number(
-        paymentSummary?.totalAmount || registration?.pricing?.total || registration?.totalAmount || 0,
+        latestPendingPayment?.amountUsd ||
+          paymentSummary?.totalAmount ||
+          registration?.pricing?.total ||
+          registration?.totalAmount ||
+          displayedPendingAmount ||
+          0,
       ),
       paidAmount: Number(
         paymentSummary?.paidAmount || registration?.pricing?.paid || registration?.paidAmount || 0,
       ),
-      pendingAmount: resolvePendingAmount(registration),
+      pendingAmount: displayedPendingAmount,
+      latestPendingPayment,
     };
   }, [pageState.registration]);
 
   const paymentBreakdown = useMemo(() => {
+    const persistedTaxAmount = resolvePersistedTaxAmount(pageState.registration);
     const baseAmount = sanitizePaymentAmount(paymentAmount, registrationTotals.pendingAmount);
     const discountAmount = resolveCouponDiscount(couponState.applied, baseAmount);
     const discountedBaseAmount = Number(Math.max(0, baseAmount - discountAmount).toFixed(2));
     const middleOfTheWorldTourAmount = includeMiddleOfTheWorldTour
       ? MIDDLE_OF_THE_WORLD_TOUR_FEE
       : 0;
-    const taxesAmount = includeTaxes ? Number((discountedBaseAmount * TAX_RATE).toFixed(2)) : 0;
+    const taxesAmount = includeTaxes
+      ? Number(
+          (couponState.applied || !persistedTaxAmount
+            ? discountedBaseAmount * TAX_RATE
+            : persistedTaxAmount
+          ).toFixed(2),
+        )
+      : 0;
     const totalAmount = Number(
       Math.max(0, discountedBaseAmount + middleOfTheWorldTourAmount + taxesAmount).toFixed(2),
     );
@@ -146,6 +173,7 @@ function PaymentPage() {
     includeMiddleOfTheWorldTour,
     includeTaxes,
     paymentAmount,
+    pageState.registration,
     registrationTotals.pendingAmount,
   ]);
 
@@ -184,14 +212,23 @@ function PaymentPage() {
       ? await paymentService.getRegistrationPayments(activeRegistration.id)
       : { payments: [] };
     const refreshedPayments = paymentsResponse.payments || [];
+    const hydratedRegistration = activeRegistration
+      ? {
+          ...activeRegistration,
+          payments: refreshedPayments,
+        }
+      : null;
+    const selectionDefaults = resolvePaymentOptionDefaults(hydratedRegistration);
 
     setPageState({
       isLoading: false,
       error: '',
-      registration: activeRegistration,
+      registration: hydratedRegistration,
       payments: refreshedPayments,
     });
-    setPaymentAmount(resolvePendingAmount(activeRegistration).toFixed(2));
+    setIncludeTaxes(selectionDefaults.includeTaxes);
+    setIncludeMiddleOfTheWorldTour(selectionDefaults.includeMiddleOfTheWorldTour);
+    setPaymentAmount(selectionDefaults.baseAmount.toFixed(2));
     setHighlightedPaymentId(
       preferredPaymentId &&
         refreshedPayments.some((payment) => String(payment.id) === String(preferredPaymentId))
@@ -340,6 +377,8 @@ function PaymentPage() {
         registrationId: pageState.registration.id,
         amountUsd: paymentBreakdown.totalAmount,
         currency: 'USD',
+        includesTaxes: includeTaxes,
+        taxAmount: paymentBreakdown.taxesAmount,
         includesTour: includeMiddleOfTheWorldTour,
         transactionReference: bankTransferState.transactionReference.trim() || undefined,
         couponCode: couponState.applied?.code || undefined,
@@ -413,6 +452,8 @@ function PaymentPage() {
         registrationId: pageState.registration.id,
         amountUsd: paymentBreakdown.totalAmount,
         currency: 'USD',
+        includesTaxes: includeTaxes,
+        taxAmount: paymentBreakdown.taxesAmount,
         includesTour: includeMiddleOfTheWorldTour,
         transactionReference: cardPaymentRequestState.reference.trim() || undefined,
         couponCode: couponState.applied?.code || undefined,
@@ -843,4 +884,237 @@ function buildPayPhoneSuccessMessage({ reusedExistingPayment, hasSupportingFile 
   }
 
   return 'La solicitud de pago con tarjeta fue registrada. El equipo administrativo enviara el link de pago al correo asociado a tu cuenta.';
+}
+
+function resolvePaymentOptionDefaults(registration) {
+  const latestPendingPayment = resolveLatestPendingPayment(registration);
+  const includeTaxes = resolvePersistedInvoiceSelection(registration);
+  const includeMiddleOfTheWorldTour = resolvePersistedTourSelection(registration);
+  const persistedTaxAmount = resolvePersistedTaxAmount(registration);
+
+  if (latestPendingPayment?.amountUsd) {
+    const paymentTotalAmount = Number(latestPendingPayment.amountUsd || 0);
+    const baseAmountFromPayment = Math.max(
+      0,
+      paymentTotalAmount -
+        (includeMiddleOfTheWorldTour ? MIDDLE_OF_THE_WORLD_TOUR_FEE : 0) -
+        (includeTaxes ? persistedTaxAmount : 0),
+    );
+
+    return {
+      includeTaxes,
+      includeMiddleOfTheWorldTour,
+      baseAmount: Number(baseAmountFromPayment.toFixed(2)),
+    };
+  }
+
+  const pendingAmount = resolvePendingAmount(registration);
+  const amountWithoutTour = Math.max(
+    0,
+    pendingAmount - (includeMiddleOfTheWorldTour ? MIDDLE_OF_THE_WORLD_TOUR_FEE : 0),
+  );
+  const baseAmount = includeTaxes
+    ? Number(Math.max(0, amountWithoutTour - persistedTaxAmount).toFixed(2))
+    : Number(amountWithoutTour.toFixed(2));
+
+  return {
+    includeTaxes,
+    includeMiddleOfTheWorldTour,
+    baseAmount,
+  };
+}
+
+function resolvePersistedInvoiceSelection(registration) {
+  const latestPayment = resolveLatestPayment(registration);
+  const paymentLevelValue = firstDefinedValue([
+    latestPayment?.requiresInvoice,
+    latestPayment?.includeTax,
+    latestPayment?.includesTax,
+    latestPayment?.includesTaxes,
+  ]);
+
+  if (paymentLevelValue !== undefined) {
+    return normalizeBooleanPreference(paymentLevelValue);
+  }
+
+  const directValue = firstDefinedValue([
+    registration?.requiresInvoice,
+    registration?.invoiceRequired,
+    registration?.needsInvoice,
+    registration?.requestInvoice,
+    registration?.billingRequested,
+    registration?.includeTax,
+    registration?.includesTaxes,
+    registration?.paymentSummary?.requiresInvoice,
+    registration?.paymentSummary?.includeTax,
+    registration?.paymentSummary?.includesTaxes,
+  ]);
+
+  if (directValue !== undefined) {
+    return normalizeBooleanPreference(directValue);
+  }
+
+  return resolveCustomFieldBoolean(
+    registration?.customFieldValues,
+    ['factura', 'invoice', 'billing'],
+  );
+}
+
+function resolvePersistedTourSelection(registration) {
+  const latestPayment = resolveLatestPayment(registration);
+  const paymentLevelValue = latestPayment?.includesTour;
+
+  if (paymentLevelValue !== undefined) {
+    return normalizeBooleanPreference(paymentLevelValue);
+  }
+
+  const directValue = firstDefinedValue([
+    registration?.willAttendTour,
+    registration?.tourAttendance,
+    registration?.attendTour,
+    registration?.middleOfTheWorldTour,
+    registration?.includesTour,
+    registration?.paymentSummary?.includeMiddleOfTheWorldTour,
+    registration?.paymentSummary?.includesTour,
+  ]);
+
+  if (directValue !== undefined) {
+    return normalizeBooleanPreference(directValue);
+  }
+
+  return resolveCustomFieldBoolean(
+    registration?.customFieldValues,
+    ['tour', 'mitad del mundo', 'middle of the world'],
+  );
+}
+
+function resolvePersistedTaxAmount(registration) {
+  const latestPayment = resolveLatestPayment(registration);
+  const latestPaymentTaxAmount = firstDefinedValue([
+    latestPayment?.taxAmount,
+    latestPayment?.invoiceTaxAmount,
+  ]);
+
+  if (
+    latestPaymentTaxAmount !== undefined &&
+    latestPaymentTaxAmount !== null &&
+    latestPaymentTaxAmount !== ''
+  ) {
+    return Number(Math.max(0, Number(latestPaymentTaxAmount)).toFixed(2));
+  }
+
+  const directValue = firstDefinedValue([
+    registration?.taxAmount,
+    registration?.invoiceTaxAmount,
+    registration?.paymentSummary?.requiresInvoice ? registration?.paymentSummary?.taxAmount : undefined,
+    registration?.paymentSummary?.taxAmount,
+    registration?.paymentSummary?.invoiceTaxAmount,
+  ]);
+
+  if (directValue !== undefined && directValue !== null && directValue !== '') {
+    return Number(Math.max(0, Number(directValue)).toFixed(2));
+  }
+
+  const includeTaxes = resolvePersistedInvoiceSelection(registration);
+  const includeMiddleOfTheWorldTour = resolvePersistedTourSelection(registration);
+
+  if (!includeTaxes) {
+    return 0;
+  }
+
+  const pendingAmount = resolvePendingAmount(registration);
+  const amountWithoutTour = Math.max(
+    0,
+    pendingAmount - (includeMiddleOfTheWorldTour ? MIDDLE_OF_THE_WORLD_TOUR_FEE : 0),
+  );
+
+  return Number((amountWithoutTour - amountWithoutTour / (1 + TAX_RATE)).toFixed(2));
+}
+
+function resolveCustomFieldBoolean(customFieldValues, keywords) {
+  const matchedField = (customFieldValues || []).find((field) => {
+    const label = normalizeText(
+      field?.customField?.label || field?.label || field?.customField?.name || '',
+    );
+
+    return keywords.some((keyword) => label.includes(normalizeText(keyword)));
+  });
+
+  if (!matchedField) {
+    return false;
+  }
+
+  return normalizeBooleanPreference(matchedField.value);
+}
+
+function normalizeBooleanPreference(value) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (value === null || value === undefined) {
+    return false;
+  }
+
+  const normalizedValue = normalizeText(String(value));
+
+  return ['true', '1', 'si', 'sí', 'yes', 'y', 'requiere', 'solicita'].includes(
+    normalizedValue,
+  );
+}
+
+function firstDefinedValue(values) {
+  return values.find((value) => value !== undefined && value !== null);
+}
+
+function resolveLatestPayment(registration) {
+  const payments = registration?.payments || [];
+
+  if (!payments.length) {
+    return null;
+  }
+
+  return [...payments].sort((left, right) => {
+    const leftTime = new Date(left?.createdAt || 0).getTime();
+    const rightTime = new Date(right?.createdAt || 0).getTime();
+    return rightTime - leftTime;
+  })[0];
+}
+
+function resolveLatestPendingPayment(registration) {
+  const payments = registration?.payments || [];
+
+  return (
+    [...payments]
+      .filter((payment) => !isResolvedPaymentStatus(payment?.status))
+      .sort((left, right) => {
+        const leftTime = new Date(left?.createdAt || 0).getTime();
+        const rightTime = new Date(right?.createdAt || 0).getTime();
+        return rightTime - leftTime;
+      })[0] || null
+  );
+}
+
+function resolveDisplayedPendingAmount(registration) {
+  const latestPendingPayment = resolveLatestPendingPayment(registration);
+
+  if (latestPendingPayment?.amountUsd) {
+    return Number(latestPendingPayment.amountUsd);
+  }
+
+  return resolvePendingAmount(registration);
+}
+
+function isResolvedPaymentStatus(status) {
+  return ['approved', 'accepted', 'paid', 'rejected', 'cancelled', 'canceled'].includes(
+    String(status || '').toLowerCase(),
+  );
+}
+
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
 }

@@ -71,6 +71,15 @@ Registration.init(
       defaultValue: false,
       field: 'requires_invoice',
     },
+    includesTaxes: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return Boolean(this.getDataValue('requiresInvoice'));
+      },
+      set() {
+        throw new Error('Do not try to set the `includesTaxes` value.');
+      },
+    },
     totalAmount: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,

@@ -273,6 +273,7 @@ function RegistrationDetailsPage() {
 function RegistrationSection({ registration, isAdminRemoteView }) {
   const requiresInvoice = resolveInvoiceRequirement(registration);
   const willAttendTour = resolveTourAttendance(registration);
+  const invoiceTaxAmount = resolveInvoiceTaxAmount(registration);
 
   const registrationRows = [
     { label: 'Conferencia', value: registration.eventEdition?.name || 'TEMSCON LATAM 2026' },
@@ -286,6 +287,10 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
     { label: 'Estado de inscripcion', value: translateRegistrationStatus(registration.status) },
     { label: 'Estado de pago', value: translatePaymentStatus(registration.paymentStatus) },
     { label: 'Requiere factura', value: formatBooleanPreference(requiresInvoice) },
+    {
+      label: 'Cargo de factura e impuestos',
+      value: requiresInvoice ? formatCurrency(invoiceTaxAmount) : 'No aplica',
+    },
     { label: 'Asistencia al tour', value: formatBooleanPreference(willAttendTour) },
     {
       label: 'Saldo pendiente',
@@ -483,6 +488,18 @@ function resolveCountry(profile) {
 }
 
 function resolveInvoiceRequirement(registration) {
+  const latestPayment = resolveLatestPayment(registration);
+  const paymentLevelValue = firstDefinedValue([
+    latestPayment?.requiresInvoice,
+    latestPayment?.includeTax,
+    latestPayment?.includesTax,
+    latestPayment?.includesTaxes,
+  ]);
+
+  if (paymentLevelValue !== undefined) {
+    return normalizeBooleanPreference(paymentLevelValue);
+  }
+
   const directValue = firstDefinedValue([
     registration?.requiresInvoice,
     registration?.invoiceRequired,
@@ -490,8 +507,12 @@ function resolveInvoiceRequirement(registration) {
     registration?.requestInvoice,
     registration?.billingRequested,
     registration?.includeTaxes,
+    registration?.includeTax,
+    registration?.includesTaxes,
     registration?.paymentSummary?.requiresInvoice,
+    registration?.paymentSummary?.includeTax,
     registration?.paymentSummary?.includeTaxes,
+    registration?.paymentSummary?.includesTaxes,
   ]);
 
   if (directValue !== undefined) {
@@ -505,6 +526,13 @@ function resolveInvoiceRequirement(registration) {
 }
 
 function resolveTourAttendance(registration) {
+  const latestPayment = resolveLatestPayment(registration);
+  const paymentLevelValue = latestPayment?.includesTour;
+
+  if (paymentLevelValue !== undefined) {
+    return normalizeBooleanPreference(paymentLevelValue);
+  }
+
   const directValue = firstDefinedValue([
     registration?.willAttendTour,
     registration?.tourAttendance,
@@ -512,7 +540,9 @@ function resolveTourAttendance(registration) {
     registration?.includeMiddleOfTheWorldTour,
     registration?.middleOfTheWorldTour,
     registration?.requiresTour,
+    registration?.includesTour,
     registration?.paymentSummary?.includeMiddleOfTheWorldTour,
+    registration?.paymentSummary?.includesTour,
   ]);
 
   if (directValue !== undefined) {
@@ -523,6 +553,35 @@ function resolveTourAttendance(registration) {
     registration?.customFieldValues,
     ['tour', 'mitad del mundo', 'middle of the world'],
   );
+}
+
+function resolveInvoiceTaxAmount(registration) {
+  const latestPayment = resolveLatestPayment(registration);
+  const latestPaymentTaxAmount = firstDefinedValue([
+    latestPayment?.taxAmount,
+    latestPayment?.invoiceTaxAmount,
+  ]);
+
+  if (
+    latestPaymentTaxAmount !== undefined &&
+    latestPaymentTaxAmount !== null &&
+    latestPaymentTaxAmount !== ''
+  ) {
+    return Number(Math.max(0, Number(latestPaymentTaxAmount)).toFixed(2));
+  }
+
+  const directValue = firstDefinedValue([
+    registration?.taxAmount,
+    registration?.invoiceTaxAmount,
+    registration?.paymentSummary?.taxAmount,
+    registration?.paymentSummary?.invoiceTaxAmount,
+  ]);
+
+  if (directValue !== undefined && directValue !== null && directValue !== '') {
+    return Number(Math.max(0, Number(directValue)).toFixed(2));
+  }
+
+  return 0;
 }
 
 function resolveCustomFieldBoolean(customFieldValues, keywords) {
@@ -577,6 +636,20 @@ function formatBooleanPreference(value) {
 
 function firstDefinedValue(values) {
   return values.find((value) => value !== undefined && value !== null);
+}
+
+function resolveLatestPayment(registration) {
+  const payments = registration?.payments || [];
+
+  if (!payments.length) {
+    return null;
+  }
+
+  return [...payments].sort((left, right) => {
+    const leftTime = new Date(left?.createdAt || 0).getTime();
+    const rightTime = new Date(right?.createdAt || 0).getTime();
+    return rightTime - leftTime;
+  })[0];
 }
 
 function normalizeText(value) {

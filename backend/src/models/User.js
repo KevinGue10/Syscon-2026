@@ -88,6 +88,12 @@ User.init(
       allowNull: false,
       defaultValue: USER_ROLES.USER,
     },
+    active: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+      field: 'active',
+    },
   },
   {
     sequelize,

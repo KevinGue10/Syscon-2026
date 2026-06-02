@@ -10,6 +10,18 @@ const INCLUDED_PAGES_PER_PAPER = 6;
 const TOUR_PRICE_USD = 10;
 const INVOICE_TAX_RATE = 0.15;
 
+const calculateTaxAmountFromGross = ({ amountUsd, includesTour = false, requiresInvoice = false }) => {
+  if (!requiresInvoice) {
+    return 0;
+  }
+
+  const grossAmount = toNumber(amountUsd);
+  const untaxedTourAmount = includesTour ? TOUR_PRICE_USD : 0;
+  const taxableGrossAmount = Math.max(0, grossAmount - untaxedTourAmount);
+
+  return Number(((taxableGrossAmount * INVOICE_TAX_RATE) / (1 + INVOICE_TAX_RATE)).toFixed(2));
+};
+
 const normalizePricingMemberType = (memberType) => {
   if (memberType === MEMBER_TYPES.STUDENT) {
     return MEMBER_TYPES.STUDENT;
@@ -126,6 +138,8 @@ const resolveRequiresInvoice = (payload = {}, fallback = false) =>
     ? Boolean(payload.requiresInvoice)
     : payload.includeTaxes !== undefined
       ? Boolean(payload.includeTaxes)
+      : payload.includesTaxes !== undefined
+        ? Boolean(payload.includesTaxes)
       : Boolean(fallback);
 
 const buildFallbackSummary = (registration) => {
@@ -260,6 +274,7 @@ const buildPricingBreakdown = async ({
       extraPagesTotal,
       includesTour: Boolean(includesTour),
       requiresInvoice: Boolean(requiresInvoice),
+      includesTaxes: Boolean(requiresInvoice),
       subtotalAmount,
       tourAmount,
       invoiceTaxAmount,
@@ -384,6 +399,7 @@ const previewRegistrationTotals = async (payload = {}, options = {}) => {
               : Boolean(registration.isTems),
           includesTour: resolveIncludesTour(payload, registration.includesTour),
           requiresInvoice: resolveRequiresInvoice(payload, registration.requiresInvoice),
+          includesTaxes: resolveRequiresInvoice(payload, registration.requiresInvoice),
           totalAmount: result.breakdown.totalAmount,
           paidAmount: result.breakdown.paidAmount,
           pendingAmount: result.breakdown.pendingAmount,
@@ -401,4 +417,5 @@ module.exports = {
   previewRegistrationTotals,
   resolveIncludesTour,
   resolveRequiresInvoice,
+  calculateTaxAmountFromGross,
 };

@@ -96,6 +96,10 @@ export const dashboardService = {
           filters.isTems === '' || filters.isTems === undefined
             ? undefined
             : filters.isTems,
+        active:
+          filters.active === '' || filters.active === undefined || filters.active === 'all'
+            ? undefined
+            : filters.active,
         excludeAdmins: true,
       },
     });
@@ -111,6 +115,18 @@ export const dashboardService = {
         totalItems: users.filter((user) => user.role !== 'admin').length,
         totalPages: Math.max(1, Math.ceil(users.filter((user) => user.role !== 'admin').length / pageSize)),
       },
+    };
+  },
+
+  async updateAdminUserActiveStatus(userId, active) {
+    const { data } = await api.patch(`/admin/users/${userId}/active`, {
+      active: Boolean(active),
+    });
+
+    return {
+      success: data.success,
+      message: data.message,
+      user: data.data?.user || null,
     };
   },
 

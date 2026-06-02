@@ -4,6 +4,7 @@ const {
   calculateRegistrationTotals,
   resolveIncludesTour,
   resolveRequiresInvoice,
+  calculateTaxAmountFromGross,
 } = require('./pricingService');
 const { createAuditLog } = require('./auditService');
 const { sendPaymentConfirmationEmail, sendPayPhoneLinkEmail } = require('./emailService');
@@ -191,7 +192,8 @@ const syncRegistrationPaymentPreferences = async (registration, payload = {}) =>
     payload.isTour !== undefined;
   const shouldUpdateRequiresInvoice =
     payload.requiresInvoice !== undefined ||
-    payload.includeTaxes !== undefined;
+    payload.includeTaxes !== undefined ||
+    payload.includesTaxes !== undefined;
 
   if (!shouldUpdateIncludesTour && !shouldUpdateRequiresInvoice) {
     return registration;
@@ -283,6 +285,8 @@ const createPaymentRecord = async ({
   paymentMethod,
   provider,
   includesTour = false,
+  requiresInvoice = false,
+  taxAmount = null,
   transactionReference = null,
   providerPaymentId = null,
   paymentUrl = null,
@@ -290,6 +294,15 @@ const createPaymentRecord = async ({
   paymentDate = null,
   status = PAYMENT_STATUSES.PENDING,
 }) => {
+  const normalizedTaxAmount =
+    taxAmount !== null && taxAmount !== undefined
+      ? Number(Number(taxAmount).toFixed(2))
+      : calculateTaxAmountFromGross({
+          amountUsd: amounts.amountUsd,
+          includesTour,
+          requiresInvoice,
+        });
+
   return Payment.create({
     registrationId: registration.id,
     amountUsd: amounts.amountUsd,
@@ -298,10 +311,18 @@ const createPaymentRecord = async ({
     paymentMethod,
     provider,
     includesTour: Boolean(includesTour),
+    includesTax: Boolean(requiresInvoice),
+    taxAmount: normalizedTaxAmount,
     transactionReference,
     providerPaymentId,
     paymentUrl,
-    providerResponseJson,
+    providerResponseJson: {
+      ...(providerResponseJson || {}),
+      includesTour: Boolean(includesTour),
+      requiresInvoice: Boolean(requiresInvoice),
+      includeTaxes: Boolean(requiresInvoice),
+      taxAmount: normalizedTaxAmount,
+    },
     status,
     paymentDate,
   });
@@ -312,6 +333,8 @@ const findReusablePendingPayment = async ({
   paymentMethod,
   amountUsd,
   currency,
+  includesTour = false,
+  includesTax = false,
 }) => {
   const normalizedAmountUsd = Number(Number(amountUsd || 0).toFixed(2));
 
@@ -321,6 +344,8 @@ const findReusablePendingPayment = async ({
       paymentMethod,
       currency,
       amountUsd: normalizedAmountUsd,
+      includesTour: Boolean(includesTour),
+      includesTax: Boolean(includesTax),
       status: [
         PAYMENT_STATUSES.PENDING_LINK,
         PAYMENT_STATUSES.PENDING_PAYMENT,
@@ -338,8 +363,18 @@ const buildPaymentResponse = async (payment, registrationId) => {
     include: ['registration', 'validator', 'statusHistory'],
   });
 
+  const normalizedPayment = refreshedPayment.toJSON();
+  normalizedPayment.includesTax = Boolean(
+    normalizedPayment.includesTax !== undefined
+      ? normalizedPayment.includesTax
+      : normalizedPayment.registration?.requiresInvoice
+  );
+  normalizedPayment.taxAmount = Number(normalizedPayment.taxAmount || 0);
+  delete normalizedPayment.includesTaxes;
+  delete normalizedPayment.requiresInvoice;
+
   return {
-    payment: refreshedPayment,
+    payment: normalizedPayment,
     registration: summary.registration,
     paymentSummary: summary.breakdown,
   };
@@ -447,6 +482,8 @@ const createBankTransferPayment = async (payload, currentUser) => {
     paymentMethod: PAYMENT_METHODS.BANK_TRANSFER,
     amountUsd: amounts.amountUsd,
     currency: amounts.currency,
+    includesTour: resolvePaymentIncludesTour(payload),
+    includesTax: resolveRequiresInvoice(payload),
   });
 
   if (reusablePayment) {
@@ -459,6 +496,8 @@ const createBankTransferPayment = async (payload, currentUser) => {
     paymentMethod: PAYMENT_METHODS.BANK_TRANSFER,
     provider: PAYMENT_PROVIDERS.MANUAL,
     includesTour: resolvePaymentIncludesTour(payload),
+    requiresInvoice: resolveRequiresInvoice(payload),
+    taxAmount: payload.taxAmount,
     transactionReference: payload.transactionReference || null,
     status: PAYMENT_STATUSES.PENDING_PAYMENT,
   });
@@ -528,6 +567,7 @@ const redeemCoupon = async (payload, currentUser) => {
     paymentMethod: COUPON_PAYMENT_METHOD,
     provider: PAYMENT_PROVIDERS.COUPON,
     includesTour: resolvePaymentIncludesTour(payload),
+    requiresInvoice: resolveRequiresInvoice(payload),
     transactionReference: `COUPON-${coupon.code}-${Date.now()}`,
     providerResponseJson: {
       couponCode: coupon.code,
@@ -754,6 +794,8 @@ const createPayPalOrder = async (payload, currentUser) => {
     paymentMethod: PAYMENT_METHODS.PAYPAL,
     amountUsd: amounts.amountUsd,
     currency: amounts.currency,
+    includesTour: resolvePaymentIncludesTour(payload),
+    includesTax: resolveRequiresInvoice(payload),
   });
 
   if (reusablePayment) {
@@ -766,6 +808,8 @@ const createPayPalOrder = async (payload, currentUser) => {
     paymentMethod: PAYMENT_METHODS.PAYPAL,
     provider: PAYMENT_PROVIDERS.PAYPAL,
     includesTour: resolvePaymentIncludesTour(payload),
+    requiresInvoice: resolveRequiresInvoice(payload),
+    taxAmount: payload.taxAmount,
   });
 
   const order = await paypalService.createOrder({
@@ -938,6 +982,8 @@ const createPayPhonePayment = async (payload, currentUser) => {
     paymentMethod: PAYMENT_METHODS.PAYPHONE,
     amountUsd: amounts.amountUsd,
     currency: amounts.currency,
+    includesTour: resolvePaymentIncludesTour(payload),
+    includesTax: resolveRequiresInvoice(payload),
   });
 
   if (reusablePayment) {
@@ -950,6 +996,8 @@ const createPayPhonePayment = async (payload, currentUser) => {
     paymentMethod: PAYMENT_METHODS.PAYPHONE,
     provider: PAYMENT_PROVIDERS.PAYPHONE,
     includesTour: resolvePaymentIncludesTour(payload),
+    requiresInvoice: resolveRequiresInvoice(payload),
+    taxAmount: payload.taxAmount,
     transactionReference: payload.transactionReference || null,
     providerResponseJson: {
       requestType: 'manual_payphone_request',
@@ -1065,7 +1113,13 @@ const listPaymentsByRegistration = async (registrationId, currentUser) => {
     where: { registrationId },
     include: ['validator', 'statusHistory'],
     order: [['createdAt', 'DESC']],
-  });
+  }).then((payments) =>
+    payments.map((payment) => ({
+      ...payment.toJSON(),
+      includesTax: Boolean(payment.includesTax),
+      taxAmount: Number(payment.taxAmount || 0),
+    }))
+  );
 };
 
 const getPaymentProofAccess = async (paymentId, currentUser) => {

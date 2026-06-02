@@ -15,6 +15,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const { buildWorkbook } = require('../services/exportService');
 const { calculateRegistrationTotals } = require('../services/pricingService');
 const { createAuditLog } = require('../services/auditService');
+const { setUserActiveStatus } = require('../services/userService');
 const { sendSuccess, sendError } = require('../utils/responseContract');
 
 const normalizeCustomFieldValues = (values = []) =>
@@ -49,6 +50,7 @@ const buildPersonalInformation = (user) => ({
   affiliation: user.affiliation,
   phoneNumber: user.phoneNumber,
   occupation: user.occupation,
+  active: user.active,
 });
 
 const formatRecentRegistrationType = (registration) => {
@@ -108,14 +110,53 @@ const getRecentActivityData = async (limit = 10) => {
 };
 
 const listUsers = asyncHandler(async (req, res) => {
+  const where = {};
+  if (req.query.active !== undefined) {
+    where.active = ['1', 'true'].includes(String(req.query.active).toLowerCase());
+  }
+
   const users = await User.findAll({
+    where,
     attributes: { exclude: ['passwordHash'] },
     include: [{ association: 'country', required: false }],
     order: [['createdAt', 'DESC']],
   });
+
+  const userIds = users.map((user) => user.id);
+  const latestPaymentStatusByUserId = new Map();
+
+  if (userIds.length) {
+    const payments = await Payment.findAll({
+      attributes: ['id', 'status', 'createdAt'],
+      include: [
+        {
+          association: 'registration',
+          attributes: ['id', 'userId'],
+          required: true,
+          where: { userId: userIds },
+        },
+      ],
+      order: [['createdAt', 'DESC'], ['id', 'DESC']],
+    });
+
+    for (const payment of payments) {
+      const paymentUserId = payment.registration?.userId;
+      if (!paymentUserId || latestPaymentStatusByUserId.has(paymentUserId)) {
+        continue;
+      }
+
+      latestPaymentStatusByUserId.set(paymentUserId, payment.status);
+    }
+  }
+
   return sendSuccess(res, {
     message: 'Usuarios obtenidos correctamente.',
-    data: { users },
+    data: {
+      users: users.map((user) => ({
+        ...user.toJSON(),
+        latestPaymentStatus: latestPaymentStatusByUserId.get(user.id) || null,
+      })),
+    },
   });
 });
 
@@ -192,7 +233,16 @@ const getUserRegistrationDetails = asyncHandler(async (req, res) => {
         paymentStatus: registration.paymentStatus,
         includesTour: registration.includesTour,
         requiresInvoice: registration.requiresInvoice,
+        includesTaxes: registration.requiresInvoice,
       },
+      payments: (registration.payments || []).map((payment) => ({
+        ...payment.toJSON(),
+        includesTax:
+          payment.includesTax !== undefined
+            ? Boolean(payment.includesTax)
+            : Boolean(payment.requiresInvoice),
+        taxAmount: Number(payment.taxAmount || 0),
+      })),
       customFieldValues: normalizeCustomFieldValues(registration.customFieldValues),
       papers: (registration.papers || []).map((paper) => ({
         ...paper.toJSON(),
@@ -268,6 +318,23 @@ const getDashboard = asyncHandler(async (req, res) => {
       summary,
       recentActivity,
     },
+  });
+});
+
+const updateUserActiveStatus = asyncHandler(async (req, res) => {
+  const user = await setUserActiveStatus(req.params.userId, req.body.active, req.user);
+
+  await createAuditLog({
+    userId: req.user.id,
+    action: req.body.active ? 'enable-user' : 'disable-user',
+    entity: 'user',
+    entityId: user.id,
+    newValue: { active: user.active },
+  });
+
+  return sendSuccess(res, {
+    message: user.active ? 'Usuario habilitado correctamente.' : 'Usuario inhabilitado correctamente.',
+    data: { user },
   });
 });
 
@@ -386,6 +453,7 @@ const exportUsers = asyncHandler(async (req, res) => {
       { header: 'Phone', key: 'phoneNumber' },
       { header: 'Occupation', key: 'occupation' },
       { header: 'Role', key: 'role' },
+      { header: 'Active', key: 'active' },
       { header: 'Created At', key: 'createdAt' },
     ],
     rows: users,
@@ -583,6 +651,7 @@ module.exports = {
   getDashboardRecentActivity,
   createPricingRule,
   updatePricingRule,
+  updateUserActiveStatus,
   listPricingRules,
   exportUsers,
   exportRegistrations,

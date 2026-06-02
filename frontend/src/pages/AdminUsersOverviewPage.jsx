@@ -24,13 +24,7 @@ const PAGE_SIZE = 10;
 
 function AdminUsersOverviewPage() {
   const navigate = useNavigate();
-  const [users, setUsers] = useState([]);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    pageSize: PAGE_SIZE,
-    totalItems: 0,
-    totalPages: 1,
-  });
+  const [allUsers, setAllUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({
@@ -41,6 +35,8 @@ function AdminUsersOverviewPage() {
     attendanceType: '',
     isIeeeMember: '',
     isTems: '',
+    active: 'true',
+    paymentStatus: '',
   });
   const [appliedFilters, setAppliedFilters] = useState({
     search: '',
@@ -50,6 +46,8 @@ function AdminUsersOverviewPage() {
     attendanceType: '',
     isIeeeMember: '',
     isTems: '',
+    active: 'true',
+    paymentStatus: '',
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -57,6 +55,9 @@ function AdminUsersOverviewPage() {
     isOpen: false,
     title: '',
     user: null,
+    actionType: '',
+    isSubmitting: false,
+    error: '',
   });
   const [articlesModalState, setArticlesModalState] = useState({
     isOpen: false,
@@ -91,24 +92,16 @@ function AdminUsersOverviewPage() {
         setIsLoading(true);
         setError('');
         const response = await dashboardService.getAdminUsers({
-          page: currentPage,
-          pageSize: PAGE_SIZE,
-          filters: appliedFilters,
+          filters: {
+            active: appliedFilters.active,
+          },
         });
 
         if (!isMounted) {
           return;
         }
 
-        setUsers(response.users || []);
-        setPagination(
-          response.pagination || {
-            page: currentPage,
-            pageSize: PAGE_SIZE,
-            totalItems: response.users?.length || 0,
-            totalPages: 1,
-          },
-        );
+        setAllUsers(response.users || []);
       } catch (loadError) {
         if (!isMounted) {
           return;
@@ -131,31 +124,77 @@ function AdminUsersOverviewPage() {
     return () => {
       isMounted = false;
     };
-  }, [appliedFilters, currentPage]);
+  }, [appliedFilters.active]);
+
+  const filteredUsers = useMemo(
+    () => applyAdminUserFilters(allUsers, appliedFilters),
+    [allUsers, appliedFilters],
+  );
+
+  const pagination = useMemo(() => {
+    const totalItems = filteredUsers.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+    const safePage = Math.min(currentPage, totalPages);
+
+    return {
+      page: safePage,
+      pageSize: PAGE_SIZE,
+      totalItems,
+      totalPages,
+    };
+  }, [currentPage, filteredUsers.length]);
+
+  const users = useMemo(() => {
+    const startIndex = (pagination.page - 1) * PAGE_SIZE;
+    return filteredUsers.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [filteredUsers, pagination.page]);
+
+  useEffect(() => {
+    if (currentPage > pagination.totalPages) {
+      setCurrentPage(pagination.totalPages);
+    }
+  }, [currentPage, pagination.totalPages]);
 
   const countryOptions = useMemo(
-    () => buildDistinctOptions(users.map((user) => resolveCountryName(user))),
-    [users],
+    () => buildDistinctOptions(allUsers.map((user) => resolveCountryName(user))),
+    [allUsers],
   );
 
   const cityOptions = useMemo(
-    () => buildDistinctOptions(users.map((user) => user.city || '')),
-    [users],
+    () => buildDistinctOptions(allUsers.map((user) => user.city || '')),
+    [allUsers],
   );
 
   const occupationOptions = useMemo(
-    () => buildDistinctOptions(users.map((user) => translateOccupation(user.occupation))),
-    [users],
+    () => buildDistinctOptions(allUsers.map((user) => translateOccupation(user.occupation))),
+    [allUsers],
   );
 
   const attendanceOptions = useMemo(
-    () => buildDistinctOptions(users.map((user) => translateAttendanceType(resolvePrimaryRegistration(user)?.attendanceType))),
-    [users],
+    () =>
+      buildDistinctOptions(
+        allUsers.map((user) =>
+          translateAttendanceType(resolvePrimaryRegistration(user)?.attendanceType),
+        ),
+      ),
+    [allUsers],
+  );
+  const paymentStatusOptions = useMemo(
+    () =>
+      buildDistinctOptions(
+        allUsers.map((user) => resolveLatestPaymentStatusLabel(user?.latestPaymentStatus)),
+      ),
+    [allUsers],
   );
 
   const booleanOptions = [
     { value: 'true', label: 'Si' },
     { value: 'false', label: 'No' },
+  ];
+  const activityOptions = [
+    { value: 'true', label: 'Activos' },
+    { value: 'false', label: 'Inactivos' },
+    { value: 'all', label: 'Todos' },
   ];
   const selectedReviewedPayment = resolveSelectedPayment(paymentReviewState);
   const isResolvedPayment = isPaymentResolved(selectedReviewedPayment);
@@ -245,6 +284,18 @@ function AdminUsersOverviewPage() {
             value={filters.isTems}
             onChange={(event) => updateFilter(setFilters, 'isTems', event.target.value)}
           />
+          <SelectField
+            label="Estado de usuario"
+            options={activityOptions}
+            value={filters.active}
+            onChange={(event) => updateFilter(setFilters, 'active', event.target.value)}
+          />
+          <SelectField
+            label="Estado de pago"
+            options={paymentStatusOptions}
+            value={filters.paymentStatus}
+            onChange={(event) => updateFilter(setFilters, 'paymentStatus', event.target.value)}
+          />
           <div className="flex items-end gap-3">
             <Button
               variant="primary"
@@ -268,6 +319,8 @@ function AdminUsersOverviewPage() {
                   attendanceType: '',
                   isIeeeMember: '',
                   isTems: '',
+                  active: 'true',
+                  paymentStatus: '',
                 };
                 setFilters(clearedFilters);
                 setAppliedFilters(clearedFilters);
@@ -282,13 +335,29 @@ function AdminUsersOverviewPage() {
         <div className="mt-6">
           <Table
             allowOverflow
-            getRowClassName={(row) =>
-              hasAdministrativePendingPayment(row)
-                ? 'bg-amber-50/70'
-                : ''
-            }
+            getRowClassName={resolveUserRowClassName}
             columns={[
               { key: 'id', label: 'ID' },
+              {
+                key: 'active',
+                label: 'Estado',
+                render: (value) => (
+                  <span
+                    className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
+                      value
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-rose-100 text-rose-700'
+                    }`}
+                  >
+                    {value ? 'Activo' : 'Inactivo'}
+                  </span>
+                ),
+              },
+              {
+                key: 'latestPaymentStatus',
+                label: 'Estado de pago',
+                render: (value) => <PaymentStatusCell status={value} />,
+              },
               {
                 key: 'fullName',
                 label: 'Nombre completo',
@@ -408,35 +477,38 @@ function AdminUsersOverviewPage() {
             .
           </p>
           <div className="grid gap-2">
-            {['Ver detalle del usuario', 'Validar pago', 'Ver articulos', 'Inhabilitar usuario'].map((action) => (
+            {buildUserActions(selectedUser).map((action) => (
               <button
-                key={action}
+                key={action.label}
                 type="button"
                 className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
                 onClick={async () => {
                   setSelectedUser(null);
-                  if (action === 'Ver detalle del usuario') {
+                  if (action.type === 'view-details') {
                     if (selectedUser?.id) {
                       navigate(`/admin/users/${selectedUser.id}/registration-details`);
                     }
                     return;
                   }
-                  if (action === 'Validar pago') {
+                  if (action.type === 'review-payments') {
                     await openPaymentReviewModal(selectedUser);
                     return;
                   }
-                  if (action === 'Ver articulos') {
+                  if (action.type === 'view-papers') {
                     await openArticlesModal(selectedUser);
                     return;
                   }
                   setActionModal({
                     isOpen: true,
-                    title: action,
+                    title: action.label,
                     user: selectedUser,
+                    actionType: action.type,
+                    isSubmitting: false,
+                    error: '',
                   });
                 }}
               >
-                {action}
+                {action.label}
               </button>
             ))}
           </div>
@@ -451,6 +523,9 @@ function AdminUsersOverviewPage() {
             isOpen: false,
             title: '',
             user: null,
+            actionType: '',
+            isSubmitting: false,
+            error: '',
           })
         }
       >
@@ -464,22 +539,42 @@ function AdminUsersOverviewPage() {
             </span>
             .
           </p>
+          {actionModal.error ? (
+            <Alert title="No fue posible actualizar el usuario" description={actionModal.error} variant="danger" />
+          ) : null}
           <p className="text-sm text-slate-500">
-            Cuando me detalles el flujo de esta opcion, conecto aqui el contenido y las acciones del
-            modal.
+            {actionModal.actionType === 'deactivate-user'
+              ? 'El usuario perdera acceso a la plataforma hasta que sea habilitado nuevamente desde administracion.'
+              : 'El usuario recuperara acceso normal a la plataforma inmediatamente despues de esta accion.'}
           </p>
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-3">
             <Button
-              variant="primary"
+              variant="ghost"
+              className="border border-slate-200"
               onClick={() =>
                 setActionModal({
                   isOpen: false,
                   title: '',
                   user: null,
+                  actionType: '',
+                  isSubmitting: false,
+                  error: '',
                 })
               }
+              disabled={actionModal.isSubmitting}
             >
-              Cerrar
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={submitUserActiveStatus}
+              disabled={actionModal.isSubmitting}
+            >
+              {actionModal.isSubmitting
+                ? 'Procesando...'
+                : actionModal.actionType === 'deactivate-user'
+                  ? 'Inhabilitar usuario'
+                  : 'Activar usuario'}
             </Button>
           </div>
         </div>
@@ -1289,6 +1384,49 @@ function AdminUsersOverviewPage() {
       }));
     }
   }
+
+  async function submitUserActiveStatus() {
+    if (!actionModal.user?.id) {
+      return;
+    }
+
+    const nextActiveState = actionModal.actionType === 'activate-user';
+
+    try {
+      setActionModal((current) => ({
+        ...current,
+        isSubmitting: true,
+        error: '',
+      }));
+
+      await dashboardService.updateAdminUserActiveStatus(actionModal.user.id, nextActiveState);
+
+      const response = await dashboardService.getAdminUsers({
+        filters: {
+          active: appliedFilters.active,
+        },
+      });
+
+      setAllUsers(response.users || []);
+      setActionModal({
+        isOpen: false,
+        title: '',
+        user: null,
+        actionType: '',
+        isSubmitting: false,
+        error: '',
+      });
+    } catch (submitError) {
+      setActionModal((current) => ({
+        ...current,
+        isSubmitting: false,
+        error:
+          submitError?.response?.data?.message ||
+          submitError?.message ||
+          'No fue posible actualizar el estado del usuario.',
+      }));
+    }
+  }
 }
 
 function updateFilter(setFilters, key, value) {
@@ -1323,12 +1461,152 @@ function resolvePrimaryRegistration(user) {
   return user?.registrations?.[0] || null;
 }
 
+function applyAdminUserFilters(users, filters) {
+  return (users || []).filter((user) => {
+    const primaryRegistration = resolvePrimaryRegistration(user);
+    const normalizedSearch = normalizeFilterText(filters.search);
+
+    if (normalizedSearch) {
+      const searchTarget = normalizeFilterText(
+        [
+          `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+          user.email,
+          user.affiliation,
+          user.docNumber,
+          resolveCountryName(user),
+          user.city,
+        ]
+          .filter(Boolean)
+          .join(' '),
+      );
+
+      if (!searchTarget.includes(normalizedSearch)) {
+        return false;
+      }
+    }
+
+    if (
+      filters.country &&
+      normalizeFilterText(resolveCountryName(user)) !== normalizeFilterText(filters.country)
+    ) {
+      return false;
+    }
+
+    if (filters.city && normalizeFilterText(user.city) !== normalizeFilterText(filters.city)) {
+      return false;
+    }
+
+    if (
+      filters.occupation &&
+      normalizeFilterText(translateOccupation(user.occupation)) !==
+        normalizeFilterText(filters.occupation)
+    ) {
+      return false;
+    }
+
+    if (
+      filters.attendanceType &&
+      normalizeFilterText(translateAttendanceType(primaryRegistration?.attendanceType)) !==
+        normalizeFilterText(filters.attendanceType)
+    ) {
+      return false;
+    }
+
+    if (filters.isIeeeMember !== '') {
+      const isIeeeMember = Boolean(primaryRegistration?.isIeeeMember);
+      if (String(isIeeeMember) !== String(filters.isIeeeMember)) {
+        return false;
+      }
+    }
+
+    if (filters.isTems !== '') {
+      const isTems = Boolean(primaryRegistration?.isTems);
+      if (String(isTems) !== String(filters.isTems)) {
+        return false;
+      }
+    }
+
+    if (filters.active !== '' && filters.active !== 'all') {
+      const isActive = Boolean(user?.active);
+      if (String(isActive) !== String(filters.active)) {
+        return false;
+      }
+    }
+
+    if (
+      filters.paymentStatus &&
+      normalizeFilterText(resolveLatestPaymentStatusLabel(user?.latestPaymentStatus)) !==
+        normalizeFilterText(filters.paymentStatus)
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function buildUserActions(user) {
+  return [
+    { type: 'view-details', label: 'Ver detalle del usuario' },
+    { type: 'review-payments', label: 'Validar pago' },
+    { type: 'view-papers', label: 'Ver articulos' },
+    {
+      type: user?.active === false ? 'activate-user' : 'deactivate-user',
+      label: user?.active === false ? 'Activar usuario' : 'Inhabilitar usuario',
+    },
+  ];
+}
+
+function normalizeFilterText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
 function hasAdministrativePendingPayment(user) {
   const payments = resolvePrimaryRegistration(user)?.payments || [];
 
   return payments.some(
     (payment) => isPaymentPendingValidation(payment) || isPaymentPendingLink(payment),
   );
+}
+
+function resolveUserRowClassName(user) {
+  if (user?.active === false && hasAdministrativePendingPayment(user)) {
+    return 'bg-amber-50/70 opacity-75';
+  }
+
+  if (user?.active === false) {
+    return 'bg-slate-100/80 opacity-75';
+  }
+
+  if (hasAdministrativePendingPayment(user)) {
+    return 'bg-amber-50/70';
+  }
+
+  return '';
+}
+
+function PaymentStatusCell({ status }) {
+  if (!status) {
+    return (
+      <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+        Sin pago registrado
+      </span>
+    );
+  }
+
+  return <StatusBadge status={status} label={translatePaymentStatus(status)} />;
+}
+
+function resolveLatestPaymentStatusLabel(status) {
+  if (!status) {
+    return 'Sin pago registrado';
+  }
+
+  return translatePaymentStatus(status);
 }
 
 function resolveSelectedPayment(paymentReviewState) {

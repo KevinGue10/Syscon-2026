@@ -17,6 +17,10 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ message: 'Invalid authentication token.' });
     }
 
+    if (!user.active) {
+      return res.status(403).json({ message: 'User account is disabled.' });
+    }
+
     req.user = user;
     return next();
   } catch (error) {

@@ -8,6 +8,7 @@ const AppError = require('../utils/errors');
 const { sendWelcomeEmail, sendPasswordResetEmail } = require('../services/emailService');
 const { createAuditLog } = require('../services/auditService');
 const { saveCustomFieldValues } = require('../services/customFieldService');
+const { ensureUserIsActive } = require('../services/userService');
 const { sendSuccess } = require('../utils/responseContract');
 
 const UPPERCASE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -77,6 +78,7 @@ const register = asyncHandler(async (req, res) => {
     affiliation: req.body.affiliation,
     phoneNumber: req.body.phoneNumber,
     occupation: req.body.occupation || null,
+    active: true,
   });
 
   const activeEventEdition = await EventEdition.findOne({ where: { isActive: true } });
@@ -118,6 +120,8 @@ const login = asyncHandler(async (req, res) => {
     throw new AppError('Credenciales invalidas.', 401);
   }
 
+  ensureUserIsActive(user, 'Tu cuenta se encuentra inhabilitada. Contacta al administrador.');
+
   const isPasswordValid = await bcrypt.compare(req.body.password, user.passwordHash);
   if (!isPasswordValid) {
     throw new AppError('Credenciales invalidas.', 401);
@@ -153,6 +157,8 @@ const forgotPassword = asyncHandler(async (req, res) => {
     });
   }
 
+  ensureUserIsActive(user, 'Tu cuenta se encuentra inhabilitada. Contacta al administrador.');
+
   const provisionalPassword = generateSecureTemporaryPassword();
   const passwordHash = await bcrypt.hash(provisionalPassword, 10);
   await user.update({ passwordHash });
@@ -186,6 +192,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
 const changePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   const user = req.user;
+  ensureUserIsActive(user, 'Tu cuenta se encuentra inhabilitada. Contacta al administrador.');
 
   const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
   if (!isCurrentPasswordValid) {

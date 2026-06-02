@@ -12,6 +12,7 @@ const amountValidation = [
   body('amount').optional().isFloat({ gt: 0 }).withMessage('amount must be greater than 0.'),
   body('amountUsd').optional().isFloat({ gt: 0 }).withMessage('amountUsd must be greater than 0.'),
   body('amountCop').optional().isFloat({ gt: 0 }).withMessage('amountCop must be greater than 0.'),
+  body('taxAmount').optional().isFloat({ min: 0 }).withMessage('taxAmount must be 0 or greater.'),
   body('currency').optional().isIn(['USD', 'COP']).withMessage('currency must be USD or COP.'),
 ];
 
@@ -20,6 +21,7 @@ const couponValidation = [
   body('code').trim().notEmpty().withMessage('code is required.'),
   body('baseAmount').optional().isFloat({ min: 0 }).withMessage('baseAmount must be 0 or greater.'),
   body('includeTaxes').optional().isBoolean(),
+  body('includesTaxes').optional().isBoolean(),
   body('includesTour').optional().isBoolean().withMessage('includesTour must be boolean.'),
 ];
 
@@ -30,6 +32,7 @@ const bankTransferValidation = [
   body('includesTour').optional().isBoolean().withMessage('includesTour must be boolean.'),
   body('requiresInvoice').optional().isBoolean().withMessage('requiresInvoice must be boolean.'),
   body('includeTaxes').optional().isBoolean().withMessage('includeTaxes must be boolean.'),
+  body('includesTaxes').optional().isBoolean().withMessage('includesTaxes must be boolean.'),
 ];
 
 const paymentProofValidation = [
@@ -65,6 +68,7 @@ const paypalCreateOrderValidation = [
   body('includesTour').optional().isBoolean().withMessage('includesTour must be boolean.'),
   body('requiresInvoice').optional().isBoolean().withMessage('requiresInvoice must be boolean.'),
   body('includeTaxes').optional().isBoolean().withMessage('includeTaxes must be boolean.'),
+  body('includesTaxes').optional().isBoolean().withMessage('includesTaxes must be boolean.'),
 ];
 
 const paypalCaptureOrderValidation = [
@@ -80,6 +84,7 @@ const payphoneCreatePaymentValidation = [
   body('includesTour').optional().isBoolean().withMessage('includesTour must be boolean.'),
   body('requiresInvoice').optional().isBoolean().withMessage('requiresInvoice must be boolean.'),
   body('includeTaxes').optional().isBoolean().withMessage('includeTaxes must be boolean.'),
+  body('includesTaxes').optional().isBoolean().withMessage('includesTaxes must be boolean.'),
 ];
 
 module.exports = {

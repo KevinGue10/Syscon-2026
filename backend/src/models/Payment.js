@@ -107,6 +107,52 @@ Payment.init(
       defaultValue: false,
       field: 'includes_tour',
     },
+    includesTax: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'includes_tax',
+    },
+    taxAmount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0,
+      field: 'tax_amount',
+    },
+    requiresInvoice: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        const includesTax = this.getDataValue('includesTax');
+        const providerResponseJson = this.getDataValue('providerResponseJson') || {};
+        return Boolean(
+          includesTax !== undefined
+            ? includesTax
+            : providerResponseJson.requiresInvoice !== undefined
+            ? providerResponseJson.requiresInvoice
+            : providerResponseJson.includeTaxes
+        );
+      },
+      set() {
+        throw new Error('Do not try to set the `requiresInvoice` value.');
+      },
+    },
+    includesTaxes: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        const includesTax = this.getDataValue('includesTax');
+        const providerResponseJson = this.getDataValue('providerResponseJson') || {};
+        return Boolean(
+          includesTax !== undefined
+            ? includesTax
+            : providerResponseJson.includeTaxes !== undefined
+            ? providerResponseJson.includeTaxes
+            : providerResponseJson.requiresInvoice
+        );
+      },
+      set() {
+        throw new Error('Do not try to set the `includesTaxes` value.');
+      },
+    },
     status: {
       type: DataTypes.ENUM(...Object.values(PAYMENT_STATUSES)),
       allowNull: false,

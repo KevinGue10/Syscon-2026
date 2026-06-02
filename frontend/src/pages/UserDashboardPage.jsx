@@ -86,7 +86,7 @@ function UserDashboardPage() {
 
   const registrations = dashboard?.registrations || [];
   const outstandingBalance = registrations.reduce(
-    (sum, item) => sum + (item.pricing?.balance || 0),
+    (sum, item) => sum + resolveDashboardPendingBalance(item),
     0,
   );
 
@@ -211,7 +211,7 @@ function UserDashboardPage() {
                   key: 'pricing',
                   label: 'Saldo',
                   render: (value, row) =>
-                    formatCurrency(value?.balance ?? row?.pendingAmount ?? 0),
+                    formatCurrency(resolveDashboardPendingBalance(row)),
                 },
               ]}
               rows={registrations}
@@ -234,6 +234,32 @@ function Metric({ label, value }) {
 
 export default UserDashboardPage;
 
+function resolveDashboardPendingBalance(registration) {
+  const basePendingAmount = Number(
+    registration?.pricing?.balance ??
+      registration?.paymentSummary?.pendingAmount ??
+      registration?.pendingAmount ??
+      0,
+  );
+  const latestPayment = resolveLatestPayment(registration);
+  const includesTaxes = normalizeBooleanPreference(
+    firstDefinedValue([
+      latestPayment?.includesTax,
+      latestPayment?.includesTaxes,
+      latestPayment?.requiresInvoice,
+    ]),
+  );
+  const taxAmount = Number(
+    firstDefinedValue([latestPayment?.taxAmount, latestPayment?.invoiceTaxAmount]) ?? 0,
+  );
+
+  if (!includesTaxes || taxAmount <= 0) {
+    return basePendingAmount;
+  }
+
+  return Number((basePendingAmount + taxAmount).toFixed(2));
+}
+
 function resolveCountryName(profile, countries = []) {
   if (profile?.country?.name) {
     return profile.country.name;
@@ -248,4 +274,40 @@ function resolveCountryName(profile, countries = []) {
   }
 
   return countries.find((country) => String(country.id) === String(profile.countryId))?.name || '';
+}
+
+function resolveLatestPayment(registration) {
+  const payments = registration?.payments || [];
+
+  if (!payments.length) {
+    return null;
+  }
+
+  return [...payments].sort((left, right) => {
+    const leftTime = new Date(left?.createdAt || 0).getTime();
+    const rightTime = new Date(right?.createdAt || 0).getTime();
+    return rightTime - leftTime;
+  })[0];
+}
+
+function firstDefinedValue(values) {
+  return values.find((value) => value !== undefined && value !== null);
+}
+
+function normalizeBooleanPreference(value) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (value === null || value === undefined) {
+    return false;
+  }
+
+  return ['true', '1', 'si', 'yes', 'y'].includes(
+    String(value)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim(),
+  );
 }

@@ -7,7 +7,8 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed": "node src/seeders/index.js",
-    "verify:smtp": "node src/scripts/verifySmtp.js"
+    "verify:smtp": "node src/scripts/verifySmtp.js",
+    "send:payphone-links": "node src/scripts/sendPayPhoneLinksFromCsv.js"
   },
   "keywords": [
     "express",

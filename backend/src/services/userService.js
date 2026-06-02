@@ -19,6 +19,12 @@ const USER_PROFILE_FIELDS = [
   'occupation',
 ];
 
+const ensureUserIsActive = (user, message = 'El usuario se encuentra inhabilitado.') => {
+  if (!user?.active) {
+    throw new AppError(message, 403);
+  }
+};
+
 const getUserProfile = async (userId, options = {}) => {
   const { transaction } = options;
   const user = await User.findByPk(userId, {
@@ -66,6 +72,7 @@ const validateUniqueDocNumber = async (docNumber, userId, options = {}) => {
 
 const updateCurrentUser = async (currentUser, payload, options = {}) => {
   const { transaction } = options;
+  ensureUserIsActive(currentUser);
   await validateUniqueDocNumber(payload.docNumber, currentUser.id, { transaction });
 
   const updatePayload = {};
@@ -96,9 +103,32 @@ const updateCurrentUser = async (currentUser, payload, options = {}) => {
   return getUserProfile(currentUser.id, { transaction });
 };
 
+const setUserActiveStatus = async (userId, active, actor, options = {}) => {
+  const { transaction } = options;
+  const user = await User.findByPk(userId, { transaction });
+
+  if (!user) {
+    throw new AppError('Usuario no encontrado.', 404);
+  }
+
+  if (actor?.id === user.id && active === false) {
+    throw new AppError('No puedes inhabilitar tu propio usuario.', 400);
+  }
+
+  const normalizedActive = Boolean(active);
+  if (user.active === normalizedActive) {
+    return user;
+  }
+
+  await user.update({ active: normalizedActive }, { transaction });
+  return user;
+};
+
 module.exports = {
   USER_PROFILE_FIELDS,
+  ensureUserIsActive,
   getUserProfile,
   updateCurrentUser,
+  setUserActiveStatus,
   sanitizeUser,
 };
