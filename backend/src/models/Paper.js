@@ -23,7 +23,6 @@ Paper.init(
     paperCode: {
       type: DataTypes.STRING(100),
       allowNull: false,
-      unique: true,
       field: 'paper_code',
     },
     authors: {
