@@ -590,7 +590,7 @@ function PaymentPage() {
 
         <div className="space-y-8">
           {canRedeemCoupon ? (
-            <Card className="rounded-[2rem] p-8">
+            <Card className="rounded-xl p-8">
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
                 Descuento total
               </p>
@@ -688,7 +688,7 @@ function PaymentPage() {
             {pageState.payments.map((payment) => (
               <div
                 key={payment.id}
-                className={`rounded-[1.5rem] border bg-slate-50 p-5 ${
+                className={`rounded-xl border bg-slate-50 p-5 ${
                   String(highlightedPaymentId) === String(payment.id)
                     ? 'border-brand-400 shadow-[0_20px_50px_rgba(37,82,134,0.12)]'
                     : 'border-slate-200'

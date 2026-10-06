@@ -30,7 +30,7 @@ export function PaymentMethods({
   const hasPendingPayPhonePayment = Boolean(pendingPayPhonePayment?.id);
 
   return (
-    <Card className="rounded-[2rem] p-8">
+    <Card className="rounded-xl p-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
@@ -81,7 +81,7 @@ export function PaymentMethods({
         </div>
       ) : null}
 
-      <div className="mt-6 rounded-[1.5rem] border border-brand-100 bg-brand-50/70 p-5">
+      <div className="mt-6 rounded-xl border border-brand-100 bg-brand-50/70 p-5">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-700">
           Como funciona
         </p>
@@ -97,7 +97,7 @@ export function PaymentMethods({
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
           <p className="text-lg font-semibold text-slate-950">PayPhone</p>
           <p className="mt-2 text-sm leading-7 text-slate-600">
             {hasPendingPayPhonePayment
@@ -124,7 +124,7 @@ export function PaymentMethods({
           </div>
         </div>
 
-        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
+        <div className="rounded-xl border border-slate-200 bg-white p-5">
           <div className="flex flex-col gap-2">
             <span className="text-sm font-semibold text-slate-700">
               Adjuntar comprobante o soporte

@@ -9,12 +9,12 @@ export function Table({
     <div className={`rounded-3xl border border-slate-200 bg-white ${allowOverflow ? 'overflow-visible' : 'overflow-hidden'}`}>
       <div className={allowOverflow ? 'overflow-x-auto overflow-y-visible' : 'overflow-x-auto'}>
         <table className="min-w-full divide-y divide-slate-200 text-left">
-          <thead className="bg-slate-100/80">
+          <thead className="bg-brand-50">
             <tr>
               {columns.map((column) => (
                 <th
                   key={column.key}
-                  className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500"
+                  className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.12em] text-brand-800"
                 >
                   {column.label}
                 </th>

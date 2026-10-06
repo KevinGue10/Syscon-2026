@@ -492,7 +492,7 @@ function EditRegistrationPage() {
               Editar información
             </p>
             <h1 className="mt-3 text-4xl font-semibold text-slate-950">
-              Actualiza tu inscripción de TEMSCON LATAM 2026
+              Actualiza tu inscripción de IEEE SYSCON LATAM 2026
             </h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
               Revisa la información cargada en tu cuenta, ajusta los datos que necesites y guarda
@@ -606,7 +606,7 @@ function EditRegistrationPage() {
                       <span className="text-sm font-semibold text-slate-700">Conferencia</span>
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                         <p className="text-sm font-semibold text-slate-900">
-                          {pageState.registration.eventEdition?.name || 'TEMSCON LATAM 2026'}
+                          {pageState.registration.eventEdition?.name || 'IEEE SYSCON LATAM 2026'}
                         </p>
                         <p className="mt-1 text-sm text-slate-500">
                           Tu inscripción se encuentra asociada a esta edición activa del evento.
@@ -869,10 +869,10 @@ function EditRegistrationPage() {
         </div>
 
         <div className="space-y-6">
-          <Card className="sticky top-24 overflow-hidden border-none bg-[#13253d] p-8 text-white shadow-[0_30px_80px_rgba(19,37,61,0.32)]">
+          <Card className="sticky top-24 overflow-hidden border-none bg-[#00334d] p-8 text-white shadow-[0_30px_80px_rgba(0,51,77,0.2)]">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,74,74,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(57,141,222,0.18),transparent_30%)]" />
             <div className="relative">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#9ec5ff]">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#a6dce5]">
                 Edición guiada
               </p>
               <h2 className="mt-3 text-2xl font-semibold text-white">
@@ -888,7 +888,7 @@ function EditRegistrationPage() {
                     key={item.title}
                     className="rounded-2xl border border-white/10 bg-white/6 px-5 py-4 backdrop-blur-sm"
                   >
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff9a9a]">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ffb184]">
                       Paso recomendado {index + 1}
                     </p>
                     <p className="mt-2 text-base font-semibold text-white">{item.title}</p>
@@ -896,7 +896,7 @@ function EditRegistrationPage() {
                   </div>
                 ))}
               </div>
-              <div className="mt-6 rounded-2xl border border-dashed border-[#ff6b6b]/55 bg-[#0f1d30]/70 px-5 py-4">
+              <div className="mt-6 rounded-2xl border border-dashed border-[#ff944d]/55 bg-[#002c45]/70 px-5 py-4">
                 <p className="text-sm font-semibold text-white">
                   Artículos actualmente asociados: {paperFields.length || 0}
                 </p>

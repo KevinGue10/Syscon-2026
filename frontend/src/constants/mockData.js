@@ -1,10 +1,10 @@
 export const conferenceOverview = {
-  name: 'TEMSCON LATAM 2026',
-  date: 'Del 24 al 26 de junio de 2026',
-  location: 'Quito, Ecuador',
+  name: 'IEEE SYSCON LATAM 2026',
+  date: '3 y 4 de diciembre de 2026',
+  location: 'Cartagena, Colombia',
   venue: 'Sede de conferencia por confirmar',
   description:
-    'Conferencia de la Sociedad de Gestion de Tecnologia e Ingenieria del IEEE para lideres, investigadores y profesionales que impulsan innovacion, analitica y transformacion empresarial en America Latina.',
+    'Primera IEEE Latin American Systems Conference: diseño, integración y gestión de sistemas complejos, conectando academia, industria y gobierno en América Latina.',
 };
 
 export const dashboardMetrics = [

@@ -624,7 +624,7 @@ function AdminUsersOverviewPage() {
             ) : (
               <div className="space-y-4">
                 {articlesModalState.papers.map((paper, index) => (
-                  <div key={paper.id || index} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                  <div key={paper.id || index} className="rounded-xl border border-slate-200 bg-slate-50 p-5">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
                         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -751,7 +751,7 @@ function AdminUsersOverviewPage() {
             ) : (
               <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
                 <div className="space-y-4">
-                  <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
                       Pagos del participante
                     </p>
@@ -788,7 +788,7 @@ function AdminUsersOverviewPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
+                  <div className="rounded-xl border border-slate-200 bg-white p-5">
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
                       Resumen de revision
                     </p>
@@ -810,7 +810,7 @@ function AdminUsersOverviewPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
+                  <div className="rounded-xl border border-slate-200 bg-white p-5">
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
                       Comprobante cargado
                     </p>
@@ -823,7 +823,7 @@ function AdminUsersOverviewPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
+                  <div className="rounded-xl border border-slate-200 bg-white p-5">
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
                       Validacion administrativa
                     </p>

@@ -21,20 +21,20 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/60 bg-white/80 backdrop-blur">
-      <div className="container-shell flex min-h-20 items-center justify-between gap-6">
+      <div className="container-shell flex min-h-20 flex-wrap items-center justify-between gap-3 py-3">
         <Link to="/" className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-sm font-bold text-white">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#00334d] text-sm font-bold text-white">
             IEEE
           </div>
           <div>
-            <p className="font-display text-sm font-semibold text-slate-950">
-              Plataforma de Conferencia
+            <p className="font-display text-sm font-semibold text-brand-900">
+              SYSCON LATAM 2026
             </p>
-            <p className="text-xs text-slate-500">Portal de registro y participantes</p>
+            <p className="text-xs text-slate-500">Cartagena · 3–4 diciembre 2026</p>
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="order-3 flex w-full flex-wrap items-center gap-x-6 gap-y-3 border-t border-brand-100 pt-3 md:order-none md:w-auto md:border-0 md:pt-0">
           {navigationItems.map((item) => (
             <NavLink key={item.path} to={item.path} className={linkClass}>
               {item.label}
@@ -56,9 +56,9 @@ export function Navbar() {
           ) : !isAuthenticated ? (
             <Link
               to="/register"
-              className="hidden rounded-2xl bg-accent-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-accent-300 sm:inline-flex"
+              className="hidden rounded-2xl bg-[#c83e00] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a93200] sm:inline-flex"
             >
-              Registrate ahora
+              Regístrate ahora
             </Link>
           ) : null}
         </div>

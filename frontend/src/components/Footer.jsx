@@ -4,10 +4,10 @@ export function Footer() {
       <div className="container-shell grid gap-8 py-10 md:grid-cols-2">
         <div>
           <p className="font-display text-lg font-semibold text-slate-950">
-            IEEE Conference Platform
+            IEEE SYSCON LATAM 2026
           </p>
           <p className="mt-2 max-w-md text-sm text-slate-600">
-            Plataforma oficial para gestionar inscripciones, articulos y pagos del evento.
+            Cartagena, Colombia · 3 y 4 de diciembre de 2026. Registro y gestión de participantes.
           </p>
         </div>
         <div className="md:text-right">

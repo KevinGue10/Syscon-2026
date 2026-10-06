@@ -236,10 +236,10 @@ function RegistrationDetailsPage() {
           ) : null}
         </Card>
 
-        <Card className="overflow-hidden border-none bg-[#13253d] p-8 text-white shadow-[0_30px_80px_rgba(19,37,61,0.32)]">
+        <Card className="overflow-hidden border-none bg-[#00334d] p-8 text-white shadow-[0_30px_80px_rgba(0,51,77,0.2)]">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,74,74,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(57,141,222,0.18),transparent_30%)]" />
           <div className="relative">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#9ec5ff]">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#a6dce5]">
               Resumen general
             </p>
             <h2 className="mt-3 text-2xl font-semibold text-white">Estado actual de tu inscripcion</h2>
@@ -276,7 +276,7 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
   const invoiceTaxAmount = resolveInvoiceTaxAmount(registration);
 
   const registrationRows = [
-    { label: 'Conferencia', value: registration.eventEdition?.name || 'TEMSCON LATAM 2026' },
+    { label: 'Conferencia', value: registration.eventEdition?.name || 'IEEE SYSCON LATAM 2026' },
     {
       label: 'Tipo de participacion',
       value: translateParticipationType(registration.participantType || registration.participationType),
@@ -460,8 +460,8 @@ function ReadOnlyRow({ label, value }) {
 function SummaryPill({ label, value, accent = 'blue' }) {
   const styles =
     accent === 'red'
-      ? 'border-[#ff6b6b]/35 bg-[#ff6b6b]/10 text-white'
-      : 'border-[#6db7ff]/35 bg-[#6db7ff]/10 text-white';
+      ? 'border-[#ff944d]/35 bg-[#ff944d]/10 text-white'
+      : 'border-[#79c5d1]/35 bg-[#79c5d1]/10 text-white';
 
   return (
     <div className={`rounded-2xl border px-4 py-4 ${styles}`}>

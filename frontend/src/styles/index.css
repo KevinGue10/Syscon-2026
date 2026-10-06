@@ -27,10 +27,37 @@
   }
 
   .panel {
-    @apply rounded-3xl border border-white/60 bg-white/90 shadow-panel backdrop-blur;
+    @apply rounded-3xl border border-slate-200 bg-white shadow-panel;
   }
 
   .section-title {
     @apply font-display text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl;
   }
+}
+
+/* SYSCON LATAM homepage */
+.syscon-home{--navy:#00334d;--teal:#007b91;background:white;color:var(--navy)}
+.syscon-hero{background:radial-gradient(ellipse at 95% 15%,#fce8de,transparent 48%),linear-gradient(120deg,#fff 40%,#eef7f8);border-bottom:1px solid #dce8eb}
+.syscon-hero-layout{display:grid;grid-template-columns:1.3fr 1fr;gap:70px;align-items:center;padding-top:80px;padding-bottom:80px}
+.syscon-eyebrow{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);line-height:1.9}
+.syscon-wordmark{display:flex;flex-wrap:wrap;align-items:center;gap:15px;margin-top:22px;font-size:clamp(48px,6vw,82px);font-weight:800;letter-spacing:-.07em;line-height:1.05;background:linear-gradient(110deg,#ec0924,#ff5100);background-clip:text;color:transparent}
+.syscon-wordmark>span{font-size:28px;letter-spacing:-.04em;line-height:1.1}.syscon-wordmark strong{display:block;color:var(--teal);font-size:43px;font-weight:500;letter-spacing:-.06em}
+.syscon-subtitle{margin-top:15px;color:var(--teal);font-size:14px}.syscon-rule{width:60px;height:4px;margin:30px 0;background:#ff5100}.syscon-heading{font-size:clamp(28px,3vw,40px);font-weight:600;line-height:1.3;letter-spacing:-.035em}
+.syscon-description{max-width:550px;margin-top:20px;color:#526b7a;font-size:15px;line-height:1.9}.syscon-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}.syscon-button{display:inline-flex;align-items:center;justify-content:center;gap:24px;padding:15px 22px;border-radius:6px;font-size:13px;font-weight:800;transition:background .2s}.syscon-primary{background:#c83e00;color:white}.syscon-primary:hover{background:#a93200}.syscon-outline{border:1px solid #b8cfd6;color:var(--navy)}.syscon-outline:hover{background:#e5f1f3}.syscon-home a:focus-visible{outline:3px solid var(--teal);outline-offset:5px}
+.syscon-event{color:white;background:linear-gradient(145deg,#00485d,#002c45);padding:36px;border-radius:12px;box-shadow:0 22px 50px #00334d20;border-top:5px solid #ff5100}.syscon-event-top{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:11px;color:#b6d8df;letter-spacing:.08em}.syscon-city{font-family:Poppins,sans-serif;font-size:clamp(30px,3.2vw,46px);font-weight:600;letter-spacing:-.04em;margin:36px 0}.syscon-city>span{display:block;font-family:Manrope,sans-serif;font-size:17px;letter-spacing:.05em;font-weight:400;color:#b6d8df;margin-top:4px}.syscon-date{display:flex;align-items:center;gap:20px;border-top:1px solid #ffffff25;border-bottom:1px solid #ffffff25;padding:22px 0;font-size:12px;letter-spacing:.1em}.syscon-date>span{font-size:clamp(32px,4vw,50px);color:#ff944d;font-weight:800;letter-spacing:-.06em}.syscon-date strong{font-size:22px}.syscon-event-copy{font-size:13px;line-height:1.9;color:#c2dce2;margin:24px 0}
+.syscon-organizers{border-bottom:1px solid #e0eaee}.syscon-organizers>.container-shell{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:24px;padding-top:25px;padding-bottom:25px}.syscon-organizers span{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#607986}.syscon-organizers p{font-size:12px;font-weight:800;color:#345364;max-width:180px}
+.syscon-about{display:grid;grid-template-columns:1fr 1.2fr;gap:80px;padding-top:85px;padding-bottom:85px;scroll-margin-top:100px}.syscon-about h2{font-size:clamp(28px,3vw,39px);font-weight:600;line-height:1.35;letter-spacing:-.035em;margin-top:18px}.syscon-about h2 span{color:var(--teal)}.syscon-about-copy{font-size:14px;line-height:1.95;color:#526b7a}.syscon-about-copy p+p{margin-top:20px}.syscon-about-copy strong{color:var(--navy)}
+.syscon-topics{background:#f3f7f8;padding:65px 0}.syscon-topics h2,.syscon-registration h2{font-size:clamp(24px,3vw,32px);font-weight:600;letter-spacing:-.03em;margin-top:12px}.syscon-topic-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:36px}.syscon-topic-grid article{border-top:2px solid #c9dce2;padding-top:22px}.syscon-topic-grid article>span{color:#c83e00;font-size:12px;font-weight:800}.syscon-topic-grid h3{font-weight:600;font-size:19px;margin-top:18px}.syscon-topic-grid p{color:#526b7a;font-size:13px;line-height:1.9;margin-top:12px}.syscon-registration{display:flex;align-items:center;justify-content:space-between;gap:30px;padding-top:65px;padding-bottom:65px}.syscon-registration p:last-child{font-size:14px;color:#526b7a;margin-top:15px}.syscon-registration .syscon-button{flex-shrink:0}
+@media(max-width:900px){.syscon-hero-layout{gap:30px;grid-template-columns:1fr 1fr}.syscon-event{padding:24px}.syscon-about{gap:35px}.syscon-organizers>.container-shell{justify-content:flex-start}}
+@media(max-width:640px){.syscon-hero-layout{grid-template-columns:1fr;padding-top:45px;padding-bottom:40px;gap:35px}.syscon-wordmark{font-size:58px}.syscon-wordmark>span{font-size:23px}.syscon-wordmark strong{font-size:35px}.syscon-about{grid-template-columns:1fr;gap:25px;padding-top:50px;padding-bottom:50px}.syscon-topic-grid{grid-template-columns:1fr;gap:30px}.syscon-registration{align-items:flex-start;flex-direction:column;padding-top:45px;padding-bottom:45px}.syscon-organizers>.container-shell{gap:18px}.syscon-organizers span{width:100%}.syscon-topics{padding:45px 0}}
+
+@layer base {
+  ::selection { background: #d7eef1; color: #00334d; }
+  a, button, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+  a:focus-visible, button:focus-visible { outline: 2px solid #00758a; outline-offset: 4px; }
+  input[type="checkbox"], input[type="radio"] { accent-color: #00758a; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }

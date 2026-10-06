@@ -26,12 +26,12 @@ export function PaymentSummaryCard({
 }) {
   return (
     <div
-      className="rounded-[2rem] p-8 text-white shadow-[0_30px_80px_rgba(19,37,61,0.22)]"
+      className="rounded-xl p-8 text-white shadow-[0_30px_80px_rgba(19,37,61,0.22)]"
       style={{
-        background: 'linear-gradient(135deg, #13253d 0%, #1c3b62 55%, #275286 100%)',
+        background: 'linear-gradient(135deg, #00334d 0%, #00485d 55%, #007b91 100%)',
       }}
     >
-      <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#a8d8ff]">
+      <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#a6dce5]">
         Resumen de pago
       </p>
       <h2 className="mt-3 text-3xl font-semibold text-white">Factura resumida de tu inscripcion</h2>
@@ -100,7 +100,7 @@ export function PaymentSummaryCard({
             <p className="mt-3 text-sm text-[#ffb4b4]">{couponState.error}</p>
           ) : null}
           {couponState.message ? (
-            <p className="mt-3 text-sm text-[#b7e0ff]">{couponState.message}</p>
+            <p className="mt-3 text-sm text-[#b4e5e9]">{couponState.message}</p>
           ) : null}
 
           {couponState.applied ? (
@@ -179,7 +179,7 @@ function MetricCard({ label, value, accent = false }) {
   return (
     <div
       className={`rounded-2xl border px-4 py-4 ${
-        accent ? 'border-[#6db7ff]/35 bg-[#6db7ff]/10' : 'border-white/10 bg-white/10'
+        accent ? 'border-[#79c5d1]/35 bg-[#79c5d1]/10' : 'border-white/10 bg-white/10'
       }`}
     >
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">{label}</p>

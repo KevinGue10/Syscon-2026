@@ -31,7 +31,7 @@ export function BankTransferForm({
   }
 
   return (
-    <Card className="rounded-[2rem] p-8">
+    <Card className="rounded-xl p-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">Opcion 1</p>
