@@ -9,6 +9,7 @@ const {
 const { createAuditLog } = require('./auditService');
 const { sendPaymentConfirmationEmail, sendPayPhoneLinkEmail } = require('./emailService');
 const AppError = require('../utils/errors');
+const { Op } = require('sequelize');
 const { uploadPaymentProofFile, getSignedObjectUrl } = require('./objectStorageService');
 
 const PAYMENT_METHODS = {
@@ -114,6 +115,7 @@ const applyReviewedAmount = async (payment, reviewedAmount) => {
 
 const resolveExchangeRate = async () => {
   const latestRate = await DollarRate.findOne({
+    where: { effectiveDate: { [Op.lte]: new Date() } },
     order: [['effectiveDate', 'DESC'], ['id', 'DESC']],
   });
 
@@ -469,6 +471,9 @@ const createBankTransferPayment = async (payload, currentUser) => {
   await syncRegistrationPaymentPreferences(registration, payload);
 
   const amounts = await resolveRequestedAmounts(payload, registration);
+  if (!Number.isFinite(amounts.amountCop) || amounts.amountCop <= 0) {
+    throw new AppError('No hay una tasa de cambio v?lida para generar la transferencia en pesos.', 409);
+  }
   const reusablePayment = await findReusablePendingPayment({
     registrationId: registration.id,
     paymentMethod: PAYMENT_METHODS.BANK_TRANSFER,

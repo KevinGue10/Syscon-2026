@@ -10,7 +10,7 @@ const {
   DollarRate,
   CustomField,
 } = require('../models');
-const { PAPER_STATUSES, PARTICIPANT_TYPES, MEMBER_TYPES, PAYMENT_STATUSES } = require('../constants/enums');
+const { PAPER_STATUSES, PARTICIPANT_TYPES, MEMBER_TYPES, PAYMENT_STATUSES, USER_ROLES } = require('../constants/enums');
 const asyncHandler = require('../utils/asyncHandler');
 const { buildWorkbook } = require('../services/exportService');
 const { calculateRegistrationTotals } = require('../services/pricingService');
@@ -90,7 +90,7 @@ const getDashboardSummaryData = async () => {
 const getRecentActivityData = async (limit = 10) => {
   const registrations = await Registration.findAll({
     include: [
-      { association: 'user', required: false },
+      { association: 'user', required: true, where: { role: USER_ROLES.USER } },
       { association: 'papers', required: false },
     ],
     order: [['createdAt', 'DESC']],

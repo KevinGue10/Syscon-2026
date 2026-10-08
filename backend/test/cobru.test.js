@@ -7,6 +7,29 @@ const sequelize = require('../src/config/database');
 const cobru = require('../src/services/cobruService');
 const createService = require('../src/services/cobruPaymentService');
 
+test('local HTTP is restricted to loopback, development and the Cobru sandbox', t => {
+  const original = { ...env.cobru };
+  const nodeEnv = env.nodeEnv;
+  t.after(() => { Object.assign(env.cobru, original); env.nodeEnv = nodeEnv; });
+  env.nodeEnv = 'development';
+  Object.assign(env.cobru, { localTestMode: true, baseUrl: 'https://dev.cobru.co',
+    apiKey: 'test-key', refreshToken: 'test-refresh', callbackToken: 'test-secret',
+    returnUrl: 'http://localhost:5173/payments/success',
+    callbackUrl: 'http://localhost:5000/api/payments/cobru/webhook' });
+  assert.doesNotThrow(cobru.assertConfigured);
+  env.cobru.callbackUrl = 'http://public.example/webhook';
+  assert.throws(cobru.assertConfigured, /HTTPS/);
+  env.cobru.callbackUrl = 'http://localhost:5000/api/payments/cobru/webhook';
+  env.nodeEnv = 'production';
+  assert.throws(cobru.assertConfigured, /only allowed in development/);
+  env.nodeEnv = 'development';
+  env.cobru.baseUrl = 'https://prod.cobru.co';
+  assert.throws(cobru.assertConfigured, /only allowed in development/);
+  env.cobru.baseUrl = 'https://dev.cobru.co';
+  env.cobru.localTestMode = false;
+  assert.throws(cobru.assertConfigured, /HTTPS/);
+});
+
 test('Cobru authenticated requests, serialized methods, URL, caching and failure handling', async t => {
   Object.assign(env.cobru, { apiKey: 'test-key', refreshToken: 'test-refresh', callbackToken: 'test-secret',
     returnUrl: 'https://site.example/payment-success', callbackUrl: 'https://api.example/api/payments/cobru/webhook' });

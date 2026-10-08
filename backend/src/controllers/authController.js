@@ -161,7 +161,6 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
   const provisionalPassword = generateSecureTemporaryPassword();
   const passwordHash = await bcrypt.hash(provisionalPassword, 10);
-  await user.update({ passwordHash });
 
   const emailResult = await sendPasswordResetEmail({
     user,
@@ -174,6 +173,9 @@ const forgotPassword = asyncHandler(async (req, res) => {
       503
     );
   }
+
+  // Preserve the existing password if SMTP fails or is not configured.
+  await user.update({ passwordHash });
 
   await createAuditLog({
     userId: user.id,

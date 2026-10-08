@@ -43,7 +43,7 @@ module.exports = ({ assertRegistrationAccess, syncRegistrationPaymentPreferences
         return existing;
       }
       const rate = await DollarRate.findOne({
-        where: { effectiveDate: { [Op.lte]: new Date().toISOString().slice(0, 10) } },
+        where: { effectiveDate: { [Op.lte]: new Date() } },
         order: [['effectiveDate', 'DESC'], ['id', 'DESC']], transaction,
       });
       const exchangeRate = Number(rate?.rate);

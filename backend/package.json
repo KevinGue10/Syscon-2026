@@ -10,7 +10,10 @@
     "verify:smtp": "node src/scripts/verifySmtp.js",
     "send:payphone-links": "node src/scripts/sendPayPhoneLinksFromCsv.js",
     "db:generate-sql": "node src/scripts/generateSchemaSql.js",
-    "test:cobru": "node --test test/cobru.test.js"
+    "test:cobru": "node --test test/cobru.test.js",
+    "rates:update": "node src/scripts/updateDollarRate.js",
+    "rates:check": "node src/scripts/updateDollarRate.js --dry-run",
+    "test:rates": "node --test test/dollar-rate.test.js"
   },
   "keywords": [
     "express",

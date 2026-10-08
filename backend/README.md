@@ -1,5 +1,7 @@
 # IEEE Platform Backend
 
+La TRM se actualiza a las 06:00 y 18:00, hora de Colombia: [servicio USD/COP](docs/dollar-rate.md).
+
 Integración de pagos actual: [Cobru: configuración, endpoints y pruebas](docs/cobru.md). Cobru reemplaza las rutas PayPal del backend.
 
 Node.js + Express backend for an IEEE conference registration platform. It supports authentication, attendee/author registrations, dynamic pricing from the database, paper management, partial payments, admin dashboards, Excel exports, and email notifications.

@@ -23,6 +23,8 @@ function PaymentPage() {
     registration: null,
     payments: [],
   });
+  const [generatedTransfer, setGeneratedTransfer] = useState(null);
+  const [transferQuoteKey, setTransferQuoteKey] = useState('');
   const [bankTransferDetails, setBankTransferDetails] = useState(null);
   const [includeTaxes, setIncludeTaxes] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -309,82 +311,41 @@ function PaymentPage() {
   }
 
   async function handleBankTransferSubmit() {
-    if (!pageState.registration || isSubmittingPayment) {
+    if (!pageState.registration || isSubmittingPayment) return;
+    const quoteKey = JSON.stringify([paymentBreakdown.totalAmount, includeTaxes, couponState.applied?.code || '']);
+    const isUpload = Boolean(generatedTransfer && transferQuoteKey === quoteKey);
+    if (isUpload && !bankTransferState.supportingFile) {
+      setBankTransferState(current => ({...current, error:'Adjunta la captura o el comprobante de tu transferencia.',success:''}));
       return;
     }
-
-    if (paymentBreakdown.totalAmount <= 0) {
-      setBankTransferState((current) => ({
-        ...current,
-        error: 'Define un monto valido para registrar el pago.',
-        success: '',
-      }));
-      return;
-    }
-
-    if (!bankTransferState.supportingFile) {
-      setBankTransferState((current) => ({
-        ...current,
-        error: 'Debes adjuntar el soporte de la transferencia.',
-        success: '',
-      }));
-      return;
-    }
-
     try {
       setIsSubmittingPayment(true);
       setSubmittingPaymentFlow('bank_transfer');
-      setBankTransferState((current) => ({
-        ...current,
-        error: '',
-        success: '',
-      }));
-
-      const existingPayments = pageState.payments || [];
-      const response = await paymentService.createBankTransferPayment({
-        registrationId: pageState.registration.id,
-        amountUsd: paymentBreakdown.totalAmount,
-        currency: 'USD',
-        includesTaxes: includeTaxes,
-        taxAmount: paymentBreakdown.taxesAmount,
-        transactionReference: bankTransferState.transactionReference.trim() || undefined,
-        couponCode: couponState.applied?.code || undefined,
-      });
-
-      const paymentId = response.payment?.id;
-
-      if (!paymentId) {
-        throw new Error('El backend no devolvio el identificador del pago creado.');
+      setBankTransferState(current => ({...current,error:'',success:''}));
+      if (!isUpload) {
+        const response = await paymentService.createBankTransferPayment({
+          registrationId:pageState.registration.id,
+          amountUsd:paymentBreakdown.totalAmount,
+          currency:'USD', includesTaxes:includeTaxes,
+          taxAmount:paymentBreakdown.taxesAmount,
+          couponCode:couponState.applied?.code || undefined,
+        });
+        if (!response.payment?.id || !Number.isFinite(Number(response.payment.amountCop)) || Number(response.payment.amountCop) <= 0) {
+          throw new Error('No hay una tasa de cambio v?lida para generar el valor en pesos. Contacta al equipo organizador.');
+        }
+        setGeneratedTransfer(response.payment);
+        setTransferQuoteKey(quoteKey);
+        setBankTransferState(current => ({...current,supportingFile:null,transactionReference:'',success:''}));
+        return;
       }
-
-      const reusedExistingPayment =
-        response.reusedExistingPayment ||
-        existingPayments.some((payment) => String(payment.id) === String(paymentId));
-
-      const filePayload = buildPaymentProofFormData({
-        file: bankTransferState.supportingFile,
-        transactionReference: bankTransferState.transactionReference,
-      });
-      await paymentService.uploadPaymentProof(paymentId, filePayload);
-      await refreshPaymentContext(paymentId);
-
-      setBankTransferState({
-        transactionReference: '',
-        supportingFile: null,
-        error: '',
-        success: reusedExistingPayment
-          ? 'Ya existia un pago pendiente con ese mismo valor. Continuaremos con ese registro y el comprobante fue cargado correctamente.'
-          : 'El pago fue registrado y el soporte fue enviado. Estado actual: pendiente de validacion.',
-      });
-    } catch (error) {
-      setBankTransferState((current) => ({
-        ...current,
-        error:
-          error?.response?.data?.message ||
-          error?.message ||
-          'No fue posible registrar la transferencia.',
-        success: '',
-      }));
+      const payload = buildPaymentProofFormData({file:bankTransferState.supportingFile,transactionReference:bankTransferState.transactionReference});
+      await paymentService.uploadPaymentProof(generatedTransfer.id,payload);
+      setGeneratedTransfer(null);
+      setTransferQuoteKey('');
+      setBankTransferState({transactionReference:'',supportingFile:null,error:'',success:'Comprobante enviado. Tu transferencia est? pendiente de validaci?n.'});
+      await refreshPaymentContext(generatedTransfer.id);
+    } catch (err) {
+      setBankTransferState(current => ({...current,error:err?.response?.data?.message || err.message || 'No fue posible procesar la transferencia.'}));
     } finally {
       setIsSubmittingPayment(false);
       setSubmittingPaymentFlow('');
@@ -491,6 +452,8 @@ function PaymentPage() {
           ) : (
             <>
               <BankTransferForm
+                generatedPayment={generatedTransfer}
+                quoteChanged={Boolean(generatedTransfer && transferQuoteKey !== JSON.stringify([paymentBreakdown.totalAmount, includeTaxes, couponState.applied?.code || '']))}
                 bankDetails={bankDetails}
                 amountToCharge={paymentBreakdown.totalAmount}
                 transactionReference={bankTransferState.transactionReference}

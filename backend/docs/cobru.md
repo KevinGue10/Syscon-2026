@@ -4,6 +4,20 @@ El backend reemplaza la creación, captura y webhook de PayPal por checkout aloj
 
 ## Configuración
 
+### Prueba local sin túnel
+
+En desarrollo se puede usar `COBRU_LOCAL_TEST_MODE=true`, con `NODE_ENV=development` y `COBRU_BASE_URL=https://dev.cobru.co`. Este modo permite HTTP únicamente para URLs de retorno/callback de loopback (`localhost`, `127.0.0.1`, `[::1]`). Configurar:
+
+```dotenv
+COBRU_LOCAL_TEST_MODE=true
+COBRU_RETURN_URL=http://localhost:5173/payments/success
+COBRU_CALLBACK_URL=http://localhost:5000/api/payments/cobru/webhook
+```
+
+Cobru no puede entregar callbacks a localhost. El campo se sigue enviando porque forma parte del contrato de creación. Para confirmar, usar **Verificar pago**, que consulta Cobru desde el backend con las credenciales. No se simulan aprobaciones. La aceptación de URLs locales por Cobru debe confirmarse con la cuenta sandbox; si el proveedor las rechaza, será necesario un túnel o un dominio público.
+
+En la nube configurar `COBRU_LOCAL_TEST_MODE=false` y URLs públicas HTTPS. La aplicación rechaza el modo local con `NODE_ENV=production` o con el servidor de Cobru de producción.
+
 Requiere Node.js 18 o superior y las tablas existentes de pagos, historial y auditoría; no agrega columnas ni dependencias. Añadir a `backend/.env`:
 
 ```dotenv

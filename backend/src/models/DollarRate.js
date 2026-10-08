@@ -15,7 +15,7 @@ DollarRate.init(
       allowNull: false,
     },
     effectiveDate: {
-      type: DataTypes.DATEONLY,
+      type: DataTypes.DATE,
       allowNull: false,
       field: 'effective_date',
     },

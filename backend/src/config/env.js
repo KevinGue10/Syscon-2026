@@ -20,6 +20,11 @@ const env = {
     secret: process.env.JWT_SECRET || 'change_this_secret',
     expiresIn: process.env.JWT_EXPIRES_IN || '1d',
   },
+  dollarRate: {
+    enabled: process.env.DOLLAR_RATE_JOB_ENABLED !== 'false',
+    runOnStart: process.env.DOLLAR_RATE_RUN_ON_START !== 'false',
+    timeoutMs: Number(process.env.DOLLAR_RATE_TIMEOUT_MS) || 15000,
+  },
   smtp: {
     host: process.env.SMTP_HOST || '',
     port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : null,
@@ -54,6 +59,7 @@ const env = {
     signedUrlExpiresInSeconds: Number(process.env.OBJECT_STORAGE_SIGNED_URL_EXPIRES_IN || 900),
   },
   cobru: {
+    localTestMode: process.env.COBRU_LOCAL_TEST_MODE === 'true',
     baseUrl: process.env.COBRU_BASE_URL || 'https://dev.cobru.co',
     apiKey: process.env.COBRU_API_KEY || '',
     refreshToken: process.env.COBRU_REFRESH_TOKEN || '',

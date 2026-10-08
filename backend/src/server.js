@@ -5,6 +5,7 @@ const env = require('./config/env');
 const { initModels, Registration, Payment } = require('./models');
 const { PAYMENT_STATUSES } = require('./constants/enums');
 const { calculateRegistrationTotals } = require('./services/pricingService');
+const { startDollarRateJob } = require('./jobs/dollarRateJob');
 
 const getErrorLocation = (error) => {
   if (!error || !error.stack) {
@@ -182,6 +183,7 @@ const startServer = async () => {
 
     app.listen(env.port, () => {
       console.log(`Server running on port ${env.port}`);
+      startDollarRateJob();
     });
   } catch (error) {
     console.error('[STARTUP ERROR]', {

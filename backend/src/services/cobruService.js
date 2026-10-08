@@ -11,10 +11,16 @@ const assertConfigured = () => {
   if (!env.cobru.apiKey || !env.cobru.refreshToken || !env.cobru.callbackToken) {
     throw new AppError('Configure COBRU_API_KEY, COBRU_REFRESH_TOKEN and COBRU_CALLBACK_TOKEN.', 503);
   }
-  for (const value of [env.cobru.baseUrl, env.cobru.returnUrl, env.cobru.callbackUrl]) {
+  if (env.cobru.localTestMode &&
+      (env.nodeEnv !== 'development' || env.cobru.baseUrl.replace(/\/$/, '') !== 'https://dev.cobru.co')) {
+    throw new AppError('COBRU_LOCAL_TEST_MODE is only allowed in development with the Cobru sandbox.', 503);
+  }
+  for (const [kind, value] of Object.entries({ api: env.cobru.baseUrl, return: env.cobru.returnUrl, callback: env.cobru.callbackUrl })) {
     let url;
     try { url = new URL(value); } catch { throw new AppError('Configure valid Cobru API, return and callback URLs.', 503); }
-    if (url.protocol !== 'https:' || url.username || url.password) {
+    const localHttp = env.cobru.localTestMode && kind !== 'api' &&
+      url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+    if ((url.protocol !== 'https:' && !localHttp) || url.username || url.password) {
       throw new AppError('Cobru URLs must use HTTPS without embedded credentials.', 503);
     }
   }

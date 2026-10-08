@@ -6,6 +6,8 @@ import { InputField } from './InputField';
 import { formatCurrency } from '../utils/currency';
 
 export function BankTransferForm({
+  generatedPayment,
+  quoteChanged,
   bankDetails,
   amountToCharge,
   transactionReference,
@@ -43,13 +45,19 @@ export function BankTransferForm({
       </div>
 
       <p className="mt-4 text-sm leading-7 text-slate-600">
-        Se creara un pago pendiente por {formatCurrency(amountToCharge)}. Luego el soporte quedara
-        disponible para validacion administrativa.
+        Genera tu pago para consultar el valor exacto en pesos colombianos. Despu?s de transferir, adjunta el comprobante para su validaci?n.
       </p>
 
       {error ? <div className="mt-5"><Alert title="No fue posible registrar la transferencia" description={error} variant="danger" /></div> : null}
       {success ? <div className="mt-5"><Alert title="Transferencia registrada" description={success} variant="success" /></div> : null}
 
+      {generatedPayment && <div className="mt-6 rounded-xl border border-brand-200 bg-brand-50 p-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-brand-700">Valor a transferir ? Pago #{generatedPayment.id}</p>
+        <p className="mt-2 text-3xl font-semibold text-brand-900">{new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:2}).format(Number(generatedPayment.amountCop))} COP</p>
+        <p className="mt-2 text-sm text-slate-600">Equivalente a {Number(generatedPayment.amountUsd).toFixed(2)} USD. Tasa aplicada: {new Intl.NumberFormat('es-CO',{maximumFractionDigits:4}).format(Number(generatedPayment.amountCop) / Number(generatedPayment.amountUsd))} COP por USD.</p>
+        <p className="mt-2 text-sm text-slate-600">Env?a este importe a la cuenta indicada. El pago se confirmar? cuando el equipo revise el soporte.</p>
+      </div>}
+      {quoteChanged && <div className="mt-4"><Alert title="El monto o las opciones cambiaron" description="Genera de nuevo el pago antes de transferir. Si ya hiciste la transferencia, restaura el monto y las opciones originales para adjuntar el soporte a ese pago." variant="warning" /></div>}
       {bankDetails.length ? (
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {bankDetails.map((item) => (
@@ -69,9 +77,10 @@ export function BankTransferForm({
         </div>
       )}
 
+      {generatedPayment && !quoteChanged && <>
       <div className="mt-6 max-w-md">
         <InputField
-          label="Referencia de la transferencia"
+          label="Referencia de la transferencia (opcional)"
           placeholder="Ej. TRX-2026-001"
           value={transactionReference}
           onChange={(event) => onTransactionReferenceChange(event.target.value)}
@@ -122,9 +131,10 @@ export function BankTransferForm({
         </div>
       </div>
 
+      </>}
       <div className="mt-6 flex flex-wrap gap-3">
-        <Button variant="primary" onClick={onSubmit} disabled={isSubmitting || amountToCharge <= 0}>
-          {isSubmitting ? 'Procesando...' : 'Crear pago y subir soporte'}
+        <Button variant="primary" onClick={onSubmit} disabled={isSubmitting || amountToCharge <= 0 || !bankDetails.length || Boolean(generatedPayment && !quoteChanged && !supportingFile)}>
+          {isSubmitting ? 'Procesando?' : generatedPayment && !quoteChanged ? 'Enviar comprobante' : 'Generar pago en pesos'}
         </Button>
       </div>
     </Card>
