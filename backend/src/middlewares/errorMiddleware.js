@@ -27,7 +27,7 @@ const errorMiddleware = (error, req, res, next) => {
 
   console.error('[API ERROR]', {
     method: req.method,
-    path: req.originalUrl,
+    path: req.path,
     message: error.message,
     name: error.name,
     statusCode: error.statusCode || 500,

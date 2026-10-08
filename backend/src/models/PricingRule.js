@@ -36,12 +36,6 @@ PricingRule.init(
       defaultValue: false,
       field: 'is_ieee_member',
     },
-    isTems: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
-      field: 'is_tems',
-    },
     baseAmount: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,

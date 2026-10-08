@@ -11,8 +11,7 @@ import { formatCurrency } from '../utils/currency';
 import { StatusBadge } from '../utils/statusStyles.jsx';
 import { translatePaymentStatus } from '../utils/translations';
 
-const TAX_RATE = 0.15;
-const MIDDLE_OF_THE_WORLD_TOUR_FEE = 10;
+const TAX_RATE = 0.19;
 
 function PaymentPage() {
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
@@ -26,7 +25,6 @@ function PaymentPage() {
   });
   const [bankTransferDetails, setBankTransferDetails] = useState(null);
   const [includeTaxes, setIncludeTaxes] = useState(false);
-  const [includeMiddleOfTheWorldTour, setIncludeMiddleOfTheWorldTour] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [couponState, setCouponState] = useState({
     code: '',
@@ -38,12 +36,6 @@ function PaymentPage() {
   });
   const [bankTransferState, setBankTransferState] = useState({
     transactionReference: '',
-    supportingFile: null,
-    error: '',
-    success: '',
-  });
-  const [cardPaymentRequestState, setCardPaymentRequestState] = useState({
-    reference: '',
     supportingFile: null,
     error: '',
     success: '',
@@ -91,7 +83,6 @@ function PaymentPage() {
         });
         setBankTransferDetails(bankDetailsResponse);
         setIncludeTaxes(selectionDefaults.includeTaxes);
-        setIncludeMiddleOfTheWorldTour(selectionDefaults.includeMiddleOfTheWorldTour);
         setPaymentAmount(selectionDefaults.baseAmount.toFixed(2));
       } catch (error) {
         if (!isMounted) {
@@ -141,36 +132,23 @@ function PaymentPage() {
   }, [pageState.registration]);
 
   const paymentBreakdown = useMemo(() => {
-    const persistedTaxAmount = resolvePersistedTaxAmount(pageState.registration);
     const baseAmount = sanitizePaymentAmount(paymentAmount, registrationTotals.pendingAmount);
     const discountAmount = resolveCouponDiscount(couponState.applied, baseAmount);
     const discountedBaseAmount = Number(Math.max(0, baseAmount - discountAmount).toFixed(2));
-    const middleOfTheWorldTourAmount = includeMiddleOfTheWorldTour
-      ? MIDDLE_OF_THE_WORLD_TOUR_FEE
-      : 0;
-    const taxesAmount = includeTaxes
-      ? Number(
-          (couponState.applied || !persistedTaxAmount
-            ? discountedBaseAmount * TAX_RATE
-            : persistedTaxAmount
-          ).toFixed(2),
-        )
-      : 0;
+    const taxesAmount = includeTaxes ? Number((discountedBaseAmount * TAX_RATE).toFixed(2)) : 0;
     const totalAmount = Number(
-      Math.max(0, discountedBaseAmount + middleOfTheWorldTourAmount + taxesAmount).toFixed(2),
+      Math.max(0, discountedBaseAmount + taxesAmount).toFixed(2),
     );
 
     return {
       baseAmount,
       discountAmount,
       discountedBaseAmount,
-      middleOfTheWorldTourAmount,
       taxesAmount,
       totalAmount,
     };
   }, [
     couponState.applied,
-    includeMiddleOfTheWorldTour,
     includeTaxes,
     paymentAmount,
     pageState.registration,
@@ -179,15 +157,6 @@ function PaymentPage() {
 
   const bankDetails = useMemo(() => buildBankDetails(bankTransferDetails), [bankTransferDetails]);
   const latestPayment = pageState.payments?.[0] || null;
-  const pendingPayPhonePayment = useMemo(
-    () =>
-      (pageState.payments || []).find(
-        (payment) =>
-          String(payment?.paymentMethod || '').toLowerCase() === 'payphone' &&
-          String(payment?.status || '').toLowerCase() === 'pending_payment',
-      ) || null,
-    [pageState.payments],
-  );
   const canRedeemCoupon = Boolean(couponState.applied) && paymentBreakdown.totalAmount <= 0;
 
   useEffect(() => {
@@ -203,7 +172,7 @@ function PaymentPage() {
         message: 'El monto o los impuestos cambiaron. Vuelve a aplicar el cupon.',
       };
     });
-  }, [includeMiddleOfTheWorldTour, includeTaxes, paymentAmount]);
+  }, [includeTaxes, paymentAmount]);
 
   async function refreshPaymentContext(preferredPaymentId = null) {
     const response = await dashboardService.getMyRegistrationDetails();
@@ -227,7 +196,6 @@ function PaymentPage() {
       payments: refreshedPayments,
     });
     setIncludeTaxes(selectionDefaults.includeTaxes);
-    setIncludeMiddleOfTheWorldTour(selectionDefaults.includeMiddleOfTheWorldTour);
     setPaymentAmount(selectionDefaults.baseAmount.toFixed(2));
     setHighlightedPaymentId(
       preferredPaymentId &&
@@ -379,7 +347,6 @@ function PaymentPage() {
         currency: 'USD',
         includesTaxes: includeTaxes,
         taxAmount: paymentBreakdown.taxesAmount,
-        includesTour: includeMiddleOfTheWorldTour,
         transactionReference: bankTransferState.transactionReference.trim() || undefined,
         couponCode: couponState.applied?.code || undefined,
       });
@@ -416,85 +383,6 @@ function PaymentPage() {
           error?.response?.data?.message ||
           error?.message ||
           'No fue posible registrar la transferencia.',
-        success: '',
-      }));
-    } finally {
-      setIsSubmittingPayment(false);
-      setSubmittingPaymentFlow('');
-    }
-  }
-
-  async function handlePayPhoneRequest() {
-    if (!pageState.registration || isSubmittingPayment) {
-      return;
-    }
-
-    if (paymentBreakdown.totalAmount <= 0) {
-      setCardPaymentRequestState((current) => ({
-        ...current,
-        error: 'Define un monto valido para registrar la solicitud de pago.',
-        success: '',
-      }));
-      return;
-    }
-
-    try {
-      setIsSubmittingPayment(true);
-      setSubmittingPaymentFlow('payphone');
-      setCardPaymentRequestState((current) => ({
-        ...current,
-        error: '',
-        success: '',
-      }));
-
-      const existingPayments = pageState.payments || [];
-      const response = await paymentService.createPayPhonePayment({
-        registrationId: pageState.registration.id,
-        amountUsd: paymentBreakdown.totalAmount,
-        currency: 'USD',
-        includesTaxes: includeTaxes,
-        taxAmount: paymentBreakdown.taxesAmount,
-        includesTour: includeMiddleOfTheWorldTour,
-        transactionReference: cardPaymentRequestState.reference.trim() || undefined,
-        couponCode: couponState.applied?.code || undefined,
-      });
-
-      const paymentId = response.payment?.id;
-
-      if (!paymentId) {
-        throw new Error('El backend no devolvio el identificador de la solicitud PayPhone.');
-      }
-
-      const reusedExistingPayment =
-        response.reusedExistingPayment ||
-        existingPayments.some((payment) => String(payment.id) === String(paymentId));
-
-      if (cardPaymentRequestState.supportingFile) {
-        const filePayload = buildPaymentProofFormData({
-          file: cardPaymentRequestState.supportingFile,
-          transactionReference: cardPaymentRequestState.reference,
-        });
-        await paymentService.uploadPaymentProof(paymentId, filePayload);
-      }
-
-      await refreshPaymentContext(paymentId);
-
-      setCardPaymentRequestState({
-        reference: '',
-        supportingFile: null,
-        error: '',
-        success: buildPayPhoneSuccessMessage({
-          reusedExistingPayment,
-          hasSupportingFile: Boolean(cardPaymentRequestState.supportingFile),
-        }),
-      });
-    } catch (error) {
-      setCardPaymentRequestState((current) => ({
-        ...current,
-        error:
-          error?.response?.data?.message ||
-          error?.message ||
-          'No fue posible registrar la solicitud PayPhone.',
         success: '',
       }));
     } finally {
@@ -550,7 +438,7 @@ function PaymentPage() {
         </h1>
         <p className="mt-4 max-w-4xl text-sm leading-7 text-slate-600">
           Esta pagina concentra el resumen del valor pendiente y las dos modalidades de gestion
-          disponibles: transferencia directa y solicitud de pago con tarjeta.
+          disponibles: transferencia directa y pago en l?nea con Cobru.
         </p>
       </div>
 
@@ -564,9 +452,6 @@ function PaymentPage() {
           onPaymentAmountChange={setPaymentAmount}
           includeTaxes={includeTaxes}
           onIncludeTaxesChange={setIncludeTaxes}
-          includeMiddleOfTheWorldTour={includeMiddleOfTheWorldTour}
-          onIncludeMiddleOfTheWorldTourChange={setIncludeMiddleOfTheWorldTour}
-          middleOfTheWorldTourAmount={paymentBreakdown.middleOfTheWorldTourAmount}
           taxesAmount={paymentBreakdown.taxesAmount}
           discountAmount={paymentBreakdown.discountAmount}
           totalToCharge={paymentBreakdown.totalAmount}
@@ -635,27 +520,13 @@ function PaymentPage() {
               />
 
               <PaymentMethods
-                amountToCharge={paymentBreakdown.totalAmount}
-                requestState={cardPaymentRequestState}
-                pendingPayPhonePayment={pendingPayPhonePayment}
-                isSubmitting={isSubmittingPayment && submittingPaymentFlow === 'payphone'}
-                onReferenceChange={(value) =>
-                  setCardPaymentRequestState((current) => ({
-                    ...current,
-                    reference: value,
-                    error: '',
-                    success: '',
-                  }))
-                }
-                onFileChange={(file) =>
-                  setCardPaymentRequestState((current) => ({
-                    ...current,
-                    supportingFile: file,
-                    error: '',
-                    success: '',
-                  }))
-                }
-                onSubmit={handlePayPhoneRequest}
+                registrationId={pageState.registration.id}
+                pendingAmount={registrationTotals.pendingAmount}
+                requiresInvoice={includeTaxes}
+                payments={pageState.payments}
+                couponApplied={couponState.applied}
+                onUpdated={refreshPaymentContext}
+                disabled={isSubmittingPayment}
               />
             </>
           )}
@@ -739,7 +610,7 @@ function PaymentPage() {
           <div className="mt-6">
             <Alert
               title="Todavia no hay pagos registrados"
-              description="Cuando generes un pago por transferencia o registres una solicitud PayPhone, aparecera en este historial."
+              description="Cuando generes un pago por transferencia o generes un pago en Cobru, aparecera en este historial."
               variant="info"
             />
           </div>
@@ -824,7 +695,8 @@ function formatMethod(value) {
   const map = {
     bank_transfer: 'Transferencia bancaria',
     paypal: 'PayPal',
-    payphone: 'PayPhone',
+    payphone: 'PayPhone (hist?rico)',
+    cobru: 'Cobru',
   };
 
   return map[value] || value || 'No registrado';
@@ -834,7 +706,8 @@ function formatProvider(value) {
   const map = {
     manual_bank_transfer: 'Transferencia manual',
     paypal: 'PayPal',
-    payphone: 'PayPhone',
+    payphone: 'PayPhone (hist?rico)',
+    cobru: 'Cobru',
   };
 
   return map[value] || value || 'No registrado';
@@ -870,26 +743,10 @@ function buildPaymentProofFormData({ file, transactionReference }) {
   return formData;
 }
 
-function buildPayPhoneSuccessMessage({ reusedExistingPayment, hasSupportingFile }) {
-  if (reusedExistingPayment && hasSupportingFile) {
-    return 'Ya existia un pago pendiente con ese mismo valor. Continuaremos con ese registro y el comprobante fue cargado correctamente.';
-  }
-
-  if (reusedExistingPayment) {
-    return 'Ya existia un pago pendiente con ese mismo valor. Continuaremos con ese registro.';
-  }
-
-  if (hasSupportingFile) {
-    return 'La solicitud PayPhone fue registrada y el comprobante quedo asociado al pago retornado por backend.';
-  }
-
-  return 'La solicitud de pago con tarjeta fue registrada. El equipo administrativo enviara el link de pago al correo asociado a tu cuenta.';
-}
 
 function resolvePaymentOptionDefaults(registration) {
   const latestPendingPayment = resolveLatestPendingPayment(registration);
   const includeTaxes = resolvePersistedInvoiceSelection(registration);
-  const includeMiddleOfTheWorldTour = resolvePersistedTourSelection(registration);
   const persistedTaxAmount = resolvePersistedTaxAmount(registration);
 
   if (latestPendingPayment?.amountUsd) {
@@ -897,29 +754,23 @@ function resolvePaymentOptionDefaults(registration) {
     const baseAmountFromPayment = Math.max(
       0,
       paymentTotalAmount -
-        (includeMiddleOfTheWorldTour ? MIDDLE_OF_THE_WORLD_TOUR_FEE : 0) -
         (includeTaxes ? persistedTaxAmount : 0),
     );
 
     return {
       includeTaxes,
-      includeMiddleOfTheWorldTour,
       baseAmount: Number(baseAmountFromPayment.toFixed(2)),
     };
   }
 
   const pendingAmount = resolvePendingAmount(registration);
-  const amountWithoutTour = Math.max(
-    0,
-    pendingAmount - (includeMiddleOfTheWorldTour ? MIDDLE_OF_THE_WORLD_TOUR_FEE : 0),
-  );
+  const amountBeforeTax = Math.max(0, pendingAmount);
   const baseAmount = includeTaxes
-    ? Number(Math.max(0, amountWithoutTour - persistedTaxAmount).toFixed(2))
-    : Number(amountWithoutTour.toFixed(2));
+    ? Number(Math.max(0, amountBeforeTax - persistedTaxAmount).toFixed(2))
+    : Number(amountBeforeTax.toFixed(2));
 
   return {
     includeTaxes,
-    includeMiddleOfTheWorldTour,
     baseAmount,
   };
 }
@@ -960,33 +811,6 @@ function resolvePersistedInvoiceSelection(registration) {
   );
 }
 
-function resolvePersistedTourSelection(registration) {
-  const latestPayment = resolveLatestPayment(registration);
-  const paymentLevelValue = latestPayment?.includesTour;
-
-  if (paymentLevelValue !== undefined) {
-    return normalizeBooleanPreference(paymentLevelValue);
-  }
-
-  const directValue = firstDefinedValue([
-    registration?.willAttendTour,
-    registration?.tourAttendance,
-    registration?.attendTour,
-    registration?.middleOfTheWorldTour,
-    registration?.includesTour,
-    registration?.paymentSummary?.includeMiddleOfTheWorldTour,
-    registration?.paymentSummary?.includesTour,
-  ]);
-
-  if (directValue !== undefined) {
-    return normalizeBooleanPreference(directValue);
-  }
-
-  return resolveCustomFieldBoolean(
-    registration?.customFieldValues,
-    ['tour', 'mitad del mundo', 'middle of the world'],
-  );
-}
 
 function resolvePersistedTaxAmount(registration) {
   const latestPayment = resolveLatestPayment(registration);
@@ -1016,19 +840,15 @@ function resolvePersistedTaxAmount(registration) {
   }
 
   const includeTaxes = resolvePersistedInvoiceSelection(registration);
-  const includeMiddleOfTheWorldTour = resolvePersistedTourSelection(registration);
 
   if (!includeTaxes) {
     return 0;
   }
 
   const pendingAmount = resolvePendingAmount(registration);
-  const amountWithoutTour = Math.max(
-    0,
-    pendingAmount - (includeMiddleOfTheWorldTour ? MIDDLE_OF_THE_WORLD_TOUR_FEE : 0),
-  );
+  const amountBeforeTax = Math.max(0, pendingAmount);
 
-  return Number((amountWithoutTour - amountWithoutTour / (1 + TAX_RATE)).toFixed(2));
+  return Number((amountBeforeTax - amountBeforeTax / (1 + TAX_RATE)).toFixed(2));
 }
 
 function resolveCustomFieldBoolean(customFieldValues, keywords) {

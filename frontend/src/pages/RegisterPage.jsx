@@ -45,7 +45,6 @@ const defaultValues = {
   attendanceType: 'in_person',
   registrationCategory: 'professional',
   isIeeeMember: false,
-  isTems: false,
   membershipNumber: '',
   papers: [],
 };
@@ -97,7 +96,6 @@ function RegisterPage() {
   const values = watch();
   const selectedEventEditionId = values.eventEditionId;
   const isIeeeMember = watch('isIeeeMember');
-  const isTems = watch('isTems');
   const shouldShowArticlesStep = values.participationType !== 'attendee';
   const stepSequence = shouldShowArticlesStep ? [0, 1, 2, 3] : [0, 1, 3];
   const visibleSteps = stepSequence.map((stepIndex) => registrationSteps[stepIndex]);
@@ -195,12 +193,6 @@ function RegisterPage() {
   }, [selectedEventEditionId]);
 
   useEffect(() => {
-    if (!isIeeeMember && isTems) {
-      setValue('isTems', false);
-    }
-  }, [isIeeeMember, isTems, setValue]);
-
-  useEffect(() => {
     if (!shouldShowArticlesStep && currentStep === 2) {
       setCurrentStep(3);
     }
@@ -240,10 +232,6 @@ function RegisterPage() {
     {
       label: 'Miembro IEEE',
       value: values.isIeeeMember ? 'Sí' : 'No',
-    },
-    {
-      label: 'Miembro TEMS',
-      value: isTems ? 'Sí' : 'No',
     },
   ];
 
@@ -385,7 +373,6 @@ function RegisterPage() {
           isIeeeMember: data.isIeeeMember,
         }),
         isIeeeMember: Boolean(data.isIeeeMember),
-        isTems: Boolean(data.isTems),
         membershipNumber: data.isIeeeMember ? data.membershipNumber : '',
         status: 'submitted',
         customFieldValues: registrationCustomValues,
@@ -679,17 +666,6 @@ function RegisterPage() {
                   </label>
 
                   {isIeeeMember ? (
-                    <label className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4">
-                      <input type="checkbox" className="mt-1 h-4 w-4" {...register('isTems')} />
-                      <span>
-                        <span className="block text-sm font-semibold text-slate-800">
-                          Confirmo que soy miembro TEMS
-                        </span>
-                      </span>
-                    </label>
-                  ) : null}
-
-                  {isIeeeMember ? (
                     <InputField
                       label="Número de membresía IEEE"
                       error={errors.membershipNumber?.message}
@@ -772,7 +748,6 @@ function RegisterPage() {
                         <InputField
                           label="Código del artículo"
                           error={errors.papers?.[index]?.paperCode?.message}
-                          helperText="Debe ser único en backend."
                           {...register(`papers.${index}.paperCode`, {
                             required: 'El código es obligatorio',
                           })}
@@ -1058,7 +1033,6 @@ function buildPaymentPreviewPayload(data) {
       isIeeeMember: data.isIeeeMember,
     }),
     isIeeeMember: Boolean(data.isIeeeMember),
-    isTems: Boolean(data.isTems),
     papers: (shouldIncludePapers ? data.papers || [] : []).map((paper) => ({
       pages: paper.pages ? Number(paper.pages) : 0,
     })),

@@ -16,6 +16,14 @@ function normalizePaymentResponse(data) {
 }
 
 export const paymentService = {
+  async createCobruPayment(payload) {
+    const { data } = await api.post('/payments/cobru/create-payment', payload);
+    return normalizePaymentResponse(data);
+  },
+  async refreshCobruPayment(paymentId) {
+    const { data } = await api.post('/payments/cobru/'+paymentId+'/refresh');
+    return normalizePaymentResponse(data);
+  },
   async getRegistrationPayments(registrationId) {
     const { data } = await api.get(`/payments/registration/${registrationId}`);
     return normalizePaymentResponse(data);

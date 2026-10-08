@@ -1,3 +1,4 @@
+const { buildRegistrationConfirmationTemplate, buildPaperRegistrationTemplate, buildPendingPaymentReminderTemplate } = require('../templates/emails/notificationTemplates');
 const nodemailer = require('nodemailer');
 const env = require('../config/env');
 const { EmailLog } = require('../models');
@@ -96,8 +97,7 @@ const sendWelcomeEmail = (user) =>
 const sendRegistrationConfirmationEmail = (user, registration) =>
   sendEmail({
     to: user.email,
-    subject: 'Conference registration created',
-    text: `Your registration #${registration.id} has been created with status ${registration.status}.`,
+    ...buildRegistrationConfirmationTemplate({ firstName: user.firstName, registration, appBaseUrl: env.app.baseUrl, logoUrl: env.app.emailLogoUrl }),
     templateName: 'registration_confirmation',
     userId: user.id,
     registrationId: registration.id,
@@ -106,8 +106,7 @@ const sendRegistrationConfirmationEmail = (user, registration) =>
 const sendPaperRegistrationEmail = (user, paper) =>
   sendEmail({
     to: user.email,
-    subject: 'Paper registered successfully',
-    text: `Your paper "${paper.title}" with code ${paper.paperCode} has been registered.`,
+    ...buildPaperRegistrationTemplate({ firstName: user.firstName, paper, appBaseUrl: env.app.baseUrl, logoUrl: env.app.emailLogoUrl }),
     templateName: 'paper_registration_confirmation',
     userId: user.id,
     registrationId: paper.registrationId,
@@ -132,8 +131,7 @@ const sendPaymentConfirmationEmail = (user, payment) =>
 const sendPendingPaymentReminderEmail = (user, registration) =>
   sendEmail({
     to: user.email,
-    subject: 'Pending conference balance reminder',
-    text: `Your registration #${registration.id} still has a pending balance of ${registration.pendingAmount}.`,
+    ...buildPendingPaymentReminderTemplate({ firstName: user.firstName, registration, appBaseUrl: env.app.baseUrl, logoUrl: env.app.emailLogoUrl }),
     templateName: 'pending_payment_reminder',
     userId: user.id,
     registrationId: registration.id,

@@ -48,12 +48,6 @@ Registration.init(
       defaultValue: false,
       field: 'is_ieee_member',
     },
-    isTems: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
-      field: 'is_tems_member',
-    },
     membershipNumber: {
       type: DataTypes.STRING(100),
       allowNull: true,

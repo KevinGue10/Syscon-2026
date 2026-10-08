@@ -31,10 +31,8 @@ const wait = (ms) => new Promise((resolve) => {
 
 const normalizeLegacyNulls = async () => {
   const cleanupStatements = [
-    'UPDATE `pricing_rules` SET `is_tems` = false WHERE `is_tems` IS NULL',
     'UPDATE `pricing_rules` SET `is_ieee_member` = false WHERE `is_ieee_member` IS NULL',
     'UPDATE `pricing_rules` SET `is_active` = true WHERE `is_active` IS NULL',
-    'UPDATE `registrations` SET `is_tems_member` = false WHERE `is_tems_member` IS NULL',
     'UPDATE `registrations` SET `is_ieee_member` = false WHERE `is_ieee_member` IS NULL',
   ];
 
@@ -125,9 +123,9 @@ const reconcileRegistrationPaymentOptions = async () => {
       (max, payment) => Math.max(max, Number(payment.amountUsd || 0)),
       0
     );
-    const includesTour = registration.includesTour || payments.some((payment) => Boolean(payment.includesTour));
-    const expectedWithTour = baseTotal + (includesTour ? 10 : 0);
-    const expectedWithInvoiceAndTour = expectedWithTour + Number((baseTotal * 0.15).toFixed(2));
+    const includesTour = false;
+    const expectedWithTour = baseTotal;
+    const expectedWithInvoiceAndTour = expectedWithTour + Number((baseTotal * 0.19).toFixed(2));
     const requiresInvoice =
       registration.requiresInvoice ||
       Math.abs(highestPaymentAmount - expectedWithInvoiceAndTour) <= 0.02;

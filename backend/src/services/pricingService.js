@@ -7,17 +7,16 @@ const MISSING_PRICING_RULE_MESSAGE = 'No active pricing rule found for the selec
 const ADDITIONAL_PAPER_RULE_NAME = 'Additional Paper';
 const ADDITIONAL_PAGE_RULE_NAME = 'Additional Page';
 const INCLUDED_PAGES_PER_PAPER = 6;
-const TOUR_PRICE_USD = 10;
-const INVOICE_TAX_RATE = 0.15;
 
-const calculateTaxAmountFromGross = ({ amountUsd, includesTour = false, requiresInvoice = false }) => {
+const INVOICE_TAX_RATE = 0.19;
+
+const calculateTaxAmountFromGross = ({ amountUsd, requiresInvoice = false }) => {
   if (!requiresInvoice) {
     return 0;
   }
 
   const grossAmount = toNumber(amountUsd);
-  const untaxedTourAmount = includesTour ? TOUR_PRICE_USD : 0;
-  const taxableGrossAmount = Math.max(0, grossAmount - untaxedTourAmount);
+  const taxableGrossAmount = Math.max(0, grossAmount);
 
   return Number(((taxableGrossAmount * INVOICE_TAX_RATE) / (1 + INVOICE_TAX_RATE)).toFixed(2));
 };
@@ -33,7 +32,7 @@ const normalizePricingMemberType = (memberType) => {
 const matchesRuleField = (ruleValue, targetValue) => ruleValue === null || ruleValue === targetValue;
 
 const getRuleSpecificityScore = (rule) =>
-  ['participationType', 'memberType', 'isIeeeMember', 'isTems'].reduce(
+  ['participationType', 'memberType', 'isIeeeMember'].reduce(
     (score, field) => score + (rule[field] === null ? 0 : 1),
     0
   );
@@ -55,7 +54,10 @@ const isBaseRuleMatch = ({
     !isChargeRule &&
     isDateMatch &&
     matchesRuleField(rule.participationType, participantType) &&
-    matchesRuleField(rule.memberType, normalizedMemberType) &&
+    matchesRuleField(
+      rule.memberType === null ? null : normalizePricingMemberType(rule.memberType),
+      normalizedMemberType
+    ) &&
     matchesRuleField(rule.isIeeeMember, isIeeeMember)
   );
 };
@@ -65,7 +67,6 @@ const getPricingRule = async ({
   participantType,
   memberType,
   isIeeeMember,
-  isTems = false,
   onDate = new Date(),
   transaction,
 }) => {
@@ -80,27 +81,15 @@ const getPricingRule = async ({
     transaction,
   });
 
-  let matchingRules = rules.filter((rule) =>
+  const matchingRules = rules.filter((rule) =>
     isBaseRuleMatch({
       rule,
       normalizedDate,
       participantType,
       normalizedMemberType,
       isIeeeMember,
-    }) && matchesRuleField(rule.isTems, isTems)
+    })
   );
-
-  if (!matchingRules.length && isTems) {
-    matchingRules = rules.filter((rule) =>
-      isBaseRuleMatch({
-        rule,
-        normalizedDate,
-        participantType,
-        normalizedMemberType,
-        isIeeeMember,
-      })
-    );
-  }
 
   if (!matchingRules.length) {
     throw new AppError(MISSING_PRICING_RULE_MESSAGE, 400);
@@ -130,8 +119,8 @@ const getChargeRuleByName = async ({ eventEditionId, name, transaction }) => {
   });
 };
 
-const resolveIncludesTour = (payload = {}, fallback = false) =>
-  payload.includesTour !== undefined ? Boolean(payload.includesTour) : Boolean(fallback);
+// Legacy database fields remain readable; this conference does not offer a tour.
+const resolveIncludesTour = () => false;
 
 const resolveRequiresInvoice = (payload = {}, fallback = false) =>
   payload.requiresInvoice !== undefined
@@ -186,7 +175,6 @@ const buildPricingBreakdown = async ({
   participationType,
   memberType,
   isIeeeMember,
-  isTems = false,
   includesTour = false,
   requiresInvoice = false,
   papers = [],
@@ -204,7 +192,6 @@ const buildPricingBreakdown = async ({
       participantType: participationType,
       memberType,
       isIeeeMember: Boolean(isIeeeMember),
-      isTems: Boolean(isTems),
       transaction,
     });
   } catch (error) {
@@ -246,7 +233,7 @@ const buildPricingBreakdown = async ({
   );
   const extraPagesTotal = additionalPagesCount * extraPageAmount;
   const subtotalAmount = Math.max(0, baseAmount + extraPapersTotal + extraPagesTotal);
-  const tourAmount = includesTour ? TOUR_PRICE_USD : 0;
+  const tourAmount = 0;
   const invoiceTaxAmount = requiresInvoice ? Number((subtotalAmount * INVOICE_TAX_RATE).toFixed(2)) : 0;
   const computedTotalAmount = Math.max(0, subtotalAmount + tourAmount + invoiceTaxAmount);
   const normalizedPaidAmount = toNumber(paidAmount);
@@ -272,7 +259,7 @@ const buildPricingBreakdown = async ({
       additionalPagesCount,
       extraPapersTotal,
       extraPagesTotal,
-      includesTour: Boolean(includesTour),
+      includesTour: false,
       requiresInvoice: Boolean(requiresInvoice),
       includesTaxes: Boolean(requiresInvoice),
       subtotalAmount,
@@ -305,7 +292,6 @@ const calculateRegistrationTotals = async (registrationId, options = {}) => {
     participationType: registration.participationType,
     memberType: registration.memberType,
     isIeeeMember: Boolean(registration.isIeeeMember),
-    isTems: Boolean(registration.isTems),
     includesTour: Boolean(registration.includesTour),
     requiresInvoice: Boolean(registration.requiresInvoice),
     papers: registration.papers,
@@ -366,7 +352,6 @@ const previewRegistrationTotals = async (payload = {}, options = {}) => {
       payload.isIeeeMember !== undefined
         ? payload.isIeeeMember
         : Boolean(registration?.isIeeeMember),
-    isTems: payload.isTems !== undefined ? payload.isTems : Boolean(registration?.isTems),
     includesTour: resolveIncludesTour(payload, registration?.includesTour),
     requiresInvoice: resolveRequiresInvoice(payload, registration?.requiresInvoice),
     papers: previewPapers,
@@ -393,10 +378,6 @@ const previewRegistrationTotals = async (payload = {}, options = {}) => {
             payload.isIeeeMember !== undefined
               ? payload.isIeeeMember
               : Boolean(registration.isIeeeMember),
-          isTems:
-            payload.isTems !== undefined
-              ? payload.isTems
-              : Boolean(registration.isTems),
           includesTour: resolveIncludesTour(payload, registration.includesTour),
           requiresInvoice: resolveRequiresInvoice(payload, registration.requiresInvoice),
           includesTaxes: resolveRequiresInvoice(payload, registration.requiresInvoice),

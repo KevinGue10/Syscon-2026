@@ -16,7 +16,6 @@ const createRegistrationValidation = [
     .isIn(Object.values(MEMBER_TYPES))
     .withMessage('memberType must be a valid member type.'),
   body('isIeeeMember').optional().isBoolean(),
-  body('isTems').optional().isBoolean(),
   body('includesTour').optional().isBoolean(),
   body('requiresInvoice').optional().isBoolean(),
   body('includeTaxes').optional().isBoolean(),
@@ -35,7 +34,6 @@ const updateRegistrationValidation = [
   body('attendanceType').optional().isIn(Object.values(ATTENDANCE_TYPES)),
   body('memberType').optional().isIn(Object.values(MEMBER_TYPES)),
   body('isIeeeMember').optional().isBoolean(),
-  body('isTems').optional().isBoolean(),
   body('includesTour').optional().isBoolean(),
   body('requiresInvoice').optional().isBoolean(),
   body('includeTaxes').optional().isBoolean(),
@@ -58,7 +56,6 @@ const paymentPreviewValidation = [
   body('participationType').optional().isIn(Object.values(PARTICIPANT_TYPES)),
   body('memberType').optional().isIn(Object.values(MEMBER_TYPES)),
   body('isIeeeMember').optional().isBoolean(),
-  body('isTems').optional().isBoolean(),
   body('includesTour').optional().isBoolean(),
   body('requiresInvoice').optional().isBoolean(),
   body('includeTaxes').optional().isBoolean(),

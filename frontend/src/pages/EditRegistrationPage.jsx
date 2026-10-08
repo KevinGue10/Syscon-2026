@@ -44,7 +44,6 @@ const defaultValues = {
   attendanceType: 'in_person',
   registrationCategory: 'professional',
   isIeeeMember: false,
-  isTems: false,
   membershipNumber: '',
   customFields: {
     registration: {},
@@ -97,7 +96,6 @@ function EditRegistrationPage() {
 
   const values = watch();
   const isIeeeMember = watch('isIeeeMember');
-  const isTems = watch('isTems');
   const shouldShowArticlesStep = values.participationType !== 'attendee';
   const stepSequence = shouldShowArticlesStep ? [0, 1, 2, 3] : [0, 1, 3];
   const visibleSteps = stepSequence.map((stepIndex) => registrationSteps[stepIndex]);
@@ -186,12 +184,6 @@ function EditRegistrationPage() {
   }, [reset]);
 
   useEffect(() => {
-    if (!isIeeeMember && isTems) {
-      setValue('isTems', false);
-    }
-  }, [isIeeeMember, isTems, setValue]);
-
-  useEffect(() => {
     if (!shouldShowArticlesStep && currentStep === 2) {
       setCurrentStep(3);
     }
@@ -239,10 +231,6 @@ function EditRegistrationPage() {
     {
       label: 'Miembro IEEE',
       value: values.isIeeeMember ? 'Sí' : 'No',
-    },
-    {
-      label: 'Miembro TEMS',
-      value: isTems ? 'Sí' : 'No',
     },
     {
       label: 'Artículos registrados',
@@ -355,7 +343,6 @@ function EditRegistrationPage() {
           isIeeeMember: data.isIeeeMember,
         }),
         isIeeeMember: Boolean(data.isIeeeMember),
-        isTems: Boolean(data.isTems),
         membershipNumber: data.isIeeeMember ? data.membershipNumber : '',
         status: pageState.registration.status,
         customFieldValues: registrationCustomValues,
@@ -645,15 +632,6 @@ function EditRegistrationPage() {
                       Confirmo que soy miembro IEEE
                     </span>
                   </label>
-
-                  {isIeeeMember ? (
-                    <label className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4">
-                      <input type="checkbox" className="mt-1 h-4 w-4" {...register('isTems')} />
-                      <span className="block text-sm font-semibold text-slate-800">
-                        Confirmo que soy miembro TEMS
-                      </span>
-                    </label>
-                  ) : null}
 
                   {isIeeeMember ? (
                     <InputField
@@ -1040,7 +1018,6 @@ function buildPaymentPreviewPayload(data) {
       isIeeeMember: data.isIeeeMember,
     }),
     isIeeeMember: Boolean(data.isIeeeMember),
-    isTems: Boolean(data.isTems),
     papers: (shouldIncludePapers ? data.papers || [] : []).map((paper) => ({
       pages: paper.pages ? Number(paper.pages) : 0,
     })),
@@ -1112,7 +1089,6 @@ function buildFormValues(user, registration, registrationFields) {
     attendanceType: registration?.attendanceType || 'in_person',
     registrationCategory: deriveRegistrationCategory(registration),
     isIeeeMember: Boolean(registration?.isIeeeMember || registration?.memberType === 'ieee_member'),
-    isTems: Boolean(registration?.isTems),
     membershipNumber: registration?.membershipNumber || '',
     customFields: {
       registration: registrationFields.reduce((accumulator, field) => {

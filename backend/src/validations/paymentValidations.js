@@ -62,18 +62,17 @@ const paymentRejectionValidation = [
   body('rejectionReason').trim().notEmpty().withMessage('rejectionReason is required.'),
 ];
 
-const paypalCreateOrderValidation = [
+const cobruCreatePaymentValidation = [
   body('registrationId').isInt({ min: 1 }).withMessage('registrationId is required.'),
-  ...amountValidation,
-  body('includesTour').optional().isBoolean().withMessage('includesTour must be boolean.'),
-  body('requiresInvoice').optional().isBoolean().withMessage('requiresInvoice must be boolean.'),
-  body('includeTaxes').optional().isBoolean().withMessage('includeTaxes must be boolean.'),
-  body('includesTaxes').optional().isBoolean().withMessage('includesTaxes must be boolean.'),
+  body(['amount', 'amountUsd', 'amountCop', 'currency', 'taxAmount']).not().exists()
+    .withMessage('Cobru amounts and currency are calculated by the backend.'),
+  body('includesTour').optional().isBoolean().withMessage('includesTour must be boolean.').toBoolean(),
+  body('requiresInvoice').optional().isBoolean().withMessage('requiresInvoice must be boolean.').toBoolean(),
+  body('includeTaxes').optional().isBoolean().withMessage('includeTaxes must be boolean.').toBoolean(),
+  body('includesTaxes').optional().isBoolean().withMessage('includesTaxes must be boolean.').toBoolean(),
 ];
 
-const paypalCaptureOrderValidation = [
-  body('orderId').trim().notEmpty().withMessage('orderId is required.'),
-];
+const cobruRefreshPaymentValidation = [...paymentIdParamValidation];
 
 const payphoneCreatePaymentValidation = [
   body('registrationId').isInt({ min: 1 }).withMessage('registrationId is required.'),
@@ -96,8 +95,8 @@ module.exports = {
   payphoneSendLinkValidation,
   paymentCancellationValidation,
   paymentRejectionValidation,
-  paypalCreateOrderValidation,
-  paypalCaptureOrderValidation,
+  cobruCreatePaymentValidation,
+  cobruRefreshPaymentValidation,
   payphoneCreatePaymentValidation,
   registrationPaymentsValidation,
 };

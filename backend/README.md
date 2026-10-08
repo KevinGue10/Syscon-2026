@@ -1,5 +1,7 @@
 # IEEE Platform Backend
 
+Integración de pagos actual: [Cobru: configuración, endpoints y pruebas](docs/cobru.md). Cobru reemplaza las rutas PayPal del backend.
+
 Node.js + Express backend for an IEEE conference registration platform. It supports authentication, attendee/author registrations, dynamic pricing from the database, paper management, partial payments, admin dashboards, Excel exports, and email notifications.
 
 ## Stack
@@ -151,3 +153,6 @@ npm start
 - Pricing is read from `pricingRules` and recalculated whenever registrations or approved payments change.
 - SMTP is optional. If it is missing or fails, the application logs the issue and continues running.
 - The API is ready to be consumed by the existing React frontend through REST endpoints.
+# Esquema SYSCON
+
+Los scripts SQL de creación, datos iniciales y migración de TEMS están en [sql/README.md](sql/README.md), junto con la revisión de consultas del backend.

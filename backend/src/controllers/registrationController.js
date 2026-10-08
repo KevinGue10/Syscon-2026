@@ -123,9 +123,9 @@ const getPaymentSummary = asyncHandler(async (req, res) => {
 });
 
 const previewPaymentSummary = asyncHandler(async (req, res) => {
-  const result = await previewRegistrationTotals(req.body, {
-    allowMissingPricingRule: true,
-  });
+  // A new quote has no persisted total to fall back to. Missing rates must be
+  // reported instead of returning a successful quote with an invented zero.
+  const result = await previewRegistrationTotals(req.body);
 
   return sendSuccess(res, {
     message: 'Resumen de pago previsualizado correctamente.',

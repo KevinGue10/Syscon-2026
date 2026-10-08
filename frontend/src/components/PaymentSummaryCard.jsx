@@ -10,9 +10,6 @@ export function PaymentSummaryCard({
   onPaymentAmountChange,
   includeTaxes,
   onIncludeTaxesChange,
-  includeMiddleOfTheWorldTour,
-  onIncludeMiddleOfTheWorldTourChange,
-  middleOfTheWorldTourAmount,
   taxesAmount,
   discountAmount,
   totalToCharge,
@@ -66,12 +63,7 @@ export function PaymentSummaryCard({
             muted={!discountAmount}
           />
           <SummaryLine
-            label="Middle of the World Tour"
-            value={formatCurrency(middleOfTheWorldTourAmount)}
-            muted={!includeMiddleOfTheWorldTour}
-          />
-          <SummaryLine
-            label="Cargo por factura e impuestos (15%)"
+            label="Cargo por factura e impuestos (19%)"
             value={formatCurrency(taxesAmount)}
             muted={!includeTaxes}
           />
@@ -81,7 +73,7 @@ export function PaymentSummaryCard({
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <InputField
               label="Cupon de descuento"
-              placeholder="Ej. TEMS2026"
+              placeholder="Ej. SYSCON2026"
               value={couponCode}
               onChange={(event) => onCouponCodeChange(event.target.value)}
               className="flex-1 [&>span:first-child]:text-white [&_input]:border-white/10 [&_input]:bg-white/10 [&_input]:text-white [&_input]:uppercase [&_input]:placeholder:text-white/45 [&_input]:focus:border-white/25 [&_input]:focus:ring-white/10"
@@ -115,23 +107,6 @@ export function PaymentSummaryCard({
           ) : null}
         </div>
 
-        <label className="mt-6 flex items-start gap-3 rounded-2xl border border-white/10 bg-white/10 p-4">
-          <input
-            type="checkbox"
-            className="mt-1 h-4 w-4"
-            checked={includeMiddleOfTheWorldTour}
-            onChange={(event) => onIncludeMiddleOfTheWorldTourChange(event.target.checked)}
-          />
-          <span>
-            <span className="block text-sm font-semibold text-white">
-              Asistir al Middle of the World Tour
-            </span>
-            <span className="mt-1 block text-sm leading-6 text-white/72">
-              Si seleccionas esta opcion, se sumaran {formatCurrency(10)} al valor total de esta
-              factura.
-            </span>
-          </span>
-        </label>
 
         <label className="mt-4 flex items-start gap-3 rounded-2xl border border-white/10 bg-white/10 p-4">
           <input
@@ -144,7 +119,7 @@ export function PaymentSummaryCard({
             <span className="block text-sm font-semibold text-white">Solicitar factura</span>
             <span className="mt-1 block text-sm leading-6 text-white/72">
               Si deseas factura, activa esta opcion. La generacion de la factura aplica un cobro
-              adicional de impuestos del 15% sobre el monto base de este pago.
+              adicional de impuestos del 19% sobre el monto base de este pago.
             </span>
           </span>
         </label>

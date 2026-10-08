@@ -1,89 +1,10 @@
-const buildWelcomeTemplate = ({ firstName, lastName, email, city, affiliation, role, appBaseUrl, logoUrl }) => {
-  const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'Usuario';
-  const normalizedRole = role || 'user';
-  const subject = 'Tu cuenta fue creada correctamente';
-  const details = [
-    { label: 'Nombre', value: fullName },
-    { label: 'Correo', value: email || 'No registrado' },
-    { label: 'Ciudad', value: city || 'No registrada' },
-    { label: 'Afiliacion', value: affiliation || 'No registrada' },
-    { label: 'Rol', value: normalizedRole },
-  ];
-
-  const text = [
-    `Hola ${fullName},`,
-    '',
-    'Tu cuenta en la plataforma IEEE Conference fue creada correctamente.',
-    '',
-    ...details.map((item) => `${item.label}: ${item.value}`),
-    '',
-    appBaseUrl ? `Acceso a la plataforma: ${appBaseUrl}` : '',
-    'Ya puedes iniciar sesion y continuar con tu registro, articulos y pagos.',
-  ]
-    .filter(Boolean)
-    .join('\n');
-
-  const html = `
-    <div style="margin:0; padding:32px 16px; background:linear-gradient(180deg, #eff6ff 0%, #f8fafc 42%, #ecfeff 100%); font-family: Arial, sans-serif; color:#0f172a; line-height:1.6;">
-      <div style="max-width:680px; margin:0 auto;">
-        <div style="background:#ffffff; border:1px solid #dbeafe; border-radius:24px; overflow:hidden; box-shadow:0 24px 60px rgba(15, 23, 42, 0.10);">
-          <div style="padding:32px 36px; background:linear-gradient(135deg, #dbeafe 0%, #eff6ff 55%, #ffffff 100%); border-bottom:1px solid #dbeafe;">
-            <div style="margin-bottom:16px; text-align:center;">
-              ${
-                logoUrl
-                  ? `<img src="${logoUrl}" alt="TEMSCON" style="display:inline-block; max-width:220px; width:auto; height:64px; object-fit:contain;" />`
-                  : `<div style="display:inline-block; padding:8px 14px; border-radius:999px; background:#ffffff; color:#1d4ed8; font-size:12px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase;">TEMSCON IEEE Conference</div>`
-              }
-            </div>
-            <h2 style="margin:18px 0 10px; font-size:32px; line-height:1.15; color:#0f172a;">Tu cuenta fue creada correctamente</h2>
-            <p style="margin:0; max-width:520px; font-size:16px; color:#334155;">Ya puedes ingresar a la plataforma para gestionar tu participacion, articulos y pagos del evento.</p>
-          </div>
-
-          <div style="padding:34px 36px 18px;">
-            <p style="margin:0 0 18px; font-size:18px;">Hola <strong>${fullName}</strong>,</p>
-            <p style="margin:0 0 24px; color:#334155;">Hemos confirmado la creacion de tu cuenta. Estos son los datos principales con los que quedaste registrado en la plataforma:</p>
-
-            <div style="margin:0 0 28px; border:1px solid #dbeafe; border-radius:20px; overflow:hidden; background:#f8fbff;">
-              ${details
-                .map(
-                  (item, index) => `
-                    <div style="padding:16px 20px; ${index < details.length - 1 ? 'border-bottom:1px solid #dbeafe;' : ''}">
-                      <p style="margin:0 0 4px; font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#2563eb;">${item.label}</p>
-                      <p style="margin:0; font-size:18px; color:#0f172a; font-weight:600;">${item.value}</p>
-                    </div>
-                  `
-                )
-                .join('')}
-            </div>
-
-            <div style="margin:0 0 24px; padding:18px 20px; border-left:4px solid #06b6d4; border-radius:14px; background:#ecfeff;">
-              <p style="margin:0; color:#155e75;"><strong>Siguiente paso:</strong> inicia sesion para completar tu informacion, registrar articulos y revisar opciones de pago.</p>
-            </div>
-
-            ${
-              appBaseUrl
-                ? `<p style="margin:0 0 28px;"><a href="${appBaseUrl}" style="display:inline-block; padding:14px 22px; background:linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color:#ffffff; text-decoration:none; border-radius:12px; font-weight:700; box-shadow:0 12px 24px rgba(37, 99, 235, 0.28);">Ingresar a la plataforma</a></p>`
-                : ''
-            }
-
-            <p style="margin:0 0 24px; color:#475569;">Si identificas algun dato incorrecto, responde este correo o contacta al equipo administrador para corregirlo.</p>
-          </div>
-
-          <div style="padding:18px 36px 30px; color:#64748b; font-size:13px; border-top:1px solid #e2e8f0;">
-            Este mensaje fue generado automaticamente por la plataforma IEEE Conference.
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  return {
-    subject,
-    text,
-    html,
-  };
-};
-
-module.exports = {
-  buildWelcomeTemplate,
-};
+﻿const { buildSysconEmail } = require('./sysconEmailLayout');
+const buildWelcomeTemplate = ({ firstName, lastName, email, city, affiliation, role, appBaseUrl, logoUrl }) => buildSysconEmail({
+  title: 'Tu cuenta fue creada correctamente',
+  name: [firstName, lastName].filter(Boolean).join(' ') || 'participante',
+  intro: 'Bienvenido a la comunidad de SYSCON LATAM 2026. Ya puedes ingresar para completar tu inscripción, registrar artículos y gestionar tus pagos.',
+  details: [{ label:'Nombre', value:[firstName,lastName].filter(Boolean).join(' ') || 'Usuario' },{label:'Correo',value:email || 'No registrado'},{label:'Ciudad',value:city || 'No registrada'},{label:'Afiliación',value:affiliation || 'No registrada'},{label:'Rol',value:role || 'user'}],
+  note: 'Siguiente paso: inicia sesión y completa tu registro para participar en la conferencia.',
+  actionUrl: appBaseUrl, appBaseUrl, logoUrl,
+});
+module.exports = { buildWelcomeTemplate };

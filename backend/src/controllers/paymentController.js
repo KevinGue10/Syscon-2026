@@ -68,31 +68,31 @@ const sendPayPhoneLink = asyncHandler(async (req, res) => {
   });
 });
 
-const createPayPalOrder = asyncHandler(async (req, res) => {
-  const result = await paymentService.createPayPalOrder(req.body, req.user);
+const createCobruPayment = asyncHandler(async (req, res) => {
+  const result = await paymentService.createCobruPayment(req.body, req.user);
   return sendSuccess(res, {
     statusCode: 201,
-    message: 'Orden de PayPal creada correctamente.',
+    message: 'Enlace de pago Cobru creado correctamente.',
     data: result,
   });
 });
 
-const capturePayPalOrder = asyncHandler(async (req, res) => {
-  const result = await paymentService.capturePayPalOrder(req.body, req.user);
+const refreshCobruPayment = asyncHandler(async (req, res) => {
+  const result = await paymentService.refreshCobruPayment(req.params.paymentId, req.user);
   return sendSuccess(res, {
-    message: 'Orden de PayPal capturada correctamente.',
+    message: 'Estado del pago Cobru consultado correctamente.',
     data: result,
   });
 });
 
-const handlePayPalWebhook = asyncHandler(async (req, res) => {
-  const result = await paymentService.handlePayPalWebhook({
-    headers: req.headers,
+const handleCobruWebhook = asyncHandler(async (req, res) => {
+  const result = await paymentService.handleCobruWebhook({
+    query: req.query,
     body: req.body,
   });
 
   return sendSuccess(res, {
-    message: 'Webhook de PayPal recibido correctamente.',
+    message: 'Webhook de Cobru recibido correctamente.',
     data: result,
   });
 });
@@ -144,9 +144,9 @@ module.exports = {
   rejectPayment,
   cancelPayment,
   sendPayPhoneLink,
-  createPayPalOrder,
-  capturePayPalOrder,
-  handlePayPalWebhook,
+  createCobruPayment,
+  refreshCobruPayment,
+  handleCobruWebhook,
   createPayPhonePayment,
   handlePayPhoneCallback,
   listPaymentsByRegistration,

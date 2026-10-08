@@ -8,7 +8,9 @@
     "start": "node src/server.js",
     "seed": "node src/seeders/index.js",
     "verify:smtp": "node src/scripts/verifySmtp.js",
-    "send:payphone-links": "node src/scripts/sendPayPhoneLinksFromCsv.js"
+    "send:payphone-links": "node src/scripts/sendPayPhoneLinksFromCsv.js",
+    "db:generate-sql": "node src/scripts/generateSchemaSql.js",
+    "test:cobru": "node --test test/cobru.test.js"
   },
   "keywords": [
     "express",

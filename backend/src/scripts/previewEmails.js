@@ -1,0 +1,14 @@
+﻿const fs = require('node:fs');
+const path = require('node:path');
+const { buildWelcomeTemplate } = require('../templates/emails/welcomeTemplate');
+const { buildPasswordResetTemplate } = require('../templates/emails/passwordResetTemplate');
+const { buildPaymentApprovedTemplate } = require('../templates/emails/paymentApprovedTemplate');
+const { buildPayPhoneLinkTemplate } = require('../templates/emails/payPhoneLinkTemplate');
+const { buildRegistrationConfirmationTemplate, buildPaperRegistrationTemplate, buildPendingPaymentReminderTemplate } = require('../templates/emails/notificationTemplates');
+const sample = {firstName:'Valentina',lastName:'García',email:'participante@example.com',city:'Cartagena',affiliation:'Universidad',role:'user',appBaseUrl:'https://example.com',provisionalPassword:'CLAVE-DE-EJEMPLO',amountUsd:400,transactionReference:'SYSCON-DEMO-001',paymentMethod:'cobru',paymentLink:'https://example.com/pago-demostracion',registration:{id:123,status:'submitted',pendingAmount:400},paper:{title:'Diseño e integración de sistemas inteligentes',paperCode:'ART-2026-001'}};
+const previews = {welcomePreview:buildWelcomeTemplate,passwordResetPreview:buildPasswordResetTemplate,paymentApprovedPreview:buildPaymentApprovedTemplate,payPhoneLinkPreview:buildPayPhoneLinkTemplate,registrationConfirmationPreview:buildRegistrationConfirmationTemplate,paperRegistrationPreview:buildPaperRegistrationTemplate,pendingPaymentReminderPreview:buildPendingPaymentReminderTemplate};
+const output = path.join(__dirname,'../templates/emails/previews');
+fs.mkdirSync(output,{recursive:true});
+for (const [name, build] of Object.entries(previews)) fs.writeFileSync(path.join(output,`${name}.html`),build(sample).html);
+fs.writeFileSync(path.join(output,'index.html'),`<!doctype html><html lang="es"><meta charset="utf-8"><title>Correos SYSCON LATAM 2026</title><body style="font-family:Arial;background:#f3f7f8;color:#00334d;padding:32px"><h1>Correos SYSCON LATAM 2026</h1><p>Vistas previas con datos ficticios. No se envían correos.</p><ul>${Object.keys(previews).map(name=>`<li style="margin:16px 0"><a style="color:#00758a" href="${name}.html">${name}</a></li>`).join('')}</ul></body></html>`);
+console.log('Generated 7 SYSCON email previews with fictional data. No emails sent.');

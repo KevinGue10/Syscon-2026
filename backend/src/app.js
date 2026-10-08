@@ -12,6 +12,8 @@ const app = express();
 
 app.use(cors());
 app.use(helmet());
+// Callback URLs contain a secret query parameter; never write queries to access logs.
+morgan.token('url', (req) => req.path);
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

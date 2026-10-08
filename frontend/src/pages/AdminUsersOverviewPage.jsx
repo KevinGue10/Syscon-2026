@@ -34,7 +34,6 @@ function AdminUsersOverviewPage() {
     occupation: '',
     attendanceType: '',
     isIeeeMember: '',
-    isTems: '',
     active: 'true',
     paymentStatus: '',
   });
@@ -45,7 +44,6 @@ function AdminUsersOverviewPage() {
     occupation: '',
     attendanceType: '',
     isIeeeMember: '',
-    isTems: '',
     active: 'true',
     paymentStatus: '',
   });
@@ -279,12 +277,6 @@ function AdminUsersOverviewPage() {
             onChange={(event) => updateFilter(setFilters, 'isIeeeMember', event.target.value)}
           />
           <SelectField
-            label="Miembro TEMS"
-            options={booleanOptions}
-            value={filters.isTems}
-            onChange={(event) => updateFilter(setFilters, 'isTems', event.target.value)}
-          />
-          <SelectField
             label="Estado de usuario"
             options={activityOptions}
             value={filters.active}
@@ -318,7 +310,6 @@ function AdminUsersOverviewPage() {
                   occupation: '',
                   attendanceType: '',
                   isIeeeMember: '',
-                  isTems: '',
                   active: 'true',
                   paymentStatus: '',
                 };
@@ -399,11 +390,6 @@ function AdminUsersOverviewPage() {
                 key: 'isIeeeMember',
                 label: 'Miembro IEEE',
                 render: (_, row) => (resolvePrimaryRegistration(row)?.isIeeeMember ? 'Si' : 'No'),
-              },
-              {
-                key: 'isTems',
-                label: 'Miembro TEMS',
-                render: (_, row) => (resolvePrimaryRegistration(row)?.isTems ? 'Si' : 'No'),
               },
               {
                 key: 'membershipNumber',
@@ -1515,13 +1501,6 @@ function applyAdminUserFilters(users, filters) {
     if (filters.isIeeeMember !== '') {
       const isIeeeMember = Boolean(primaryRegistration?.isIeeeMember);
       if (String(isIeeeMember) !== String(filters.isIeeeMember)) {
-        return false;
-      }
-    }
-
-    if (filters.isTems !== '') {
-      const isTems = Boolean(primaryRegistration?.isTems);
-      if (String(isTems) !== String(filters.isTems)) {
         return false;
       }
     }

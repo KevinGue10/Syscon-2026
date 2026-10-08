@@ -8,7 +8,7 @@ const env = {
   db: {
     host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT) || 3306,
-    name: process.env.DB_NAME || 'ieee_conference',
+    name: process.env.DB_NAME || 'syscon2026',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     syncOnStart:
@@ -53,14 +53,16 @@ const env = {
     paymentProofsPrefix: process.env.OBJECT_STORAGE_PAYMENT_PROOFS_PREFIX || 'payment-proofs',
     signedUrlExpiresInSeconds: Number(process.env.OBJECT_STORAGE_SIGNED_URL_EXPIRES_IN || 900),
   },
-  paypal: {
-    clientId: process.env.PAYPAL_CLIENT_ID || '',
-    clientSecret: process.env.PAYPAL_CLIENT_SECRET || '',
-    baseUrl: process.env.PAYPAL_BASE_URL || 'https://api-m.sandbox.paypal.com',
-    webhookId: process.env.PAYPAL_WEBHOOK_ID || '',
-    returnUrl: process.env.PAYPAL_RETURN_URL || '',
-    cancelUrl: process.env.PAYPAL_CANCEL_URL || '',
-    brandName: process.env.PAYPAL_BRAND_NAME || 'IEEE Conference Platform',
+  cobru: {
+    baseUrl: process.env.COBRU_BASE_URL || 'https://dev.cobru.co',
+    apiKey: process.env.COBRU_API_KEY || '',
+    refreshToken: process.env.COBRU_REFRESH_TOKEN || '',
+    callbackToken: process.env.COBRU_CALLBACK_TOKEN || '',
+    callbackUrl: process.env.COBRU_CALLBACK_URL || '',
+    returnUrl: process.env.COBRU_RETURN_URL || '',
+    expirationDays: Number(process.env.COBRU_EXPIRATION_DAYS || 1),
+    timeoutMs: Number(process.env.COBRU_TIMEOUT_MS || 15000),
+    paymentMethods: { breb: true, pse: true, NEQUI: true, credit_card: true },
   },
   payphone: {
     baseUrl: process.env.PAYPHONE_BASE_URL || 'https://pay.payphonetodoesposible.com/api',

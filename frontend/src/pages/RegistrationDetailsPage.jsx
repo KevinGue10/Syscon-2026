@@ -272,7 +272,6 @@ function RegistrationDetailsPage() {
 
 function RegistrationSection({ registration, isAdminRemoteView }) {
   const requiresInvoice = resolveInvoiceRequirement(registration);
-  const willAttendTour = resolveTourAttendance(registration);
   const invoiceTaxAmount = resolveInvoiceTaxAmount(registration);
 
   const registrationRows = [
@@ -291,7 +290,6 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
       label: 'Cargo de factura e impuestos',
       value: requiresInvoice ? formatCurrency(invoiceTaxAmount) : 'No aplica',
     },
-    { label: 'Asistencia al tour', value: formatBooleanPreference(willAttendTour) },
     {
       label: 'Saldo pendiente',
       value: formatCurrency(
@@ -525,35 +523,6 @@ function resolveInvoiceRequirement(registration) {
   );
 }
 
-function resolveTourAttendance(registration) {
-  const latestPayment = resolveLatestPayment(registration);
-  const paymentLevelValue = latestPayment?.includesTour;
-
-  if (paymentLevelValue !== undefined) {
-    return normalizeBooleanPreference(paymentLevelValue);
-  }
-
-  const directValue = firstDefinedValue([
-    registration?.willAttendTour,
-    registration?.tourAttendance,
-    registration?.attendTour,
-    registration?.includeMiddleOfTheWorldTour,
-    registration?.middleOfTheWorldTour,
-    registration?.requiresTour,
-    registration?.includesTour,
-    registration?.paymentSummary?.includeMiddleOfTheWorldTour,
-    registration?.paymentSummary?.includesTour,
-  ]);
-
-  if (directValue !== undefined) {
-    return normalizeBooleanPreference(directValue);
-  }
-
-  return resolveCustomFieldBoolean(
-    registration?.customFieldValues,
-    ['tour', 'mitad del mundo', 'middle of the world'],
-  );
-}
 
 function resolveInvoiceTaxAmount(registration) {
   const latestPayment = resolveLatestPayment(registration);

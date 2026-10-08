@@ -92,10 +92,6 @@ export const dashboardService = {
           filters.isIeeeMember === '' || filters.isIeeeMember === undefined
             ? undefined
             : filters.isIeeeMember,
-        isTems:
-          filters.isTems === '' || filters.isTems === undefined
-            ? undefined
-            : filters.isTems,
         active:
           filters.active === '' || filters.active === undefined || filters.active === 'all'
             ? undefined

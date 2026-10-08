@@ -9,18 +9,17 @@ const {
 const { createAuditLog } = require('./auditService');
 const { sendPaymentConfirmationEmail, sendPayPhoneLinkEmail } = require('./emailService');
 const AppError = require('../utils/errors');
-const paypalService = require('./paypalService');
 const { uploadPaymentProofFile, getSignedObjectUrl } = require('./objectStorageService');
 
 const PAYMENT_METHODS = {
   BANK_TRANSFER: 'bank_transfer',
-  PAYPAL: 'paypal',
+  COBRU: 'cobru',
   PAYPHONE: 'payphone',
 };
 
 const PAYMENT_PROVIDERS = {
   MANUAL: 'manual_bank_transfer',
-  PAYPAL: 'paypal',
+  COBRU: 'cobru',
   PAYPHONE: 'manual_payphone_request',
   COUPON: 'coupon',
 };
@@ -62,6 +61,9 @@ const requiresProofValidation = (payment) =>
   [PAYMENT_METHODS.BANK_TRANSFER, PAYMENT_METHODS.PAYPHONE].includes(payment?.paymentMethod);
 
 const assertPaymentCanBeApproved = (payment) => {
+  if (payment?.provider === PAYMENT_PROVIDERS.COBRU) {
+    throw new AppError('Cobru payments must be confirmed through provider reconciliation.', 409);
+  }
   const pendingAmount = Number(payment?.registration?.pendingAmount || 0);
   const paymentAmount = Number(payment?.amountUsd || 0);
 
@@ -170,16 +172,7 @@ const resolveRequestedAmounts = async (payload, registration) => {
 };
 
 const normalizeCouponCode = (code) => String(code || '').trim().toUpperCase();
-const resolvePaymentIncludesTour = (payload = {}) =>
-  Boolean(
-    payload.includesTour !== undefined
-      ? payload.includesTour
-      : payload.goToTour !== undefined
-        ? payload.goToTour
-        : payload.isTour !== undefined
-          ? payload.isTour
-          : false
-  );
+const resolvePaymentIncludesTour = () => false;
 
 const syncRegistrationPaymentPreferences = async (registration, payload = {}) => {
   if (!registration) {
@@ -200,9 +193,7 @@ const syncRegistrationPaymentPreferences = async (registration, payload = {}) =>
   }
 
   await registration.update({
-    includesTour: shouldUpdateIncludesTour
-      ? resolvePaymentIncludesTour(payload)
-      : registration.includesTour,
+    includesTour: false,
     requiresInvoice: shouldUpdateRequiresInvoice
       ? resolveRequiresInvoice(payload)
       : registration.requiresInvoice,
@@ -293,6 +284,7 @@ const createPaymentRecord = async ({
   providerResponseJson = null,
   paymentDate = null,
   status = PAYMENT_STATUSES.PENDING,
+  transaction = undefined,
 }) => {
   const normalizedTaxAmount =
     taxAmount !== null && taxAmount !== undefined
@@ -310,7 +302,7 @@ const createPaymentRecord = async ({
     currency: amounts.currency,
     paymentMethod,
     provider,
-    includesTour: Boolean(includesTour),
+    includesTour: false,
     includesTax: Boolean(requiresInvoice),
     taxAmount: normalizedTaxAmount,
     transactionReference,
@@ -318,14 +310,14 @@ const createPaymentRecord = async ({
     paymentUrl,
     providerResponseJson: {
       ...(providerResponseJson || {}),
-      includesTour: Boolean(includesTour),
+      includesTour: false,
       requiresInvoice: Boolean(requiresInvoice),
       includeTaxes: Boolean(requiresInvoice),
       taxAmount: normalizedTaxAmount,
     },
     status,
     paymentDate,
-  });
+  }, { transaction });
 };
 
 const findReusablePendingPayment = async ({
@@ -344,7 +336,7 @@ const findReusablePendingPayment = async ({
       paymentMethod,
       currency,
       amountUsd: normalizedAmountUsd,
-      includesTour: Boolean(includesTour),
+      includesTour: false,
       includesTax: Boolean(includesTax),
       status: [
         PAYMENT_STATUSES.PENDING_LINK,
@@ -357,8 +349,8 @@ const findReusablePendingPayment = async ({
   });
 };
 
-const buildPaymentResponse = async (payment, registrationId) => {
-  const summary = await calculateRegistrationTotals(registrationId);
+const buildPaymentResponse = async (payment, registrationId, options = {}) => {
+  const summary = await calculateRegistrationTotals(registrationId, options);
   const refreshedPayment = await Payment.findByPk(payment.id, {
     include: ['registration', 'validator', 'statusHistory'],
   });
@@ -681,6 +673,10 @@ const approvePayment = async (paymentId, reviewedAmount, currentUser) => {
     throw new AppError('Payment not found.', 404);
   }
 
+  if (payment.provider === PAYMENT_PROVIDERS.COBRU) {
+    throw new AppError('Use Cobru reconciliation to confirm this payment.', 409);
+  }
+
   if (payment.status === PAYMENT_STATUSES.APPROVED) {
     return buildPaymentResponse(payment, payment.registrationId);
   }
@@ -714,6 +710,10 @@ const rejectPayment = async (paymentId, rejectionReason, currentUser) => {
 
   if (!payment) {
     throw new AppError('Payment not found.', 404);
+  }
+
+  if (payment.provider === PAYMENT_PROVIDERS.COBRU) {
+    throw new AppError('Use Cobru reconciliation to update this payment.', 409);
   }
 
   if (payment.status === PAYMENT_STATUSES.APPROVED) {
@@ -751,6 +751,10 @@ const cancelPayment = async (paymentId, currentUser) => {
     throw new AppError('Payment not found.', 404);
   }
 
+  if (payment.provider === PAYMENT_PROVIDERS.COBRU) {
+    throw new AppError('Expire the payment in Cobru and reconcile it before cancelling locally.', 409);
+  }
+
   if (payment.status === PAYMENT_STATUSES.APPROVED) {
     throw new AppError('Approved payments cannot be cancelled.', 409);
   }
@@ -776,194 +780,6 @@ const cancelPayment = async (paymentId, currentUser) => {
   });
 
   return buildPaymentResponse(payment, payment.registrationId);
-};
-
-const createPayPalOrder = async (payload, currentUser) => {
-  const registration = await Registration.findByPk(payload.registrationId);
-  assertRegistrationAccess(registration, currentUser);
-  await syncRegistrationPaymentPreferences(registration, payload);
-
-  const amounts = await resolveRequestedAmounts(payload, registration);
-  const pendingAmount = Number(registration.pendingAmount || 0);
-  if (pendingAmount <= 0) {
-    throw new AppError('The registration has no pending balance.', 409);
-  }
-
-  const reusablePayment = await findReusablePendingPayment({
-    registrationId: registration.id,
-    paymentMethod: PAYMENT_METHODS.PAYPAL,
-    amountUsd: amounts.amountUsd,
-    currency: amounts.currency,
-    includesTour: resolvePaymentIncludesTour(payload),
-    includesTax: resolveRequiresInvoice(payload),
-  });
-
-  if (reusablePayment) {
-    return buildPaymentResponse(reusablePayment, registration.id);
-  }
-
-  const payment = await createPaymentRecord({
-    registration,
-    amounts,
-    paymentMethod: PAYMENT_METHODS.PAYPAL,
-    provider: PAYMENT_PROVIDERS.PAYPAL,
-    includesTour: resolvePaymentIncludesTour(payload),
-    requiresInvoice: resolveRequiresInvoice(payload),
-    taxAmount: payload.taxAmount,
-  });
-
-  const order = await paypalService.createOrder({
-    paymentId: payment.id,
-    registrationId: registration.id,
-    amountUsd: amounts.amountUsd,
-    currency: amounts.currency,
-  });
-
-  await payment.update({
-    providerPaymentId: order.id,
-    paymentUrl: order.approvalUrl,
-    providerResponseJson: order.raw,
-  });
-
-  await createAuditLog({
-    userId: currentUser.id,
-    action: 'create-paypal-order',
-    entity: 'payment',
-    entityId: payment.id,
-    newValue: payment.toJSON(),
-  });
-
-  await recordStatusHistory({
-    paymentId: payment.id,
-    previousStatus: null,
-    newStatus: PAYMENT_STATUSES.PENDING,
-    changedBy: currentUser.id,
-    reason: 'PayPal order created.',
-    providerResponseJson: order.raw,
-  });
-
-  return buildPaymentResponse(payment, registration.id);
-};
-
-const capturePayPalOrder = async ({ orderId }, currentUser) => {
-  const payment = await Payment.findOne({
-    where: {
-      provider: PAYMENT_PROVIDERS.PAYPAL,
-      providerPaymentId: orderId,
-    },
-    include: [{ association: 'registration' }],
-  });
-
-  if (!payment) {
-    throw new AppError('PayPal payment not found for the provided order.', 404);
-  }
-
-  assertRegistrationAccess(payment.registration, currentUser);
-
-  if (payment.status === PAYMENT_STATUSES.APPROVED) {
-    return buildPaymentResponse(payment, payment.registrationId);
-  }
-
-  const captureResponse = await paypalService.captureOrder(orderId);
-  const normalizedStatus = String(captureResponse.status || '').toUpperCase();
-
-  if (normalizedStatus === 'COMPLETED') {
-    assertPaymentCanBeApproved(payment);
-    await updatePaymentStatus({
-      payment,
-      status: PAYMENT_STATUSES.APPROVED,
-      changedBy: currentUser.id,
-      reason: 'PayPal order captured by backend.',
-      providerResponseJson: captureResponse.raw,
-    });
-    await maybeSendApprovalEmail(payment, payment.registration);
-  } else if (['VOIDED', 'DECLINED', 'FAILED'].includes(normalizedStatus)) {
-    await updatePaymentStatus({
-      payment,
-      status: PAYMENT_STATUSES.REJECTED,
-      changedBy: currentUser.id,
-      reason: `PayPal capture returned status ${normalizedStatus}.`,
-      providerResponseJson: captureResponse.raw,
-    });
-  } else {
-    await payment.update({
-      providerResponseJson: captureResponse.raw,
-    });
-  }
-
-  await createAuditLog({
-    userId: currentUser.id,
-    action: 'capture-paypal-order',
-    entity: 'payment',
-    entityId: payment.id,
-    newValue: payment.toJSON(),
-  });
-
-  return buildPaymentResponse(payment, payment.registrationId);
-};
-
-const handlePayPalWebhook = async ({ headers, body }) => {
-  const isValid = await paypalService.verifyWebhook({
-    headers,
-    body,
-  });
-
-  if (!isValid) {
-    throw new AppError('Invalid PayPal webhook signature.', 400);
-  }
-
-  const eventType = String(body.event_type || '');
-  const orderId =
-    body.resource?.supplementary_data?.related_ids?.order_id ||
-    body.resource?.id ||
-    body.resource?.order_id ||
-    null;
-
-  if (!orderId) {
-    return { received: true, ignored: true };
-  }
-
-  const payment = await Payment.findOne({
-    where: {
-      provider: PAYMENT_PROVIDERS.PAYPAL,
-      providerPaymentId: orderId,
-    },
-    include: [{ association: 'registration' }],
-  });
-
-  if (!payment) {
-    return { received: true, ignored: true };
-  }
-
-  if (eventType === 'PAYMENT.CAPTURE.COMPLETED') {
-    assertPaymentCanBeApproved(payment);
-    await updatePaymentStatus({
-      payment,
-      status: PAYMENT_STATUSES.APPROVED,
-      reason: 'PayPal webhook confirmed capture.',
-      providerResponseJson: body,
-    });
-    await maybeSendApprovalEmail(payment, payment.registration);
-  }
-
-  if (['PAYMENT.CAPTURE.DENIED', 'PAYMENT.CAPTURE.DECLINED'].includes(eventType)) {
-    await updatePaymentStatus({
-      payment,
-      status: PAYMENT_STATUSES.REJECTED,
-      reason: `PayPal webhook event ${eventType}.`,
-      providerResponseJson: body,
-    });
-  }
-
-  await createAuditLog({
-    userId: payment.registration.userId,
-    action: 'paypal-webhook',
-    entity: 'payment',
-    entityId: payment.id,
-    newValue: payment.toJSON(),
-  });
-
-  return { received: true };
 };
 
 const createPayPhonePayment = async (payload, currentUser) => {
@@ -1158,9 +974,10 @@ module.exports = {
   rejectPayment,
   cancelPayment,
   sendPayPhoneLink,
-  createPayPalOrder,
-  capturePayPalOrder,
-  handlePayPalWebhook,
+  ...require('./cobruPaymentService')({
+    assertRegistrationAccess, syncRegistrationPaymentPreferences, createPaymentRecord,
+    updatePaymentStatus, buildPaymentResponse, calculateRegistrationTotals, maybeSendApprovalEmail,
+  }),
   createPayPhonePayment,
   handlePayPhoneCallback,
   listPaymentsByRegistration,

@@ -68,7 +68,6 @@ const createRegistration = async (payload, currentUser, options = {}) => {
     attendanceType: payload.attendanceType,
     memberType: normalizeRegistrationMemberType(payload.memberType),
     isIeeeMember: payload.isIeeeMember || false,
-    isTems: payload.isTems || false,
     includesTour: resolveIncludesTour(payload),
     requiresInvoice: resolveRequiresInvoice(payload),
     membershipNumber: payload.membershipNumber || null,
@@ -93,7 +92,7 @@ const createRegistration = async (payload, currentUser, options = {}) => {
     entity: 'registration',
     entityId: registration.id,
     newValue: registration.toJSON(),
-  });
+  }, { transaction });
 
   return summary;
 };
@@ -119,11 +118,7 @@ const updateRegistration = async (registrationId, payload, currentUser, options 
         ? normalizeRegistrationMemberType(payload.memberType)
         : registration.memberType,
     isIeeeMember: payload.isIeeeMember !== undefined ? payload.isIeeeMember : registration.isIeeeMember,
-    isTems: payload.isTems !== undefined ? payload.isTems : registration.isTems,
-    includesTour:
-      payload.includesTour !== undefined
-        ? payload.includesTour
-        : registration.includesTour,
+    includesTour: false,
     requiresInvoice:
       payload.requiresInvoice !== undefined || payload.includeTaxes !== undefined
         ? resolveRequiresInvoice(payload)
@@ -152,15 +147,20 @@ const updateRegistration = async (registrationId, payload, currentUser, options 
     entityId: registration.id,
     oldValue,
     newValue: summary.registration.toJSON(),
-  });
+  }, { transaction });
 
   if (Number(summary.registration.pendingAmount) > 0) {
     const user = await User.findByPk(registration.userId, { transaction });
     if (user) {
-      dispatchEmailInBackground(
+      const sendReminder = () => dispatchEmailInBackground(
         () => sendPendingPaymentReminderEmail(user, summary.registration),
         'Pending payment reminder email'
       );
+      if (transaction) {
+        transaction.afterCommit(sendReminder);
+      } else {
+        sendReminder();
+      }
     }
   }
 

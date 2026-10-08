@@ -13,15 +13,15 @@ const {
   payphoneSendLinkValidation,
   paymentCancellationValidation,
   paymentRejectionValidation,
-  paypalCreateOrderValidation,
-  paypalCaptureOrderValidation,
+  cobruCreatePaymentValidation,
+  cobruRefreshPaymentValidation,
   payphoneCreatePaymentValidation,
   registrationPaymentsValidation,
 } = require('../validations/paymentValidations');
 
 const router = express.Router();
 
-router.post('/paypal/webhook', paymentController.handlePayPalWebhook);
+router.post('/cobru/webhook', paymentController.handleCobruWebhook);
 router.post('/payphone/callback', paymentController.handlePayPhoneCallback);
 
 router.use(authMiddleware);
@@ -71,8 +71,8 @@ router.patch(
   validationMiddleware,
   paymentController.cancelPayment
 );
-router.post('/paypal/create-order', paypalCreateOrderValidation, validationMiddleware, paymentController.createPayPalOrder);
-router.post('/paypal/capture-order', paypalCaptureOrderValidation, validationMiddleware, paymentController.capturePayPalOrder);
+router.post('/cobru/create-payment', cobruCreatePaymentValidation, validationMiddleware, paymentController.createCobruPayment);
+router.post('/cobru/:paymentId/refresh', cobruRefreshPaymentValidation, validationMiddleware, paymentController.refreshCobruPayment);
 router.post(
   '/payphone/create-payment',
   payphoneCreatePaymentValidation,
