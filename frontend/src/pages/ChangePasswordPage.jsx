@@ -10,7 +10,7 @@ import { authService } from '../services/authService';
 
 function ChangePasswordPage() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [serverState, setServerState] = useState({
     error: '',
     success: '',
@@ -45,7 +45,7 @@ function ChangePasswordPage() {
 
       setServerState({
         error: '',
-        success: 'Tu contrasena fue actualizada. Por seguridad debes iniciar sesion de nuevo.',
+        success: 'Tu contraseña fue actualizada. Por seguridad debes iniciar sesión de nuevo.',
       });
 
       setTimeout(() => {
@@ -77,16 +77,16 @@ function ChangePasswordPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
             Seguridad
           </p>
-          <h1 className="mt-3 text-4xl font-semibold text-slate-950">Cambiar contrasena</h1>
+          <h1 className="mt-3 text-4xl font-semibold text-slate-950">Cambiar contraseña</h1>
           <p className="mt-4 text-sm leading-7 text-slate-600">
-            Actualiza tu contrasena de acceso. Despues del cambio cerraremos tu sesion por
+            Actualiza tu contraseña de acceso. Después del cambio cerraremos tu sesion por
             seguridad y te enviaremos de nuevo al ingreso.
           </p>
 
           <form className="mt-8 grid gap-5" onSubmit={handleSubmit(onSubmit)}>
             {serverState.error ? (
               <Alert
-                title="No fue posible cambiar la contrasena"
+                title="No fue posible cambiar la contraseña"
                 description={serverState.error}
                 variant="danger"
               />
@@ -94,55 +94,58 @@ function ChangePasswordPage() {
 
             {serverState.success ? (
               <Alert
-                title="Contrasena actualizada"
+                title="Contraseña actualizada"
                 description={serverState.success}
                 variant="success"
               />
             ) : null}
 
             <InputField
-              label="Contrasena actual"
+              label="Contraseña actual"
               type="password"
+              autoComplete="current-password"
               error={errors.currentPassword?.message}
               {...register('currentPassword', {
-                required: 'La contrasena actual es obligatoria',
+                required: 'La contraseña actual es obligatoria',
               })}
             />
 
             <InputField
-              label="Nueva contrasena"
+              label="Nueva contraseña"
               type="password"
+              autoComplete="new-password"
               error={errors.newPassword?.message}
               helperText="Usa al menos 8 caracteres."
               {...register('newPassword', {
-                required: 'La nueva contrasena es obligatoria',
+                required: 'La nueva contraseña es obligatoria',
                 minLength: {
                   value: 8,
-                  message: 'La nueva contrasena debe tener al menos 8 caracteres',
+                  message: 'La nueva contraseña debe tener al menos 8 caracteres',
                 },
               })}
             />
 
             <InputField
-              label="Confirmar nueva contrasena"
+              label="Confirmar nueva contraseña"
               type="password"
+              autoComplete="new-password"
               error={errors.confirmPassword?.message}
               {...register('confirmPassword', {
-                required: 'Debes confirmar la nueva contrasena',
+                required: 'Debes confirmar la nueva contraseña',
                 validate: (value) =>
-                  value === newPassword || 'La confirmacion no coincide con la nueva contrasena',
+                  value === newPassword || 'La confirmación no coincide con la nueva contraseña',
               })}
             />
 
             <div className="mt-2 flex flex-wrap gap-3">
               <Button type="submit" variant="primary" disabled={isSubmitting}>
-                {isSubmitting ? 'Guardando...' : 'Actualizar contrasena'}
+                {isSubmitting ? 'Guardando...' : 'Actualizar contraseña'}
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 className="border border-slate-200"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/dashboard')}
               >
                 Volver al panel
               </Button>
@@ -163,6 +166,6 @@ function resolveBackendPasswordError(error) {
     fieldErrorMessage ||
     error?.response?.data?.message ||
     error?.message ||
-    'No fue posible actualizar la contrasena.'
+    'No fue posible actualizar la contraseña.'
   );
 }

@@ -1,3 +1,4 @@
+import { getPaymentReviewAmounts, formatReviewMoney } from '../utils/paymentReview';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert } from '../components/Alert';
@@ -194,7 +195,10 @@ function AdminUsersOverviewPage() {
     { value: 'false', label: 'Inactivos' },
     { value: 'all', label: 'Todos' },
   ];
+  const [reviewCurrency, setReviewCurrency] = useState('USD');
+  useEffect(() => { setReviewCurrency('USD'); }, [paymentReviewState.selectedPaymentId, paymentReviewState.isOpen]);
   const selectedReviewedPayment = resolveSelectedPayment(paymentReviewState);
+  const reviewAmounts = getPaymentReviewAmounts(selectedReviewedPayment, paymentReviewState.registration, paymentReviewState.reviewedAmount, reviewCurrency);
   const isResolvedPayment = isPaymentResolved(selectedReviewedPayment);
   const isRejectedPayment = isPaymentRejected(selectedReviewedPayment);
   const isApprovedPayment = isPaymentApproved(selectedReviewedPayment);
@@ -776,7 +780,7 @@ function AdminUsersOverviewPage() {
 
                   <div className="rounded-xl border border-slate-200 bg-white p-5">
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Resumen de revision
+                      Resumen de revisión
                     </p>
                     <div className="mt-4 grid gap-4 sm:grid-cols-2">
                       <ReviewItem
@@ -785,13 +789,14 @@ function AdminUsersOverviewPage() {
                       />
                       <ReviewItem
                         label="Saldo pendiente"
-                        value={formatCurrency(
-                          paymentReviewState.registration?.paymentSummary?.pendingAmount ||
-                            paymentReviewState.registration?.pendingAmount ||
-                            0,
-                        )}
+                        value={formatReviewMoney(reviewAmounts.pendingUsd, reviewAmounts.rate)}
                       />
+                      <ReviewItem label="Total de la inscripción" value={formatReviewMoney(Number(paymentReviewState.registration?.paymentSummary?.totalAmount ?? paymentReviewState.registration?.totalAmount ?? 0), reviewAmounts.rate)} />
+                      <ReviewItem label="Pagado anteriormente" value={formatReviewMoney(Number(paymentReviewState.registration?.paymentSummary?.paidAmount ?? paymentReviewState.registration?.paidAmount ?? 0), reviewAmounts.rate)} />
+                      <ReviewItem label="Valor del pago seleccionado" value={formatReviewMoney(reviewAmounts.originalUsd, reviewAmounts.rate)} />
+                      <ReviewItem label="Tasa de este pago" value={reviewAmounts.rate ? reviewAmounts.rate.toLocaleString('es-CO',{maximumFractionDigits:4}) + ' COP por USD' : 'Sin conversión registrada'} />
                     </div>
+                    <p className="mt-3 text-xs leading-6 text-slate-500">Los equivalentes en pesos del resumen usan la tasa del pago seleccionado. Los pagos anteriores pueden tener tasas diferentes.</p>
                   </div>
                 </div>
 
@@ -896,8 +901,19 @@ function AdminUsersOverviewPage() {
                     ) : canValidateSelectedPayment ? (
                       <>
                         <div className="mt-4 grid gap-4">
+                          <SelectField
+                            label="Moneda del comprobante"
+                            value={reviewCurrency}
+                            options={[{label:'Dólares (USD)',value:'USD'}, ...(reviewAmounts.rate ? [{label:'Pesos colombianos (COP)',value:'COP'}] : [])]}
+                            onChange={event => {
+                              const next = event.target.value;
+                              setPaymentReviewState(current => ({...current, reviewedAmount:Number.isFinite(reviewAmounts.verifiedUsd) ? String(next === 'COP' ? reviewAmounts.verifiedCop : reviewAmounts.verifiedUsd) : ''}));
+                              setReviewCurrency(next);
+                            }}
+                          />
                           <InputField
-                            label="Valor verificado"
+                            label={'Valor verificado (' + reviewCurrency + ')'}
+                            disabled={paymentReviewState.isSubmitting}
                             type="number"
                             step="0.01"
                             value={paymentReviewState.reviewedAmount}
@@ -907,8 +923,17 @@ function AdminUsersOverviewPage() {
                                 reviewedAmount: event.target.value,
                               }))
                             }
-                            helperText="Este valor queda listo para conectarse al backend si desean guardar el monto validado por el administrador."
+                            min="0.01"
+                            max={reviewCurrency === 'COP' ? reviewAmounts.originalCop : reviewAmounts.originalUsd}
+                            helperText="Ingresa el importe recibido según el comprobante. Puedes aprobar un abono menor al pago generado."
                           />
+                          <div className="rounded-xl border border-brand-200 bg-brand-50 p-5" aria-live="polite">
+                            {reviewAmounts.valid ? <>
+                              <p className="font-semibold text-brand-900">{reviewAmounts.remainingUsd <= 0 ? 'Pago completo: cubrirá el saldo pendiente' : 'Abono parcial: quedará saldo pendiente'}</p>
+                              <p className="mt-2 text-sm text-slate-700">A reconocer: {formatReviewMoney(reviewAmounts.verifiedUsd, reviewAmounts.rate)}</p>
+                              <p className="mt-2 text-sm text-slate-700">Saldo después de aprobar: {formatReviewMoney(reviewAmounts.remainingUsd, reviewAmounts.rate)}</p>
+                            </> : <p className="text-sm text-rose-700">Ingresa un importe mayor que cero y que no supere el valor del pago seleccionado.</p>}
+                          </div>
                           <TextAreaField
                             label="Motivo de rechazo"
                             placeholder="Describe por que el comprobante no es valido o que debe corregir el participante."
@@ -993,9 +1018,7 @@ function AdminUsersOverviewPage() {
 
                                 await paymentService.rejectPayment(selectedPayment.id, {
                                   rejectionReason: paymentReviewState.rejectionReason.trim(),
-                                  reviewedAmount: paymentReviewState.reviewedAmount
-                                    ? Number(paymentReviewState.reviewedAmount)
-                                    : undefined,
+                                  reviewedAmount: reviewAmounts.valid ? reviewAmounts.verifiedUsd : undefined,
                                 });
 
                                 await openPaymentReviewModal(paymentReviewState.user, selectedPayment.id);
@@ -1036,10 +1059,9 @@ function AdminUsersOverviewPage() {
                                   success: '',
                                 }));
 
+                                if (!reviewAmounts.valid) throw new Error('Revisa el valor verificado antes de aprobar el pago.');
                                 await paymentService.approvePayment(selectedPayment.id, {
-                                  reviewedAmount: paymentReviewState.reviewedAmount
-                                    ? Number(paymentReviewState.reviewedAmount)
-                                    : undefined,
+                                  reviewedAmount: reviewAmounts.valid ? reviewAmounts.verifiedUsd : undefined,
                                 });
 
                                 await openPaymentReviewModal(paymentReviewState.user, selectedPayment.id);

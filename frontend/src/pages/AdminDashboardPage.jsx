@@ -76,13 +76,18 @@ function AdminDashboardPage() {
 
   return (
     <section className="container-shell py-16">
-      <div className="mb-8">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-5">
+        <div>
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
           Consola de administracion
         </p>
         <h1 className="mt-3 text-4xl font-semibold text-slate-950">
           Panorama operativo y de registros
         </h1>
+        </div>
+        <Link to="/change-password" className="inline-flex rounded-lg border border-brand-200 bg-white px-5 py-3 text-sm font-semibold text-brand-800 transition hover:bg-brand-50">
+          Cambiar mi contraseña
+        </Link>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">

@@ -57,7 +57,7 @@ function AppRouter() {
         <Route
           path="/change-password"
           element={
-            <ProtectedRoute roles={['user']}>
+            <ProtectedRoute roles={['user', 'admin']}>
               <ChangePasswordPage />
             </ProtectedRoute>
           }

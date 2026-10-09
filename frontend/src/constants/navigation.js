@@ -8,5 +8,8 @@ export const authenticatedNavigation = [{ label: 'Inicio', path: '/' }];
 
 export const dashboardNavigation = {
   user: [{ label: 'Panel', path: '/dashboard' }],
-  admin: [{ label: 'Administracion', path: '/admin' }],
+  admin: [
+    { label: 'Administracion', path: '/admin' },
+    { label: 'Cambiar contraseña', path: '/change-password' },
+  ],
 };
