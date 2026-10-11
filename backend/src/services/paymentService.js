@@ -326,6 +326,7 @@ const findReusablePendingPayment = async ({
   registrationId,
   paymentMethod,
   amountUsd,
+  amountCop,
   currency,
   includesTour = false,
   includesTax = false,
@@ -338,6 +339,7 @@ const findReusablePendingPayment = async ({
       paymentMethod,
       currency,
       amountUsd: normalizedAmountUsd,
+      ...(amountCop !== undefined ? { amountCop } : {}),
       includesTour: false,
       includesTax: Boolean(includesTax),
       status: [
@@ -472,12 +474,15 @@ const createBankTransferPayment = async (payload, currentUser) => {
 
   const amounts = await resolveRequestedAmounts(payload, registration);
   if (!Number.isFinite(amounts.amountCop) || amounts.amountCop <= 0) {
-    throw new AppError('No hay una tasa de cambio v?lida para generar la transferencia en pesos.', 409);
+    throw new AppError('No hay una tasa de cambio válida para generar la transferencia en pesos.', 409);
   }
   const reusablePayment = await findReusablePendingPayment({
     registrationId: registration.id,
     paymentMethod: PAYMENT_METHODS.BANK_TRANSFER,
     amountUsd: amounts.amountUsd,
+    // A previous quote may use an older exchange rate. Keep its stored amount
+    // intact and only reuse it when the freshly calculated COP amount matches.
+    amountCop: amounts.amountCop,
     currency: amounts.currency,
     includesTour: resolvePaymentIncludesTour(payload),
     includesTax: resolveRequiresInvoice(payload),

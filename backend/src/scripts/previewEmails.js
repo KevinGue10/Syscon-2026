@@ -1,11 +1,11 @@
-﻿const fs = require('node:fs');
+const fs = require('node:fs');
 const path = require('node:path');
 const { buildWelcomeTemplate } = require('../templates/emails/welcomeTemplate');
 const { buildPasswordResetTemplate } = require('../templates/emails/passwordResetTemplate');
 const { buildPaymentApprovedTemplate } = require('../templates/emails/paymentApprovedTemplate');
 const { buildPayPhoneLinkTemplate } = require('../templates/emails/payPhoneLinkTemplate');
 const { buildRegistrationConfirmationTemplate, buildPaperRegistrationTemplate, buildPendingPaymentReminderTemplate } = require('../templates/emails/notificationTemplates');
-const sample = {firstName:'Valentina',lastName:'García',email:'participante@example.com',city:'Cartagena',affiliation:'Universidad',role:'user',appBaseUrl:'https://example.com',provisionalPassword:'CLAVE-DE-EJEMPLO',amountUsd:400,transactionReference:'SYSCON-DEMO-001',paymentMethod:'cobru',paymentLink:'https://example.com/pago-demostracion',registration:{id:123,status:'submitted',pendingAmount:400},paper:{title:'Diseño e integración de sistemas inteligentes',paperCode:'ART-2026-001'}};
+const sample = {firstName:'Valentina',lastName:'García',email:'participante@example.com',city:'Cartagena',affiliation:'Universidad',role:'user',appBaseUrl:'https://ieeeconference2026.org',provisionalPassword:'CLAVE-DE-EJEMPLO',amountUsd:400,transactionReference:'SYSCON-DEMO-001',paymentMethod:'cobru',paymentLink:'https://example.com/pago-demostracion',registration:{id:123,status:'submitted',pendingAmount:400},paper:{title:'Diseño e integración de sistemas inteligentes',paperCode:'ART-2026-001'}};
 const previews = {welcomePreview:buildWelcomeTemplate,passwordResetPreview:buildPasswordResetTemplate,paymentApprovedPreview:buildPaymentApprovedTemplate,payPhoneLinkPreview:buildPayPhoneLinkTemplate,registrationConfirmationPreview:buildRegistrationConfirmationTemplate,paperRegistrationPreview:buildPaperRegistrationTemplate,pendingPaymentReminderPreview:buildPendingPaymentReminderTemplate};
 const output = path.join(__dirname,'../templates/emails/previews');
 fs.mkdirSync(output,{recursive:true});

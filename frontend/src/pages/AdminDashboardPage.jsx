@@ -38,7 +38,7 @@ function AdminDashboardPage() {
         setError(
           loadError?.response?.data?.message ||
             loadError?.message ||
-            'No fue posible cargar el panel de administracion.',
+            'No fue posible cargar el panel de administración.',
         );
       } finally {
         if (isMounted) {
@@ -58,7 +58,7 @@ function AdminDashboardPage() {
     return (
       <section className="container-shell py-16">
         <Alert
-          title="Cargando panel de administracion"
+          title="Cargando panel de administración"
           description="Consultando resumen general y actividad reciente desde el backend."
           variant="info"
         />
@@ -79,7 +79,7 @@ function AdminDashboardPage() {
       <div className="mb-8 flex flex-wrap items-center justify-between gap-5">
         <div>
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-          Consola de administracion
+          Consola de administración
         </p>
         <h1 className="mt-3 text-4xl font-semibold text-slate-950">
           Panorama operativo y de registros
@@ -125,7 +125,7 @@ function AdminDashboardPage() {
               { key: 'id', label: 'ID' },
               { key: 'participant', label: 'Participante' },
               { key: 'type', label: 'Tipo' },
-              { key: 'papers', label: 'Articulos' },
+              { key: 'papers', label: 'Artículos' },
               {
                 key: 'paymentStatus',
                 label: 'Estado de pago',
@@ -151,17 +151,17 @@ function AdminDashboardPage() {
 
         <Card className="p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-            Proximas integraciones
+            Próximas integraciones
           </p>
           <div className="mt-6 space-y-4">
-            <PlaceholderItem title="Asignacion de revisores">
-              Espacio reservado para la asignacion de articulos a revisores y el flujo de aprobacion.
+            <PlaceholderItem title="Asignación de revisores">
+              Espacio reservado para la asignación de artículos a revisores y el flujo de aprobación.
             </PlaceholderItem>
-            <PlaceholderItem title="Conciliacion financiera">
-              Espacio reservado para estado de pasarela, exportacion de facturas y aprobaciones financieras.
+            <PlaceholderItem title="Conciliación financiera">
+              Espacio reservado para estado de pasarela, exportación de facturas y aprobaciones financieras.
             </PlaceholderItem>
             <PlaceholderItem title="Centro de comunicaciones">
-              Espacio reservado para correos masivos, recordatorios y notificaciones de aceptacion.
+              Espacio reservado para correos masivos, recordatorios y notificaciones de aceptación.
             </PlaceholderItem>
           </div>
         </Card>

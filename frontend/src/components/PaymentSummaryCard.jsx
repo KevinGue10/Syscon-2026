@@ -31,10 +31,10 @@ export function PaymentSummaryCard({
       <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#a6dce5]">
         Resumen de pago
       </p>
-      <h2 className="mt-3 text-3xl font-semibold text-white">Factura resumida de tu inscripcion</h2>
+      <h2 className="mt-3 text-3xl font-semibold text-white">Factura resumida de tu inscripción</h2>
       <p className="mt-4 text-sm leading-7 text-white/78">
         Puedes pagar el saldo completo o registrar un abono parcial. La referencia principal sigue
-        siendo el estado actual de tu inscripcion.
+        siendo el estado actual de tu inscripción.
       </p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -56,9 +56,9 @@ export function PaymentSummaryCard({
         />
 
         <div className="mt-6 space-y-4">
-          <SummaryLine label="Pago inscripcion conferencia" value={formatCurrency(baseAmount)} />
+          <SummaryLine label="Pago inscripción conferencia" value={formatCurrency(baseAmount)} />
           <SummaryLine
-            label="Descuento por cupon"
+            label="Descuento por cupón"
             value={`-${formatCurrency(discountAmount)}`}
             muted={!discountAmount}
           />
@@ -72,7 +72,7 @@ export function PaymentSummaryCard({
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/10 p-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <InputField
-              label="Cupon de descuento"
+              label="Cupón de descuento"
               placeholder="Ej. SYSCON2026"
               value={couponCode}
               onChange={(event) => onCouponCodeChange(event.target.value)}
@@ -84,7 +84,7 @@ export function PaymentSummaryCard({
               disabled={couponState.isApplying || !couponCode.trim()}
               className="inline-flex h-[3.25rem] items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-5 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {couponState.isApplying ? 'Aplicando...' : 'Aplicar cupon'}
+              {couponState.isApplying ? 'Aplicando...' : 'Aplicar cupón'}
             </button>
           </div>
 
@@ -98,7 +98,7 @@ export function PaymentSummaryCard({
           {couponState.applied ? (
             <div className="mt-4 rounded-2xl border border-emerald-300/20 bg-emerald-400/10 px-4 py-3">
               <p className="text-sm font-semibold text-white">
-                Cupon aplicado: {couponState.applied.code}
+                Cupón aplicado: {couponState.applied.code}
               </p>
               <p className="mt-1 text-sm text-white/72">
                 Descuento reconocido por backend: {formatCurrency(discountAmount)}
@@ -118,7 +118,7 @@ export function PaymentSummaryCard({
           <span>
             <span className="block text-sm font-semibold text-white">Solicitar factura</span>
             <span className="mt-1 block text-sm leading-6 text-white/72">
-              Si deseas factura, activa esta opcion. La generacion de la factura aplica un cobro
+              Si deseas factura, activa esta opción. La generación de la factura aplica un cobro
               adicional de impuestos del 19% sobre el monto base de este pago.
             </span>
           </span>
@@ -130,10 +130,10 @@ export function PaymentSummaryCard({
 
         {canRedeemCoupon ? (
           <div className="mt-6 rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-4">
-            <p className="text-sm font-semibold text-white">Saldo cubierto por cupon</p>
+            <p className="text-sm font-semibold text-white">Saldo cubierto por cupón</p>
             <p className="mt-1 text-sm leading-6 text-white/72">
               No necesitas pasar por una pasarela de pago. Puedes liquidar la deuda y dejar la
-              inscripcion sin saldo pendiente.
+              inscripción sin saldo pendiente.
             </p>
             <button
               type="button"
@@ -141,7 +141,7 @@ export function PaymentSummaryCard({
               disabled={isRedeemingCoupon}
               className="mt-4 inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isRedeemingCoupon ? 'Liquidando...' : 'Liquidar deuda con cupon'}
+              {isRedeemingCoupon ? 'Liquidando...' : 'Liquidar deuda con cupón'}
             </button>
           </div>
         ) : null}

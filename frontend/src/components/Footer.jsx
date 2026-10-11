@@ -13,7 +13,7 @@ export function Footer() {
         <div className="md:text-right">
           <p className="text-sm text-slate-500">Soporte: josesanchezdelahoz@ieee.org</p>
           <p className="mt-2 text-sm text-slate-500">
-            Si necesitas ayuda con tu registro o tu pago, contactanos por este medio.
+            Si necesitas ayuda con tu registro o tu pago, contáctanos por este medio.
           </p>
         </div>
       </div>

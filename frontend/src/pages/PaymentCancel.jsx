@@ -18,7 +18,7 @@ function PaymentCancel() {
 
         <Card className="mt-8 p-8">
           <p className="text-base leading-8 text-slate-700">
-            El flujo con {provider} fue cancelado antes de completarse. Tu inscripcion no se
+            El flujo con {provider} fue cancelado antes de completarse. Tu inscripción no se
             modifico y puedes intentar de nuevo cuando quieras.
           </p>
 

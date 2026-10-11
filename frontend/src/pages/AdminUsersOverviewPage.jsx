@@ -187,7 +187,7 @@ function AdminUsersOverviewPage() {
   );
 
   const booleanOptions = [
-    { value: 'true', label: 'Si' },
+    { value: 'true', label: 'Sí' },
     { value: 'false', label: 'No' },
   ];
   const activityOptions = [
@@ -237,7 +237,7 @@ function AdminUsersOverviewPage() {
           Detalle completo de participantes
         </h1>
         <p className="mt-4 max-w-4xl text-sm leading-7 text-slate-600">
-          Consulta los datos personales y de inscripcion en una sola tabla, con filtros de apoyo
+          Consulta los datos personales y de inscripción en una sola tabla, con filtros de apoyo
           para seguimiento administrativo y operativo.
         </p>
       </div>
@@ -246,12 +246,12 @@ function AdminUsersOverviewPage() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <InputField
             label="Buscar"
-            placeholder="Nombre, correo, afiliacion o documento"
+            placeholder="Nombre, correo, afiliación o documento"
             value={filters.search}
             onChange={(event) => updateFilter(setFilters, 'search', event.target.value)}
           />
           <SelectField
-            label="Pais"
+            label="País"
             options={countryOptions}
             value={filters.country}
             onChange={(event) => updateFilter(setFilters, 'country', event.target.value)}
@@ -263,7 +263,7 @@ function AdminUsersOverviewPage() {
             onChange={(event) => updateFilter(setFilters, 'city', event.target.value)}
           />
           <SelectField
-            label="Ocupacion"
+            label="Ocupación"
             options={occupationOptions}
             value={filters.occupation}
             onChange={(event) => updateFilter(setFilters, 'occupation', event.target.value)}
@@ -365,14 +365,14 @@ function AdminUsersOverviewPage() {
               { key: 'email', label: 'Correo' },
               {
                 key: 'country',
-                label: 'Pais',
+                label: 'País',
                 render: (_, row) => resolveCountryName(row) || 'No registrado',
               },
               { key: 'city', label: 'Ciudad' },
-              { key: 'affiliation', label: 'Afiliacion' },
+              { key: 'affiliation', label: 'Afiliación' },
               {
                 key: 'occupation',
-                label: 'Ocupacion',
+                label: 'Ocupación',
                 render: (value) => translateOccupation(value),
               },
               {
@@ -389,11 +389,11 @@ function AdminUsersOverviewPage() {
                   </div>
                 ),
               },
-              { key: 'phoneNumber', label: 'Telefono' },
+              { key: 'phoneNumber', label: 'Teléfono' },
               {
                 key: 'isIeeeMember',
                 label: 'Miembro IEEE',
-                render: (_, row) => (resolvePrimaryRegistration(row)?.isIeeeMember ? 'Si' : 'No'),
+                render: (_, row) => (resolvePrimaryRegistration(row)?.isIeeeMember ? 'Sí' : 'No'),
               },
               {
                 key: 'membershipNumber',
@@ -427,7 +427,7 @@ function AdminUsersOverviewPage() {
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
           <p className="text-sm text-slate-500">
-            Mostrando pagina {pagination.page} de {pagination.totalPages}. Total de registros:{' '}
+            Mostrando página {pagination.page} de {pagination.totalPages}. Total de registros:{' '}
             {pagination.totalItems}
           </p>
           <div className="flex gap-3">
@@ -458,7 +458,7 @@ function AdminUsersOverviewPage() {
       >
         <div className="space-y-3">
           <p className="text-sm text-slate-600">
-            Selecciona una accion para{' '}
+            Selecciona una acción para{' '}
             <span className="font-semibold text-slate-950">
               {selectedUser
                 ? `${selectedUser.firstName || ''} ${selectedUser.lastName || ''}`.trim()
@@ -521,7 +521,7 @@ function AdminUsersOverviewPage() {
       >
         <div className="space-y-3">
           <p className="text-sm text-slate-600">
-            Accion seleccionada para{' '}
+            Acción seleccionada para{' '}
             <span className="font-semibold text-slate-950">
               {actionModal.user
                 ? `${actionModal.user.firstName || ''} ${actionModal.user.lastName || ''}`.trim()
@@ -534,8 +534,8 @@ function AdminUsersOverviewPage() {
           ) : null}
           <p className="text-sm text-slate-500">
             {actionModal.actionType === 'deactivate-user'
-              ? 'El usuario perdera acceso a la plataforma hasta que sea habilitado nuevamente desde administracion.'
-              : 'El usuario recuperara acceso normal a la plataforma inmediatamente despues de esta accion.'}
+              ? 'El usuario perderá acceso a la plataforma hasta que sea habilitado nuevamente desde administración.'
+              : 'El usuario recuperará acceso normal a la plataforma inmediatamente después de esta acción.'}
           </p>
           <div className="flex justify-end gap-3">
             <Button
@@ -572,7 +572,7 @@ function AdminUsersOverviewPage() {
 
       <Modal
         isOpen={articlesModalState.isOpen}
-        title="Ver articulos"
+        title="Ver artículos"
         panelClassName="max-w-5xl"
         onClose={() =>
           setArticlesModalState({
@@ -587,16 +587,16 @@ function AdminUsersOverviewPage() {
       >
         {articlesModalState.isLoading ? (
           <Alert
-            title="Cargando articulos"
-            description="Consultando los articulos registrados por el participante desde el backend."
+            title="Cargando artículos"
+            description="Consultando los artículos registrados por el participante desde el backend."
             variant="info"
           />
         ) : articlesModalState.error ? (
-          <Alert title="No fue posible abrir los articulos" description={articlesModalState.error} variant="danger" />
+          <Alert title="No fue posible abrir los artículos" description={articlesModalState.error} variant="danger" />
         ) : (
           <div className="space-y-5">
             <p className="text-sm text-slate-600">
-              Articulos registrados por{' '}
+              Artículos registrados por{' '}
               <span className="font-semibold text-slate-950">
                 {articlesModalState.user
                   ? `${articlesModalState.user.firstName || ''} ${articlesModalState.user.lastName || ''}`.trim()
@@ -607,8 +607,8 @@ function AdminUsersOverviewPage() {
 
             {!articlesModalState.papers.length ? (
               <Alert
-                title="Sin articulos registrados"
-                description="Este participante no tiene articulos asociados a su inscripcion."
+                title="Sin artículos registrados"
+                description="Este participante no tiene artículos asociados a su inscripción."
                 variant="warning"
               />
             ) : (
@@ -618,15 +618,15 @@ function AdminUsersOverviewPage() {
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
                         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                          Articulo {index + 1}
+                          Artículo {index + 1}
                         </p>
                         <h3 className="mt-2 text-lg font-semibold text-slate-950">
-                          {paper.title || 'Sin titulo'}
+                          {paper.title || 'Sin título'}
                         </h3>
                       </div>
                       <div className="rounded-2xl bg-white px-4 py-3 text-right">
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                          Codigo
+                          Código
                         </p>
                         <p className="mt-2 text-sm font-semibold text-slate-950">
                           {paper.paperCode || 'No registrado'}
@@ -639,7 +639,7 @@ function AdminUsersOverviewPage() {
                         label="Autores"
                         value={Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}
                       />
-                      <ReadOnlyCard label="Paginas" value={paper.pages} />
+                      <ReadOnlyCard label="Páginas" value={paper.pages} />
                     </div>
 
                     {paper.customFieldValues?.length ? (
@@ -708,7 +708,7 @@ function AdminUsersOverviewPage() {
             variant="info"
           />
         ) : paymentReviewState.error && !paymentReviewState.payments.length ? (
-          <Alert title="No fue posible abrir la validacion" description={paymentReviewState.error} variant="danger" />
+          <Alert title="No fue posible abrir la validación" description={paymentReviewState.error} variant="danger" />
         ) : (
           <div className="space-y-6">
             <div>
@@ -726,7 +726,7 @@ function AdminUsersOverviewPage() {
             {paymentReviewState.error &&
             paymentReviewState.payments.length &&
             !isMissingPaymentProofMessage(paymentReviewState.error) ? (
-              <Alert title="Accion no completada" description={paymentReviewState.error} variant="danger" />
+              <Alert title="Acción no completada" description={paymentReviewState.error} variant="danger" />
             ) : null}
             {paymentReviewState.success ? (
               <Alert title="Pago actualizado" description={paymentReviewState.success} variant="success" />
@@ -784,7 +784,7 @@ function AdminUsersOverviewPage() {
                     </p>
                     <div className="mt-4 grid gap-4 sm:grid-cols-2">
                       <ReviewItem
-                        label="Inscripcion"
+                        label="Inscripción"
                         value={paymentReviewState.registration?.id || 'No registrada'}
                       />
                       <ReviewItem
@@ -816,7 +816,7 @@ function AdminUsersOverviewPage() {
 
                   <div className="rounded-xl border border-slate-200 bg-white p-5">
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Validacion administrativa
+                      Validación administrativa
                     </p>
                     {isResolvedPayment ? (
                       <div className="mt-4 space-y-4">
@@ -850,7 +850,7 @@ function AdminUsersOverviewPage() {
                         ) : null}
                         <p className="text-sm text-slate-500">
                           Este pago ya tiene una decision administrativa tomada y no admite una
-                          nueva accion desde esta pantalla.
+                          nueva acción desde esta pantalla.
                         </p>
                         {canCancelSelectedPayment ? (
                           <div className="flex justify-end">
@@ -936,7 +936,7 @@ function AdminUsersOverviewPage() {
                           </div>
                           <TextAreaField
                             label="Motivo de rechazo"
-                            placeholder="Describe por que el comprobante no es valido o que debe corregir el participante."
+                            placeholder="Describe por qué el comprobante no es válido o que debe corregir el participante."
                             value={paymentReviewState.rejectionReason}
                             onChange={(event) =>
                               setPaymentReviewState((current) => ({
@@ -1116,7 +1116,7 @@ function AdminUsersOverviewPage() {
                                 success: '',
                               }))
                             }
-                            helperText="Pega aqui el enlace que recibira el participante por correo."
+                            helperText="Pega aquí el enlace que recibirá el participante por correo."
                           />
                         ) : null}
 
@@ -1342,7 +1342,7 @@ function AdminUsersOverviewPage() {
         error:
           error?.response?.data?.message ||
           error?.message ||
-          'No fue posible cargar los articulos del participante.',
+          'No fue posible cargar los artículos del participante.',
         user,
         registration: null,
         papers: [],
@@ -1550,7 +1550,7 @@ function buildUserActions(user) {
   return [
     { type: 'view-details', label: 'Ver detalle del usuario' },
     { type: 'review-payments', label: 'Validar pago' },
-    { type: 'view-papers', label: 'Ver articulos' },
+    { type: 'view-papers', label: 'Ver artículos' },
     {
       type: user?.active === false ? 'activate-user' : 'deactivate-user',
       label: user?.active === false ? 'Activar usuario' : 'Inhabilitar usuario',

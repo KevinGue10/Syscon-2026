@@ -74,8 +74,8 @@ export function translateGender(value) {
 
 export function translateDocumentType(value) {
   const map = {
-    CC: 'Cedula de ciudadania',
-    CE: 'Cedula de extranjeria',
+    CC: 'Cédula de ciudadanía',
+    CE: 'Cédula de extranjería',
     TI: 'Tarjeta de identidad',
     PP: 'Pasaporte',
   };

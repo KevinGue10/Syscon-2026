@@ -68,7 +68,7 @@ function UserDashboardPage() {
         setError(
           loadError?.response?.data?.message ||
             loadError?.message ||
-            'No fue posible cargar la informacion del panel.',
+            'No fue posible cargar la información del panel.',
         );
       } finally {
         if (isMounted) {
@@ -95,7 +95,7 @@ function UserDashboardPage() {
       <section className="container-shell py-16">
         <Alert
           title="Cargando panel del participante"
-          description="Consultando perfil, inscripciones, articulos y estado de pago desde el backend."
+          description="Consultando perfil, inscripciones, artículos y estado de pago desde el backend."
           variant="info"
         />
       </section>
@@ -124,7 +124,7 @@ function UserDashboardPage() {
             <div className="mt-6 space-y-3 text-sm text-slate-600">
               <p>Email: {dashboard?.profile?.email || 'No registrado'}</p>
               <p>Organizacion: {dashboard?.profile?.organization || 'No registrada'}</p>
-              <p>Pais: {dashboard?.profile?.country || resolveCountryName(dashboard?.profile) || 'No registrado'}</p>
+              <p>País: {dashboard?.profile?.country || resolveCountryName(dashboard?.profile) || 'No registrado'}</p>
             </div>
             <Button
               variant="primary"
@@ -138,7 +138,7 @@ function UserDashboardPage() {
               className="mt-3 w-full border border-slate-200 sm:w-fit"
               onClick={() => navigate('/change-password')}
             >
-              Cambiar contrasena
+              Cambiar contraseña
             </Button>
           </Card>
 
@@ -149,7 +149,7 @@ function UserDashboardPage() {
             <div className="mt-5 space-y-4">
               <Metric label="Inscripciones" value={`${registrations.length}`} />
               <Metric
-                label="Articulos registrados"
+                label="Artículos registrados"
                 value={`${dashboard?.metrics?.activePapers || 0}`}
               />
               <Metric label="Saldo pendiente" value={formatCurrency(outstandingBalance)} />
@@ -170,7 +170,7 @@ function UserDashboardPage() {
           {!registrations.length ? (
             <Alert
               title="No hay inscripciones registradas"
-              description="Completa el flujo de inscripcion para visualizar articulos y estado de pago."
+              description="Completa el flujo de inscripción para visualizar artículos y estado de pago."
               variant="warning"
             />
           ) : null}
@@ -178,15 +178,15 @@ function UserDashboardPage() {
           <Card className="p-8">
             <div className="mb-6">
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-                Historial de inscripcion
+                Historial de inscripción
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                Resumen de articulos y pagos
+                Resumen de artículos y pagos
               </h2>
             </div>
             <Table
               columns={[
-                { key: 'id', label: 'ID de inscripcion' },
+                { key: 'id', label: 'ID de inscripción' },
                 {
                   key: 'participantType',
                   label: 'Tipo',
@@ -194,7 +194,7 @@ function UserDashboardPage() {
                 },
                 {
                   key: 'papers',
-                  label: 'Articulos',
+                  label: 'Artículos',
                   render: (value) => value?.length || 0,
                 },
                 {

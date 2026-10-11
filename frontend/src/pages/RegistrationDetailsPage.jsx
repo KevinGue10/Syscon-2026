@@ -132,28 +132,28 @@ function RegistrationDetailsPage() {
   const activeRegistration = registrations[0] || null;
 
   const pageTitle = isAdminRemoteView
-    ? 'Detalle de la inscripcion del participante'
-    : 'Tu informacion de inscripcion';
+    ? 'Detalle de la inscripción del participante'
+    : 'Tu información de inscripción';
 
   const pageDescription = isAdminRemoteView
-    ? 'Aqui puedes revisar de forma clara los datos personales, la inscripcion, los pagos y los articulos asociados al participante.'
-    : 'Aqui puedes revisar los datos que registraste, el estado de tu inscripcion y la informacion de tus articulos.';
+    ? 'Aquí puedes revisar de forma clara los datos personales, la inscripción, los pagos y los artículos asociados al participante.'
+    : 'Aquí puedes revisar los datos que registraste, el estado de tu inscripción y la información de tus artículos.';
 
   const personalRows = useMemo(
     () => [
       { label: 'Nombres', value: profile?.firstName },
       { label: 'Apellidos', value: profile?.lastName },
-      { label: 'Correo electronico', value: profile?.email },
-      { label: 'Telefono', value: profile?.phoneNumber },
-      { label: 'Pais', value: resolveCountry(profile) },
+      { label: 'Correo electrónico', value: profile?.email },
+      { label: 'Teléfono', value: profile?.phoneNumber },
+      { label: 'País', value: resolveCountry(profile) },
       { label: 'Ciudad', value: profile?.city },
-      { label: 'Direccion', value: profile?.address },
+      { label: 'Dirección', value: profile?.address },
       { label: 'Fecha de nacimiento', value: profile?.birthDate },
       { label: 'Genero', value: translateGender(profile?.gender) },
       { label: 'Tipo de documento', value: translateDocumentType(profile?.docType) },
-      { label: 'Numero de documento', value: profile?.docNumber },
-      { label: 'Afiliacion', value: profile?.affiliation || profile?.organization },
-      { label: 'Ocupacion', value: translateOccupation(profile?.occupation) },
+      { label: 'Número de documento', value: profile?.docNumber },
+      { label: 'Afiliación', value: profile?.affiliation || profile?.organization },
+      { label: 'Ocupación', value: translateOccupation(profile?.occupation) },
     ],
     [profile],
   );
@@ -165,8 +165,8 @@ function RegistrationDetailsPage() {
           title={isAdminRemoteView ? 'Cargando detalle del usuario' : 'Cargando tus inscripciones'}
           description={
             isAdminRemoteView
-              ? 'Consultando informacion de inscripciones, pagos y articulos desde el backend.'
-              : 'Consultando tus datos de registro y articulos desde el backend.'
+              ? 'Consultando información de inscripciones, pagos y artículos desde el backend.'
+              : 'Consultando tus datos de registro y artículos desde el backend.'
           }
           variant="info"
         />
@@ -187,7 +187,7 @@ function RegistrationDetailsPage() {
       <section className="container-shell py-16">
         <Alert
           title="No hay datos de registro disponibles"
-          description="Todavia no se encuentra una inscripcion disponible para mostrar."
+          description="Todavía no se encuentra una inscripción disponible para mostrar."
           variant="warning"
         />
       </section>
@@ -205,7 +205,7 @@ function RegistrationDetailsPage() {
         {!isAdminRemoteView ? (
           <div className="mt-6">
             <Button variant="primary" onClick={() => navigate('/registration-details/edit')}>
-              Editar informacion
+              Editar información
             </Button>
           </div>
         ) : null}
@@ -213,7 +213,7 @@ function RegistrationDetailsPage() {
 
       <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <Card className="p-8">
-          <h2 className="text-2xl font-semibold text-slate-950">Informacion personal</h2>
+          <h2 className="text-2xl font-semibold text-slate-950">Información personal</h2>
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             {personalRows.map((row) => (
               <ReadOnlyRow key={row.label} label={row.label} value={row.value} />
@@ -242,10 +242,10 @@ function RegistrationDetailsPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#a6dce5]">
               Resumen general
             </p>
-            <h2 className="mt-3 text-2xl font-semibold text-white">Estado actual de tu inscripcion</h2>
+            <h2 className="mt-3 text-2xl font-semibold text-white">Estado actual de tu inscripción</h2>
             <div className="mt-6 grid gap-4">
               <SummaryPill
-                label="Articulos registrados"
+                label="Artículos registrados"
                 value={`${activeRegistration.papers?.length || 0}`}
                 accent="red"
               />
@@ -282,8 +282,8 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
     },
     { label: 'Modalidad', value: translateAttendanceType(registration.attendanceType) },
     { label: 'Tipo de miembro', value: translateMemberType(registration.memberType) },
-    { label: 'Numero de membresia', value: registration.membershipNumber || 'No aplica' },
-    { label: 'Estado de inscripcion', value: translateRegistrationStatus(registration.status) },
+    { label: 'Número de membresia', value: registration.membershipNumber || 'No aplica' },
+    { label: 'Estado de inscripción', value: translateRegistrationStatus(registration.status) },
     { label: 'Estado de pago', value: translatePaymentStatus(registration.paymentStatus) },
     { label: 'Requiere factura', value: formatBooleanPreference(requiresInvoice) },
     {
@@ -305,9 +305,9 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-            Tu inscripcion
+            Tu inscripción
           </p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-950">Inscripcion activa</h2>
+          <h2 className="mt-2 text-2xl font-semibold text-slate-950">Inscripción activa</h2>
         </div>
         <div className="rounded-2xl bg-slate-100 px-4 py-3 text-right">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -324,7 +324,7 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
 
       <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
         <div>
-          <h3 className="text-lg font-semibold text-slate-950">Datos de inscripcion</h3>
+          <h3 className="text-lg font-semibold text-slate-950">Datos de inscripción</h3>
           <div className="mt-4 grid gap-4">
             {registrationRows.map((row) => (
               <ReadOnlyRow key={row.label} label={row.label} value={row.value} />
@@ -333,7 +333,7 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
 
           {registration.customFieldValues?.length ? (
             <div className="mt-8">
-              <h3 className="text-lg font-semibold text-slate-950">Campos adicionales de la inscripcion</h3>
+              <h3 className="text-lg font-semibold text-slate-950">Campos adicionales de la inscripción</h3>
               <div className="mt-4 grid gap-4">
                 {registration.customFieldValues.map((field) => (
                   <ReadOnlyRow
@@ -372,7 +372,7 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
               <div className="mt-4">
                 <Table
                   columns={[
-                    { key: 'paymentMethod', label: 'Metodo' },
+                    { key: 'paymentMethod', label: 'Método' },
                     {
                       key: 'amountUsd',
                       label: 'Monto USD',
@@ -400,21 +400,21 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
       </div>
 
       <div className="mt-10">
-        <h3 className="text-lg font-semibold text-slate-950">Articulos registrados</h3>
+        <h3 className="text-lg font-semibold text-slate-950">Artículos registrados</h3>
         <div className="mt-4">
           <Table
             columns={[
-              { key: 'title', label: 'Titulo' },
-              { key: 'paperCode', label: 'Codigo' },
+              { key: 'title', label: 'Título' },
+              { key: 'paperCode', label: 'Código' },
               {
                 key: 'authors',
                 label: 'Autores',
                 render: (value) => (Array.isArray(value) ? value.join(', ') : value),
               },
-              { key: 'pages', label: 'Paginas' },
+              { key: 'pages', label: 'Páginas' },
             ]}
             rows={registration.papers || []}
-            emptyMessage="No se registraron articulos."
+            emptyMessage="No se registraron artículos."
           />
         </div>
 
@@ -423,7 +423,7 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
             {registration.papers.map((paper, paperIndex) => (
               <div key={paper.id || paperIndex} className="rounded-2xl bg-slate-50 p-5">
                 <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  Articulo {paperIndex + 1}
+                  Artículo {paperIndex + 1}
                 </p>
                 <p className="mt-2 text-base font-semibold text-slate-950">{paper.title}</p>
                 {paper.customFieldValues?.length ? (
@@ -593,7 +593,7 @@ function normalizeBooleanPreference(value) {
 
 function formatBooleanPreference(value) {
   if (value === true) {
-    return 'Si';
+    return 'Sí';
   }
 
   if (value === false) {

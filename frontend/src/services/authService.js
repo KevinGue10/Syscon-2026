@@ -33,7 +33,7 @@ export const authService = {
     const { data } = await api.post('/auth/change-password', payload);
     return {
       success: data?.success ?? true,
-      message: data?.message || 'Contrasena actualizada correctamente.',
+      message: data?.message || 'Contraseña actualizada correctamente.',
       data: data?.data || {},
     };
   },
@@ -42,7 +42,7 @@ export const authService = {
     const { data } = await api.post('/auth/forgot-password', payload);
     return {
       success: data?.success ?? true,
-      message: data?.message || 'Si el correo existe, se enviara una contrasena provisional.',
+      message: data?.message || 'Si el correo existe, se enviará una contraseña provisional.',
       data: data?.data || {},
     };
   },

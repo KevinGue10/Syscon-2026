@@ -1,4 +1,4 @@
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
   authenticatedNavigation,
   primaryNavigation,
@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { Button } from './Button';
 
 export function Navbar() {
+  const { pathname } = useLocation();
   const { isAuthenticated, user, logout } = useAuth();
   const protectedNav = isAuthenticated ? dashboardNavigation[user?.role || 'user'] || [] : [];
   const navigationItems = isAuthenticated
@@ -22,7 +23,7 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-white/60 bg-white/80 backdrop-blur">
       <div className="container-shell flex min-h-20 flex-wrap items-center justify-between gap-3 py-3">
-        <Link to="/" className="flex items-center gap-3">
+        <Link to="/" reloadDocument={pathname === '/'} className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#00334d] text-sm font-bold text-white">
             IEEE
           </div>
@@ -50,7 +51,7 @@ export function Navbar() {
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{user?.role}</p>
               </div>
               <Button variant="ghost" onClick={logout} className="border border-slate-200">
-                Cerrar sesion
+                Cerrar sesión
               </Button>
             </>
           ) : !isAuthenticated ? (

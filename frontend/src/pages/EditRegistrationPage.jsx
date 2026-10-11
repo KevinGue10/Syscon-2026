@@ -722,14 +722,14 @@ function EditRegistrationPage() {
                               className="md:col-span-2"
                               error={errors.papers?.[index]?.title?.message}
                               {...register(`papers.${index}.title`, {
-                                required: 'El titulo es obligatorio',
+                                required: 'El título es obligatorio',
                               })}
                             />
                             <InputField
                               label="Código del artículo"
                               error={errors.papers?.[index]?.paperCode?.message}
                               {...register(`papers.${index}.paperCode`, {
-                                required: 'El codigo es obligatorio',
+                                required: 'El código es obligatorio',
                               })}
                             />
                             <InputField

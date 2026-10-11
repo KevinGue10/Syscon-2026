@@ -9,7 +9,7 @@ export const conferenceOverview = {
 
 export const dashboardMetrics = [
   { label: 'Inscripciones totales', value: '1,248', delta: '+12.4%' },
-  { label: 'Articulos aceptados', value: '314', delta: '+7.8%' },
+  { label: 'Artículos aceptados', value: '314', delta: '+7.8%' },
   { label: 'Ingresos recaudados', value: '$286,400', delta: '+18.1%' },
   { label: 'Saldos pendientes', value: '$41,300', delta: '-4.2%' },
 ];

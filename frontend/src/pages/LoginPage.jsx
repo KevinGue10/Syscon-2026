@@ -63,7 +63,7 @@ function LoginPage() {
     if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
       setRecoveryState({
         isSubmitting: false,
-        error: 'Ingresa un correo valido para continuar.',
+        error: 'Ingresa un correo válido para continuar.',
         success: '',
       });
       return;
@@ -85,7 +85,7 @@ function LoginPage() {
         error: '',
         success:
           response.message ||
-          'Si el correo existe, se enviara una contrasena provisional a tu bandeja de entrada.',
+          'Si el correo existe, se enviará una contraseña provisional a tu bandeja de entrada.',
       });
     } catch (requestError) {
       setRecoveryState({
@@ -93,7 +93,7 @@ function LoginPage() {
         error:
           requestError?.response?.data?.message ||
           requestError?.message ||
-          'No fue posible procesar la recuperacion de contrasena.',
+          'No fue posible procesar la recuperacion de contraseña.',
         success: '',
       });
     }
@@ -108,18 +108,18 @@ function LoginPage() {
           </p>
           <h1 className="mt-3 text-4xl font-semibold text-slate-950">Ingresa a la plataforma</h1>
           <p className="mt-4 text-sm text-slate-600">
-            Ingresa con tu correo y contrasena para acceder a tu panel de participante.
+            Ingresa con tu correo y contraseña para acceder a tu panel de participante.
           </p>
 
           <form className="mt-8 grid gap-5" onSubmit={handleSubmit(onSubmit)}>
             {sessionExpired ? (
               <Alert
-                title="Sesion expirada"
-                description="Por seguridad cerramos tu sesion automaticamente. Ingresa de nuevo para continuar."
+                title="Sesión expirada"
+                description="Por seguridad cerramos tu sesión automáticamente. Ingresa de nuevo para continuar."
                 variant="warning"
               />
             ) : null}
-            {error ? <Alert title="No fue posible iniciar sesion" description={error} variant="danger" /> : null}
+            {error ? <Alert title="No fue posible iniciar sesión" description={error} variant="danger" /> : null}
 
             <InputField
               label="Email"
@@ -130,21 +130,21 @@ function LoginPage() {
                 required: 'El correo es obligatorio',
                 pattern: {
                   value: /^\S+@\S+\.\S+$/,
-                  message: 'Ingresa un correo valido',
+                  message: 'Ingresa un correo válido',
                 },
               })}
             />
 
             <InputField
-              label="Contrasena"
+              label="Contraseña"
               type="password"
-              placeholder="Minimo 8 caracteres"
+              placeholder="Mínimo 8 caracteres"
               error={errors.password?.message}
               {...register('password', {
-                required: 'La contrasena es obligatoria',
+                required: 'La contraseña es obligatoria',
                 minLength: {
                   value: 8,
-                  message: 'La contrasena debe tener al menos 8 caracteres',
+                  message: 'La contraseña debe tener al menos 8 caracteres',
                 },
               })}
             />
@@ -162,20 +162,20 @@ function LoginPage() {
                 }}
                 className="text-sm font-semibold text-brand-600 transition hover:text-brand-800"
               >
-                {showRecovery ? 'Ocultar recuperacion de contrasena' : '¿Olvidaste tu contrasena?'}
+                {showRecovery ? 'Ocultar recuperacion de contraseña' : '¿Olvidaste tu contraseña?'}
               </button>
             </div>
 
             {showRecovery ? (
               <div className="rounded-3xl border border-brand-100 bg-brand-50/70 p-5">
-                <p className="text-sm font-semibold text-slate-950">Recuperar contrasena</p>
+                <p className="text-sm font-semibold text-slate-950">Recuperar contraseña</p>
                 <p className="mt-2 text-sm leading-7 text-slate-600">
-                  Ingresa tu correo y te enviaremos una contrasena temporal para recuperar el acceso.
+                  Ingresa tu correo y te enviaremos una contraseña temporal para recuperar el acceso.
                 </p>
                 {recoveryState.error ? (
                   <div className="mt-4">
                     <Alert
-                      title="No fue posible recuperar la contrasena"
+                      title="No fue posible recuperar la contraseña"
                       description={recoveryState.error}
                       variant="danger"
                     />
@@ -216,7 +216,7 @@ function LoginPage() {
                   </Button>
                 </div>
                 <p className="mt-3 text-xs uppercase tracking-[0.18em] text-slate-500">
-                  Recibiras una contrasena provisional y luego podras cambiarla desde tu cuenta.
+                  Recibirás una contraseña provisional y luego podrás cambiarla desde tu cuenta.
                 </p>
               </div>
             ) : null}
@@ -235,7 +235,7 @@ function resolveLoginError(error) {
   return (
     error?.response?.data?.message ||
     error?.message ||
-    'No fue posible iniciar sesion.'
+    'No fue posible iniciar sesión.'
   );
 }
 

@@ -107,11 +107,11 @@ function PaymentSuccess() {
   const alertTitle =
     latestPayment?.status === 'approved'
       ? 'Pago confirmado'
-      : 'Pago registrado o en validacion';
+      : 'Pago registrado o en validación';
   const alertDescription =
     latestPayment?.status === 'approved'
-      ? 'El pago ya fue aplicado a tu inscripcion.'
-      : 'El proveedor reporto el retorno correctamente. Si el estado sigue pendiente, actualizalo en unos minutos.';
+      ? 'El pago ya fue aplicado a tu inscripción.'
+      : 'El proveedor reportó el retorno correctamente. Si el estado sigue pendiente, actualízalo en unos minutos.';
 
   return (
     <section className="container-shell py-16">
@@ -139,7 +139,7 @@ function PaymentSuccess() {
 
             <Card className="mt-8 p-8">
               <div className="grid gap-4 md:grid-cols-2">
-                <InfoItem label="Metodo" value={formatMethod(latestPayment?.paymentMethod)} />
+                <InfoItem label="Método" value={formatMethod(latestPayment?.paymentMethod)} />
                 <InfoItem label="Proveedor" value={formatProvider(latestPayment?.provider)} />
                 <InfoItem label="Estado" value={translatePaymentStatus(latestPayment?.status)} />
                 <InfoItem label="Monto" value={formatCurrency(latestPayment?.amountUsd || 0)} />

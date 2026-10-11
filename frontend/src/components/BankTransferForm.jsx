@@ -3,7 +3,7 @@ import { Alert } from './Alert';
 import { Button } from './Button';
 import { Card } from './Card';
 import { InputField } from './InputField';
-import { formatCurrency } from '../utils/currency';
+
 
 export function BankTransferForm({
   generatedPayment,
@@ -20,6 +20,16 @@ export function BankTransferForm({
   onSubmit,
 }) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [fileError, setFileError] = useState('');
+  function selectFile(file) {
+    if (!file || isSubmitting) return;
+    if (!isAcceptedProofFile(file)) {
+      setFileError('Elige una imagen JPG, PNG o un documento PDF.');
+      return;
+    }
+    setFileError('');
+    onFileChange(file);
+  }
 
   function handleDrop(event) {
     event.preventDefault();
@@ -27,16 +37,14 @@ export function BankTransferForm({
 
     const droppedFile = event.dataTransfer?.files?.[0] || null;
 
-    if (droppedFile && isAcceptedProofFile(droppedFile)) {
-      onFileChange(droppedFile);
-    }
+    selectFile(droppedFile);
   }
 
   return (
     <Card className="rounded-xl p-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">Opcion 1</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">Opción 1</p>
           <h2 className="mt-2 text-2xl font-semibold text-slate-950">Transferencia directa</h2>
         </div>
         <span className="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -71,7 +79,7 @@ export function BankTransferForm({
         <div className="mt-6">
           <Alert
             title="No se pudieron cargar los datos bancarios"
-            description="Verifica el endpoint de metadata o vuelve a cargar la pagina."
+            description="Verifica el endpoint de metadata o vuelve a cargar la página."
             variant="warning"
           />
         </div>
@@ -94,7 +102,7 @@ export function BankTransferForm({
             className={`flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed px-4 py-5 text-center transition ${
               isDragOver
                 ? 'border-brand-500 bg-brand-50'
-                : 'border-slate-300 bg-slate-50 hover:border-brand-400 hover:bg-brand-50/40'
+                : supportingFile ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 bg-slate-50 hover:border-brand-400 hover:bg-brand-50/40'
             }`}
             onDragOver={(event) => {
               event.preventDefault();
@@ -112,31 +120,44 @@ export function BankTransferForm({
             }}
             onDrop={handleDrop}
           >
-            <span className="text-sm font-semibold text-slate-800">
+            {supportingFile && <span className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m5 12 4 4L19 6" /></svg></span>}
+            <span className="text-sm font-semibold text-slate-800 break-all">
               {supportingFile ? supportingFile.name : 'Seleccionar archivo'}
             </span>
             <span className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">
-              {isDragOver ? 'Suelta el archivo aqui' : 'JPG, PNG o PDF'}
+              {isDragOver ? 'Suelta el archivo aquí' : 'JPG, PNG o PDF'}
             </span>
             <input
               type="file"
               accept=".jpg,.jpeg,.png,.pdf"
-              className="hidden"
+              className="sr-only"
+              disabled={isSubmitting}
               onChange={(event) => {
                 const selectedFile = event.target.files?.[0] || null;
-                onFileChange(selectedFile && isAcceptedProofFile(selectedFile) ? selectedFile : null);
+                selectFile(selectedFile);
+                event.target.value = '';
               }}
             />
           </label>
+          <div role="status" aria-live="polite">
+            {supportingFile && <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+              <p className="font-semibold">Comprobante adjunto correctamente</p>
+              <p className="mt-1">{(supportingFile.size / 1024).toFixed(0)} KB. {isSubmitting ? 'Enviando comprobante. Espera la confirmaci\u00f3n.' : 'Listo para enviar. Pulsa \"Enviar comprobante\" para completar la carga.'}</p>
+            </div>}
+          </div>
+          {fileError && <p role="alert" className="mt-2 text-sm text-rose-700">{fileError}</p>}
         </div>
       </div>
 
       </>}
       <div className="mt-6 flex flex-wrap gap-3">
         <Button variant="primary" onClick={onSubmit} disabled={isSubmitting || amountToCharge <= 0 || !bankDetails.length || Boolean(generatedPayment && !quoteChanged && !supportingFile)}>
-          {isSubmitting ? 'Procesando...' : generatedPayment && !quoteChanged ? 'Enviar comprobante' : 'Generar pago en pesos'}
+          {isSubmitting && <span aria-hidden="true" className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white motion-reduce:animate-none" />}
+          {isSubmitting ? (generatedPayment && !quoteChanged ? 'Enviando comprobante...' : 'Generando pago...') : generatedPayment && !quoteChanged ? 'Enviar comprobante' : 'Generar pago en pesos'}
         </Button>
       </div>
+      {success && <div className="mt-4" role="status"><Alert title="Comprobante enviado" description={success} variant="success" /></div>}
+      {error && <p role="alert" className="mt-3 text-sm text-rose-700">{error}</p>}
     </Card>
   );
 }

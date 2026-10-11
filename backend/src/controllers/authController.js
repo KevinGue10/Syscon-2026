@@ -129,7 +129,7 @@ const login = asyncHandler(async (req, res) => {
 
   const token = signToken({ userId: user.id, role: user.role });
   return sendSuccess(res, {
-    message: 'Inicio de sesion correcto.',
+    message: 'Inicio de sesión correcto.',
     data: {
       token,
       user: sanitizeUser(user),
@@ -152,7 +152,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
   if (!user) {
     return sendSuccess(res, {
-      message: 'Si el correo existe, se enviara una contrasena provisional.',
+      message: 'Si el correo existe, se enviará una contraseña provisional.',
       data: {},
     });
   }
@@ -169,7 +169,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
   if (emailResult?.skipped || emailResult?.error) {
     throw new AppError(
-      'No fue posible enviar el correo de restablecimiento. Verifica la configuracion SMTP.',
+      'No fue posible enviar el correo de restablecimiento. Verifica la configuración SMTP.',
       503
     );
   }
@@ -186,7 +186,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
   });
 
   return sendSuccess(res, {
-    message: 'Si el correo existe, se enviara una contrasena provisional.',
+    message: 'Si el correo existe, se enviará una contraseña provisional.',
     data: {},
   });
 });
@@ -199,14 +199,14 @@ const changePassword = asyncHandler(async (req, res) => {
   const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
   if (!isCurrentPasswordValid) {
     throw new AppError('Revisa los campos marcados.', 400, [
-      { field: 'currentPassword', message: 'La contrasena actual no es correcta.' },
+      { field: 'currentPassword', message: 'La contraseña actual no es correcta.' },
     ]);
   }
 
   const isSamePassword = await bcrypt.compare(newPassword, user.passwordHash);
   if (isSamePassword) {
     throw new AppError('Revisa los campos marcados.', 400, [
-      { field: 'newPassword', message: 'La nueva contrasena no puede ser igual a la actual.' },
+      { field: 'newPassword', message: 'La nueva contraseña no puede ser igual a la actual.' },
     ]);
   }
 
@@ -222,7 +222,7 @@ const changePassword = asyncHandler(async (req, res) => {
   });
 
   return sendSuccess(res, {
-    message: 'Contrasena actualizada correctamente. Inicia sesion de nuevo por seguridad.',
+    message: 'Contraseña actualizada correctamente. Inicia sesión de nuevo por seguridad.',
     data: {},
   });
 });

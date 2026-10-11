@@ -14,7 +14,7 @@ const createBankTransferPayment = asyncHandler(async (req, res) => {
 const previewCoupon = asyncHandler(async (req, res) => {
   const result = await paymentService.previewCoupon(req.body, req.user);
   return sendSuccess(res, {
-    message: 'Cupon validado correctamente.',
+    message: 'Cupón validado correctamente.',
     data: result,
   });
 });
@@ -22,7 +22,7 @@ const previewCoupon = asyncHandler(async (req, res) => {
 const redeemCoupon = asyncHandler(async (req, res) => {
   const result = await paymentService.redeemCoupon(req.body, req.user);
   return sendSuccess(res, {
-    message: 'Cupon aplicado correctamente.',
+    message: 'Cupón aplicado correctamente.',
     data: result,
   });
 });

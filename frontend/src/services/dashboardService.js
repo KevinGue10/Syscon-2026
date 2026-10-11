@@ -52,7 +52,7 @@ export const dashboardService = {
       metrics: [
         { label: 'Inscripciones totales', value: String(summary.totalRegistrations || 0) },
         {
-          label: 'Articulos registrados',
+          label: 'Artículos registrados',
           value: String(metrics.papersCount || summary.papersCount || summary.acceptedPapers || 0),
         },
         { label: 'Ingresos recaudados', value: formatCurrency(summary.revenueCollected || 0) },

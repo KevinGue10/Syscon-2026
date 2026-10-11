@@ -96,7 +96,7 @@ function PaymentPage() {
           error:
             error?.response?.data?.message ||
             error?.message ||
-            'No fue posible cargar la informacion de pago.',
+            'No fue posible cargar la información de pago.',
           registration: null,
           payments: [],
         });
@@ -171,7 +171,7 @@ function PaymentPage() {
         ...current,
         applied: null,
         error: '',
-        message: 'El monto o los impuestos cambiaron. Vuelve a aplicar el cupon.',
+        message: 'El monto o los impuestos cambiaron. Vuelve a aplicar el cupón.',
       };
     });
   }, [includeTaxes, paymentAmount]);
@@ -237,7 +237,7 @@ function PaymentPage() {
       const preview = response.couponPreview;
 
       if (!preview) {
-        throw new Error('El backend no devolvio el resumen del cupon.');
+        throw new Error('El backend no devolvió el resumen del cupón.');
       }
 
       setCouponState((current) => ({
@@ -248,8 +248,8 @@ function PaymentPage() {
         message:
           preview.message ||
           (Number(preview.discountAmount || 0) > 0
-            ? 'El cupon fue validado correctamente.'
-            : 'El cupon no genera descuento para este pago.'),
+            ? 'El cupón fue validado correctamente.'
+            : 'El cupón no genera descuento para este pago.'),
         applied: preview,
       }));
     } catch (error) {
@@ -259,7 +259,7 @@ function PaymentPage() {
         error:
           error?.response?.data?.message ||
           error?.message ||
-          'No fue posible validar el cupon.',
+          'No fue posible validar el cupón.',
         message: '',
         applied: null,
       }));
@@ -296,7 +296,7 @@ function PaymentPage() {
         isRedeeming: false,
         message:
           response.message ||
-          'La deuda quedo liquidada con el cupon y el saldo pendiente se actualizo a cero.',
+          'La deuda quedo liquidada con el cupón y el saldo pendiente se actualizo a cero.',
       }));
     } catch (error) {
       setCouponState((current) => ({
@@ -305,7 +305,7 @@ function PaymentPage() {
         error:
           error?.response?.data?.message ||
           error?.message ||
-          'No fue posible liquidar la deuda con el cupon.',
+          'No fue posible liquidar la deuda con el cupón.',
       }));
     }
   }
@@ -331,7 +331,7 @@ function PaymentPage() {
           couponCode:couponState.applied?.code || undefined,
         });
         if (!response.payment?.id || !Number.isFinite(Number(response.payment.amountCop)) || Number(response.payment.amountCop) <= 0) {
-          throw new Error('No hay una tasa de cambio v?lida para generar el valor en pesos. Contacta al equipo organizador.');
+          throw new Error('No hay una tasa de cambio válida para generar el valor en pesos. Contacta al equipo organizador.');
         }
         setGeneratedTransfer(response.payment);
         setTransferQuoteKey(quoteKey);
@@ -342,7 +342,7 @@ function PaymentPage() {
       await paymentService.uploadPaymentProof(generatedTransfer.id,payload);
       setGeneratedTransfer(null);
       setTransferQuoteKey('');
-      setBankTransferState({transactionReference:'',supportingFile:null,error:'',success:'Comprobante enviado. Tu transferencia est? pendiente de validaci?n.'});
+      setBankTransferState({transactionReference:'',supportingFile:null,error:'',success:'Comprobante enviado. Tu transferencia está pendiente de validación.'});
       await refreshPaymentContext(generatedTransfer.id);
     } catch (err) {
       setBankTransferState(current => ({...current,error:err?.response?.data?.message || err.message || 'No fue posible procesar la transferencia.'}));
@@ -356,8 +356,8 @@ function PaymentPage() {
     return (
       <section className="container-shell py-16">
         <Alert
-          title="Cargando informacion de pago"
-          description="Consultando saldo pendiente y resumen de la inscripcion."
+          title="Cargando información de pago"
+          description="Consultando saldo pendiente y resumen de la inscripción."
           variant="info"
         />
       </section>
@@ -368,7 +368,7 @@ function PaymentPage() {
     return (
       <section className="container-shell py-16">
         <Alert
-          title="No fue posible cargar la pagina de pagos"
+          title="No fue posible cargar la página de pagos"
           description={pageState.error}
           variant="danger"
         />
@@ -380,8 +380,8 @@ function PaymentPage() {
     return (
       <section className="container-shell py-16">
         <Alert
-          title="No hay una inscripcion activa para pagar"
-          description="Cuando exista una inscripcion con saldo pendiente, podras gestionarla desde esta pagina."
+          title="No hay una inscripción activa para pagar"
+          description="Cuando exista una inscripción con saldo pendiente, podrás gestionarla desde esta página."
           variant="warning"
         />
       </section>
@@ -395,11 +395,11 @@ function PaymentPage() {
           Pagos
         </p>
         <h1 className="mt-3 text-4xl font-semibold text-slate-950">
-          Completa el pago de tu inscripcion
+          Completa el pago de tu inscripción
         </h1>
         <p className="mt-4 max-w-4xl text-sm leading-7 text-slate-600">
-          Esta pagina concentra el resumen del valor pendiente y las dos modalidades de gestion
-          disponibles: transferencia directa y pago en l?nea con Cobru.
+          Esta página concentra el resumen del valor pendiente y las dos modalidades de gestión
+          disponibles: transferencia directa y pago en línea con Cobru.
         </p>
       </div>
 
@@ -444,7 +444,7 @@ function PaymentPage() {
                 No necesitas procesar un pago externo
               </h2>
               <p className="mt-4 text-sm leading-7 text-slate-600">
-                El cupon cubre el valor completo de este pago. El siguiente paso es confirmar la
+                El cupón cubre el valor completo de este pago. El siguiente paso es confirmar la
                 liquidacion para que el backend deje el saldo pendiente en cero y registre la
                 trazabilidad del descuento.
               </p>
@@ -544,7 +544,7 @@ function PaymentPage() {
                 </div>
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                  <PaymentMeta label="Metodo" value={formatMethod(payment.paymentMethod)} />
+                  <PaymentMeta label="Método" value={formatMethod(payment.paymentMethod)} />
                   <PaymentMeta label="Proveedor" value={formatProvider(payment.provider)} />
                   <PaymentMeta
                     label="Referencia"
@@ -572,7 +572,7 @@ function PaymentPage() {
         ) : (
           <div className="mt-6">
             <Alert
-              title="Todavia no hay pagos registrados"
+              title="Todavía no hay pagos registrados"
               description="Cuando generes un pago por transferencia o generes un pago en Cobru, aparecera en este historial."
               variant="info"
             />
@@ -610,7 +610,7 @@ function buildBankDetails(bankTransferDetails) {
       value: bankTransferDetails.accountType || '',
     },
     {
-      label: 'Numero de cuenta',
+      label: 'Número de cuenta',
       value: bankTransferDetails.accountNumber || '',
     },
     {
@@ -621,9 +621,9 @@ function buildBankDetails(bankTransferDetails) {
         bankTransferDetails.taxIdentificationNumber ||
         '',
     },
-    { label: 'Codigo SWIFT', value: bankTransferDetails.swiftCode || bankTransferDetails.swift || '' },
+    { label: 'Código SWIFT', value: bankTransferDetails.swiftCode || bankTransferDetails.swift || '' },
     {
-      label: 'Pais destino',
+      label: 'País destino',
       value: bankTransferDetails.destinationCountry || bankTransferDetails.country || '',
     },
   ];
@@ -658,7 +658,7 @@ function formatMethod(value) {
   const map = {
     bank_transfer: 'Transferencia bancaria',
     paypal: 'PayPal',
-    payphone: 'PayPhone (hist?rico)',
+    payphone: 'PayPhone (histórico)',
     cobru: 'Cobru',
   };
 
@@ -669,7 +669,7 @@ function formatProvider(value) {
   const map = {
     manual_bank_transfer: 'Transferencia manual',
     paypal: 'PayPal',
-    payphone: 'PayPhone (hist?rico)',
+    payphone: 'PayPhone (histórico)',
     cobru: 'Cobru',
   };
 

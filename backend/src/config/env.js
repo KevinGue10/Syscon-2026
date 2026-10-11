@@ -45,7 +45,7 @@ const env = {
     instructions: process.env.BANK_TRANSFER_INSTRUCTIONS || '',
   },
   app: {
-    baseUrl: process.env.APP_BASE_URL || 'http://localhost:5000',
+    baseUrl: (process.env.APP_BASE_URL || 'https://ieeeconference2026.org').trim().replace(/\/+$/, ''),
     emailLogoUrl: process.env.EMAIL_LOGO_URL || '',
   },
   storage: {
