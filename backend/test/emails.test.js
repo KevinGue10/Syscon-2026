@@ -4,8 +4,21 @@ const { buildSysconEmail } = require('../src/templates/emails/sysconEmailLayout'
 const { buildPasswordResetTemplate } = require('../src/templates/emails/passwordResetTemplate');
 const { buildPaymentApprovedTemplate } = require('../src/templates/emails/paymentApprovedTemplate');
 const { buildPayPhoneLinkTemplate } = require('../src/templates/emails/payPhoneLinkTemplate');
+const { buildWelcomeTemplate } = require('../src/templates/emails/welcomeTemplate');
+const { buildRegistrationConfirmationTemplate, buildPaperRegistrationTemplate, buildPendingPaymentReminderTemplate } = require('../src/templates/emails/notificationTemplates');
+
+test('all seven email templates use English in HTML and plain text', () => {
+  const builders = [buildWelcomeTemplate, buildPasswordResetTemplate, buildPaymentApprovedTemplate, buildPayPhoneLinkTemplate, buildRegistrationConfirmationTemplate, buildPaperRegistrationTemplate, buildPendingPaymentReminderTemplate];
+  for (const build of builders) {
+    const email = build({ firstName: 'Alex', registration: { id: 1, status: 'submitted', pendingAmount: 100 }, paper: { title: 'Systems', paperCode: 'ART-1' }, amountUsd: 100, appBaseUrl: 'https://ieeeconference2026.org', paymentLink: 'https://example.com/pay' });
+    assert.ok(email.html.includes('lang="en"'));
+    assert.ok(email.html.includes('Hello'));
+    assert.ok(email.text.includes('Hello'));
+    assert.ok(!/Hola|Contraseña|Inscripción|Si el botón|Mensaje automático/.test(email.html + email.text + email.subject));
+  }
+});
 test('email layout escapes participant data and excludes unsafe links', () => {
-  const email = buildSysconEmail({title:'Confirmación',name:'<img src=x>',details:[{label:'Artículo',value:'A & B <script>'}],actionUrl:'javascript:alert(1)',logoUrl:'javascript:alert(1)'});
+  const email = buildSysconEmail({title:'Confirmación',name:'<img src=x>',details:[{label:"Paper",value:'A & B <script>'}],actionUrl:'javascript:alert(1)',logoUrl:'javascript:alert(1)'});
   assert.ok(email.html.includes('&lt;img src=x&gt;'));
   assert.ok(email.html.includes('A &amp; B &lt;script&gt;'));
   assert.ok(!email.html.includes('javascript:'));

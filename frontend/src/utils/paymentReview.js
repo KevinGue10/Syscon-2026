@@ -13,6 +13,6 @@
   };
 }
 export function formatReviewMoney(usd, rate) {
-  const dollars = new Intl.NumberFormat('es-CO',{style:'currency',currency:'USD',minimumFractionDigits:2}).format(usd) + ' USD';
-  return dollars + (rate ? ' / ' + new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:2}).format(usd * rate) + ' COP' : ' / COP no disponible');
+  const dollars = new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2}).format(usd) + ' USD';
+  return dollars + (rate ? ' / ' + new Intl.NumberFormat('en-US',{style:'currency',currency:'COP',minimumFractionDigits:2}).format(usd * rate) + ' COP' : "/ COP unavailable");
 }

@@ -109,7 +109,7 @@ function AdminUsersOverviewPage() {
         setError(
           loadError?.response?.data?.message ||
             loadError?.message ||
-            'No fue posible cargar el consolidado de usuarios.',
+            "Unable to load the participant overview.",
         );
       } finally {
         if (isMounted) {
@@ -187,13 +187,13 @@ function AdminUsersOverviewPage() {
   );
 
   const booleanOptions = [
-    { value: 'true', label: 'Sí' },
+    { value: 'true', label: "Yes" },
     { value: 'false', label: 'No' },
   ];
   const activityOptions = [
-    { value: 'true', label: 'Activos' },
-    { value: 'false', label: 'Inactivos' },
-    { value: 'all', label: 'Todos' },
+    { value: 'true', label: "Active" },
+    { value: 'false', label: "Inactive" },
+    { value: 'all', label: "All" },
   ];
   const [reviewCurrency, setReviewCurrency] = useState('USD');
   useEffect(() => { setReviewCurrency('USD'); }, [paymentReviewState.selectedPaymentId, paymentReviewState.isOpen]);
@@ -211,8 +211,8 @@ function AdminUsersOverviewPage() {
     return (
       <section className="container-shell py-16">
         <Alert
-          title="Cargando consolidado de usuarios"
-          description="Consultando los datos completos de participantes desde el backend."
+          title="Loading participant overview"
+          description="Loading complete participant information."
           variant="info"
         />
       </section>
@@ -222,7 +222,7 @@ function AdminUsersOverviewPage() {
   if (error) {
     return (
       <section className="container-shell py-16">
-        <Alert title="No fue posible cargar la vista" description={error} variant="danger" />
+        <Alert title="Unable to load this view" description={error} variant="danger" />
       </section>
     );
   }
@@ -231,63 +231,62 @@ function AdminUsersOverviewPage() {
     <section className="container-shell py-16">
       <div className="mb-8">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-          Vista administrativa
+          Administrative view
         </p>
         <h1 className="mt-3 text-4xl font-semibold text-slate-950">
-          Detalle completo de participantes
+          Complete participant details
         </h1>
         <p className="mt-4 max-w-4xl text-sm leading-7 text-slate-600">
-          Consulta los datos personales y de inscripción en una sola tabla, con filtros de apoyo
-          para seguimiento administrativo y operativo.
+          Review personal and registration information in one table, with filters for administrative and operational follow-up.
         </p>
       </div>
 
       <Card className="p-8">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <InputField
-            label="Buscar"
-            placeholder="Nombre, correo, afiliación o documento"
+            label="Search"
+            placeholder="Name, email, affiliation or ID number"
             value={filters.search}
             onChange={(event) => updateFilter(setFilters, 'search', event.target.value)}
           />
           <SelectField
-            label="País"
+            label="Country"
             options={countryOptions}
             value={filters.country}
             onChange={(event) => updateFilter(setFilters, 'country', event.target.value)}
           />
           <SelectField
-            label="Ciudad"
+            label="City"
             options={cityOptions}
             value={filters.city}
             onChange={(event) => updateFilter(setFilters, 'city', event.target.value)}
           />
           <SelectField
-            label="Ocupación"
+            label="Occupation"
             options={occupationOptions}
             value={filters.occupation}
             onChange={(event) => updateFilter(setFilters, 'occupation', event.target.value)}
           />
           <SelectField
-            label="Tipo de asistencia"
+            label="Attendance type"
             options={attendanceOptions}
             value={filters.attendanceType}
             onChange={(event) => updateFilter(setFilters, 'attendanceType', event.target.value)}
           />
           <SelectField
-            label="Miembro IEEE"
+            label="IEEE member"
             options={booleanOptions}
             value={filters.isIeeeMember}
             onChange={(event) => updateFilter(setFilters, 'isIeeeMember', event.target.value)}
           />
           <SelectField
-            label="Estado de usuario"
+            label="Account status"
             options={activityOptions}
             value={filters.active}
             onChange={(event) => updateFilter(setFilters, 'active', event.target.value)}
           />
           <SelectField
-            label="Estado de pago"
+            label="Payment status"
             options={paymentStatusOptions}
             value={filters.paymentStatus}
             onChange={(event) => updateFilter(setFilters, 'paymentStatus', event.target.value)}
@@ -301,7 +300,7 @@ function AdminUsersOverviewPage() {
                 setAppliedFilters(filters);
               }}
             >
-              Aplicar filtros
+              Apply filters
             </Button>
             <Button
               variant="ghost"
@@ -322,7 +321,7 @@ function AdminUsersOverviewPage() {
                 setCurrentPage(1);
               }}
             >
-              Limpiar
+              Clear
             </Button>
           </div>
         </div>
@@ -335,7 +334,7 @@ function AdminUsersOverviewPage() {
               { key: 'id', label: 'ID' },
               {
                 key: 'active',
-                label: 'Estado',
+                label: "Status",
                 render: (value) => (
                   <span
                     className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
@@ -344,71 +343,71 @@ function AdminUsersOverviewPage() {
                         : 'bg-rose-100 text-rose-700'
                     }`}
                   >
-                    {value ? 'Activo' : 'Inactivo'}
+                    {value ? "Active" : "Inactive"}
                   </span>
                 ),
               },
               {
                 key: 'latestPaymentStatus',
-                label: 'Estado de pago',
+                label: "Payment status",
                 render: (value) => <PaymentStatusCell status={value} />,
               },
               {
                 key: 'fullName',
-                label: 'Nombre completo',
+                label: "Full name",
                 render: (_, row) => (
                   <div className="min-w-[12rem]">
-                    {`${row.firstName || ''} ${row.lastName || ''}`.trim() || 'No registrado'}
+                    {`${row.firstName || ''} ${row.lastName || ''}`.trim() || "Not provided"}
                   </div>
                 ),
               },
-              { key: 'email', label: 'Correo' },
+              { key: 'email', label: "Email" },
               {
                 key: 'country',
-                label: 'País',
-                render: (_, row) => resolveCountryName(row) || 'No registrado',
+                label: "Country",
+                render: (_, row) => resolveCountryName(row) || "Not provided",
               },
-              { key: 'city', label: 'Ciudad' },
-              { key: 'affiliation', label: 'Afiliación' },
+              { key: 'city', label: "City" },
+              { key: 'affiliation', label: "Affiliation" },
               {
                 key: 'occupation',
-                label: 'Ocupación',
+                label: "Occupation",
                 render: (value) => translateOccupation(value),
               },
               {
                 key: 'gender',
-                label: 'Genero',
+                label: "Gender",
                 render: (value) => translateGender(value),
               },
               {
                 key: 'docType',
-                label: 'Documento',
+                label: "ID document",
                 render: (value, row) => (
                   <div className="min-w-[12rem]">
                     {`${translateDocumentType(value)}${row.docNumber ? ` - ${row.docNumber}` : ''}`}
                   </div>
                 ),
               },
-              { key: 'phoneNumber', label: 'Teléfono' },
+              { key: 'phoneNumber', label: "Phone" },
               {
                 key: 'isIeeeMember',
-                label: 'Miembro IEEE',
-                render: (_, row) => (resolvePrimaryRegistration(row)?.isIeeeMember ? 'Sí' : 'No'),
+                label: "IEEE member",
+                render: (_, row) => (resolvePrimaryRegistration(row)?.isIeeeMember ? "Yes" : 'No'),
               },
               {
                 key: 'membershipNumber',
-                label: 'Membresia',
-                render: (_, row) => resolvePrimaryRegistration(row)?.membershipNumber || 'No aplica',
+                label: "Membership",
+                render: (_, row) => resolvePrimaryRegistration(row)?.membershipNumber || "Not applicable",
               },
               {
                 key: 'attendanceType',
-                label: 'Asistencia',
+                label: "Attendance",
                 render: (_, row) =>
                   translateAttendanceType(resolvePrimaryRegistration(row)?.attendanceType),
               },
               {
                 key: 'actions',
-                label: 'Acciones',
+                label: "Actions",
                 render: (_, row) => (
                   <button
                     type="button"
@@ -421,13 +420,13 @@ function AdminUsersOverviewPage() {
               },
             ]}
             rows={users}
-            emptyMessage="No hay participantes que coincidan con los filtros aplicados."
+            emptyMessage="No participants match the selected filters."
           />
         </div>
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
           <p className="text-sm text-slate-500">
-            Mostrando página {pagination.page} de {pagination.totalPages}. Total de registros:{' '}
+            Page {pagination.page} of {pagination.totalPages}. Total records:{' '}
             {pagination.totalItems}
           </p>
           <div className="flex gap-3">
@@ -437,7 +436,7 @@ function AdminUsersOverviewPage() {
               disabled={pagination.page <= 1}
               onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
             >
-              Anterior
+              Previous
             </Button>
             <Button
               variant="ghost"
@@ -445,7 +444,7 @@ function AdminUsersOverviewPage() {
               disabled={pagination.page >= pagination.totalPages}
               onClick={() => setCurrentPage((page) => Math.min(page + 1, pagination.totalPages))}
             >
-              Siguiente
+              Next
             </Button>
           </div>
         </div>
@@ -453,16 +452,16 @@ function AdminUsersOverviewPage() {
 
       <Modal
         isOpen={Boolean(selectedUser)}
-        title="Acciones disponibles"
+        title="Available actions"
         onClose={() => setSelectedUser(null)}
       >
         <div className="space-y-3">
           <p className="text-sm text-slate-600">
-            Selecciona una acción para{' '}
+            Select an action for{' '}
             <span className="font-semibold text-slate-950">
               {selectedUser
                 ? `${selectedUser.firstName || ''} ${selectedUser.lastName || ''}`.trim()
-                : 'el participante'}
+                : "the participant"}
             </span>
             .
           </p>
@@ -521,21 +520,21 @@ function AdminUsersOverviewPage() {
       >
         <div className="space-y-3">
           <p className="text-sm text-slate-600">
-            Acción seleccionada para{' '}
+            Selected action for{' '}
             <span className="font-semibold text-slate-950">
               {actionModal.user
                 ? `${actionModal.user.firstName || ''} ${actionModal.user.lastName || ''}`.trim()
-                : 'el participante'}
+                : "the participant"}
             </span>
             .
           </p>
           {actionModal.error ? (
-            <Alert title="No fue posible actualizar el usuario" description={actionModal.error} variant="danger" />
+            <Alert title="Unable to update the user" description={actionModal.error} variant="danger" />
           ) : null}
           <p className="text-sm text-slate-500">
             {actionModal.actionType === 'deactivate-user'
-              ? 'El usuario perderá acceso a la plataforma hasta que sea habilitado nuevamente desde administración.'
-              : 'El usuario recuperará acceso normal a la plataforma inmediatamente después de esta acción.'}
+              ? "The user will lose access to the platform until an administrator enables the account again."
+              : "The user will regain access to the platform immediately after this action."}
           </p>
           <div className="flex justify-end gap-3">
             <Button
@@ -553,7 +552,7 @@ function AdminUsersOverviewPage() {
               }
               disabled={actionModal.isSubmitting}
             >
-              Cancelar
+              Cancel
             </Button>
             <Button
               variant="primary"
@@ -561,10 +560,10 @@ function AdminUsersOverviewPage() {
               disabled={actionModal.isSubmitting}
             >
               {actionModal.isSubmitting
-                ? 'Procesando...'
+                ? "Processing..."
                 : actionModal.actionType === 'deactivate-user'
-                  ? 'Inhabilitar usuario'
-                  : 'Activar usuario'}
+                  ? "Disable account"
+                  : "Enable account"}
             </Button>
           </div>
         </div>
@@ -572,7 +571,7 @@ function AdminUsersOverviewPage() {
 
       <Modal
         isOpen={articlesModalState.isOpen}
-        title="Ver artículos"
+        title="View papers"
         panelClassName="max-w-5xl"
         onClose={() =>
           setArticlesModalState({
@@ -587,28 +586,28 @@ function AdminUsersOverviewPage() {
       >
         {articlesModalState.isLoading ? (
           <Alert
-            title="Cargando artículos"
-            description="Consultando los artículos registrados por el participante desde el backend."
+            title="Loading papers"
+            description="Loading the participant's registered papers."
             variant="info"
           />
         ) : articlesModalState.error ? (
-          <Alert title="No fue posible abrir los artículos" description={articlesModalState.error} variant="danger" />
+          <Alert title="Unable to open papers" description={articlesModalState.error} variant="danger" />
         ) : (
           <div className="space-y-5">
             <p className="text-sm text-slate-600">
-              Artículos registrados por{' '}
+              Papers registered by{' '}
               <span className="font-semibold text-slate-950">
                 {articlesModalState.user
                   ? `${articlesModalState.user.firstName || ''} ${articlesModalState.user.lastName || ''}`.trim()
-                  : 'el participante'}
+                  : "the participant"}
               </span>
               .
             </p>
 
             {!articlesModalState.papers.length ? (
               <Alert
-                title="Sin artículos registrados"
-                description="Este participante no tiene artículos asociados a su inscripción."
+                title="No registered papers"
+                description="This participant has no papers associated with their registration."
                 variant="warning"
               />
             ) : (
@@ -618,28 +617,28 @@ function AdminUsersOverviewPage() {
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
                         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                          Artículo {index + 1}
+                          Paper {index + 1}
                         </p>
                         <h3 className="mt-2 text-lg font-semibold text-slate-950">
-                          {paper.title || 'Sin título'}
+                          {paper.title || "Untitled"}
                         </h3>
                       </div>
                       <div className="rounded-2xl bg-white px-4 py-3 text-right">
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                          Código
+                          Code
                         </p>
                         <p className="mt-2 text-sm font-semibold text-slate-950">
-                          {paper.paperCode || 'No registrado'}
+                          {paper.paperCode || "Not provided"}
                         </p>
                       </div>
                     </div>
 
                     <div className="mt-5 grid gap-4 md:grid-cols-2">
                       <ReadOnlyCard
-                        label="Autores"
+                        label="Authors"
                         value={Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}
                       />
-                      <ReadOnlyCard label="Páginas" value={paper.pages} />
+                      <ReadOnlyCard label="Pages" value={paper.pages} />
                     </div>
 
                     {paper.customFieldValues?.length ? (
@@ -647,7 +646,7 @@ function AdminUsersOverviewPage() {
                         {paper.customFieldValues.map((field) => (
                           <ReadOnlyCard
                             key={field.id || `${field.customFieldId}-${field.value}`}
-                            label={field.customField?.label || `Campo ${field.customFieldId}`}
+                            label={field.customField?.label || `Field ${field.customFieldId}`}
                             value={field.value}
                           />
                         ))}
@@ -672,7 +671,7 @@ function AdminUsersOverviewPage() {
                   })
                 }
               >
-                Cerrar
+                Close
               </Button>
             </div>
           </div>
@@ -681,7 +680,7 @@ function AdminUsersOverviewPage() {
 
       <Modal
         isOpen={paymentReviewState.isOpen}
-        title="Validar pago"
+        title="Review payment"
         panelClassName="w-[min(96vw,78rem)] max-w-none"
         onClose={() =>
           setPaymentReviewState({
@@ -703,21 +702,21 @@ function AdminUsersOverviewPage() {
       >
         {paymentReviewState.isLoading ? (
           <Alert
-            title="Cargando detalle del pago"
-            description="Consultando comprobantes, montos y estado actual desde el backend."
+            title="Loading payment details"
+            description="Loading receipts, amounts and current status."
             variant="info"
           />
         ) : paymentReviewState.error && !paymentReviewState.payments.length ? (
-          <Alert title="No fue posible abrir la validación" description={paymentReviewState.error} variant="danger" />
+          <Alert title="Unable to open payment review" description={paymentReviewState.error} variant="danger" />
         ) : (
           <div className="space-y-6">
             <div>
               <p className="text-sm text-slate-600">
-                Revisa el comprobante y decide si apruebas o rechazas el soporte cargado por{' '}
+                Review the receipt and decide whether to approve or reject the payment submitted by{' '}
                 <span className="font-semibold text-slate-950">
                   {paymentReviewState.user
                     ? `${paymentReviewState.user.firstName || ''} ${paymentReviewState.user.lastName || ''}`.trim()
-                    : 'el participante'}
+                    : "the participant"}
                 </span>
                 .
               </p>
@@ -726,16 +725,16 @@ function AdminUsersOverviewPage() {
             {paymentReviewState.error &&
             paymentReviewState.payments.length &&
             !isMissingPaymentProofMessage(paymentReviewState.error) ? (
-              <Alert title="Acción no completada" description={paymentReviewState.error} variant="danger" />
+              <Alert title="Action not completed" description={paymentReviewState.error} variant="danger" />
             ) : null}
             {paymentReviewState.success ? (
-              <Alert title="Pago actualizado" description={paymentReviewState.success} variant="success" />
+              <Alert title="Payment updated" description={paymentReviewState.success} variant="success" />
             ) : null}
 
             {!paymentReviewState.payments.length ? (
               <Alert
-                title="No hay pagos registrados"
-                description="Este participante no tiene pagos disponibles para validar."
+                title="No registered payments"
+                description="This participant has no payments available for review."
                 variant="warning"
               />
             ) : (
@@ -743,7 +742,7 @@ function AdminUsersOverviewPage() {
                 <div className="space-y-4">
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Pagos del participante
+                      Participant payments
                     </p>
                     <div className="mt-4 space-y-3">
                       {paymentReviewState.payments.map((payment) => (
@@ -762,7 +761,7 @@ function AdminUsersOverviewPage() {
                           <div className="flex items-start justify-between gap-4">
                             <div>
                               <p className="text-sm font-semibold text-slate-950">
-                                Pago #{payment.id}
+                                Payment #{payment.id}
                               </p>
                               <p className="mt-1 text-sm text-slate-600">
                                 {formatMethod(payment.paymentMethod)} · {formatCurrency(payment.amountUsd || 0)}
@@ -780,30 +779,30 @@ function AdminUsersOverviewPage() {
 
                   <div className="rounded-xl border border-slate-200 bg-white p-5">
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Resumen de revisión
+                      Review summary
                     </p>
                     <div className="mt-4 grid gap-4 sm:grid-cols-2">
                       <ReviewItem
-                        label="Inscripción"
-                        value={paymentReviewState.registration?.id || 'No registrada'}
+                        label="Registration"
+                        value={paymentReviewState.registration?.id || "Not provided"}
                       />
                       <ReviewItem
-                        label="Saldo pendiente"
+                        label="Outstanding balance"
                         value={formatReviewMoney(reviewAmounts.pendingUsd, reviewAmounts.rate)}
                       />
-                      <ReviewItem label="Total de la inscripción" value={formatReviewMoney(Number(paymentReviewState.registration?.paymentSummary?.totalAmount ?? paymentReviewState.registration?.totalAmount ?? 0), reviewAmounts.rate)} />
-                      <ReviewItem label="Pagado anteriormente" value={formatReviewMoney(Number(paymentReviewState.registration?.paymentSummary?.paidAmount ?? paymentReviewState.registration?.paidAmount ?? 0), reviewAmounts.rate)} />
-                      <ReviewItem label="Valor del pago seleccionado" value={formatReviewMoney(reviewAmounts.originalUsd, reviewAmounts.rate)} />
-                      <ReviewItem label="Tasa de este pago" value={reviewAmounts.rate ? reviewAmounts.rate.toLocaleString('es-CO',{maximumFractionDigits:4}) + ' COP por USD' : 'Sin conversión registrada'} />
+                      <ReviewItem label="Registration total" value={formatReviewMoney(Number(paymentReviewState.registration?.paymentSummary?.totalAmount ?? paymentReviewState.registration?.totalAmount ?? 0), reviewAmounts.rate)} />
+                      <ReviewItem label="Previously paid" value={formatReviewMoney(Number(paymentReviewState.registration?.paymentSummary?.paidAmount ?? paymentReviewState.registration?.paidAmount ?? 0), reviewAmounts.rate)} />
+                      <ReviewItem label="Selected payment amount" value={formatReviewMoney(reviewAmounts.originalUsd, reviewAmounts.rate)} />
+                      <ReviewItem label="Payment exchange rate" value={reviewAmounts.rate ? reviewAmounts.rate.toLocaleString('en-US',{maximumFractionDigits:4}) + " COP per USD" : "No exchange rate recorded"} />
                     </div>
-                    <p className="mt-3 text-xs leading-6 text-slate-500">Los equivalentes en pesos del resumen usan la tasa del pago seleccionado. Los pagos anteriores pueden tener tasas diferentes.</p>
+                    <p className="mt-3 text-xs leading-6 text-slate-500">COP equivalents in this summary use the selected payment's exchange rate. Previous payments may have used different rates.</p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div className="rounded-xl border border-slate-200 bg-white p-5">
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Comprobante cargado
+                      Uploaded receipt
                     </p>
                     <div className="mt-4">
                       <PaymentProofViewer
@@ -816,13 +815,13 @@ function AdminUsersOverviewPage() {
 
                   <div className="rounded-xl border border-slate-200 bg-white p-5">
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Validación administrativa
+                      Administrative review
                     </p>
                     {isResolvedPayment ? (
                       <div className="mt-4 space-y-4">
                         {isApprovedPayment ? (
                           <ReviewItem
-                            label="Valor aprobado"
+                            label="Approved amount"
                             value={formatCurrency(
                               Number(selectedReviewedPayment?.amountUsd || 0),
                             )}
@@ -831,26 +830,25 @@ function AdminUsersOverviewPage() {
                         {isRejectedPayment ? (
                           <div className="rounded-2xl bg-rose-50 px-4 py-4">
                             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700">
-                              Motivo de rechazo
+                              Reason for rejection
                             </p>
                             <p className="mt-2 text-sm font-medium text-rose-900">
-                              {selectedReviewedPayment?.rejectionReason || 'No registrado'}
+                              {selectedReviewedPayment?.rejectionReason || "Not provided"}
                             </p>
                           </div>
                         ) : null}
                         {isCancelledPayment ? (
                           <div className="rounded-2xl bg-slate-100 px-4 py-4">
                             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                              Estado final
+                              Final status
                             </p>
                             <p className="mt-2 text-sm font-medium text-slate-900">
-                              Este pago fue cancelado administrativamente.
+                              This payment was cancelled by an administrator.
                             </p>
                           </div>
                         ) : null}
                         <p className="text-sm text-slate-500">
-                          Este pago ya tiene una decision administrativa tomada y no admite una
-                          nueva acción desde esta pantalla.
+                          This payment already has a final administrative decision and cannot be changed from this screen.
                         </p>
                         {canCancelSelectedPayment ? (
                           <div className="flex justify-end">
@@ -877,7 +875,7 @@ function AdminUsersOverviewPage() {
                                   await openPaymentReviewModal(paymentReviewState.user, selectedPayment.id);
                                   setPaymentReviewState((current) => ({
                                     ...current,
-                                    success: 'El pago fue cancelado correctamente.',
+                                    success: "Payment cancelled successfully.",
                                   }));
                                 } catch (error) {
                                   setPaymentReviewState((current) => ({
@@ -886,14 +884,14 @@ function AdminUsersOverviewPage() {
                                     error:
                                       error?.response?.data?.message ||
                                       error?.message ||
-                                      'No fue posible cancelar el pago.',
+                                      "Unable to cancel the payment.",
                                     success: '',
                                   }));
                                 }
                               }}
                               disabled={paymentReviewState.isSubmitting}
                             >
-                              {paymentReviewState.isSubmitting ? 'Procesando...' : 'Cancelar pago'}
+                              {paymentReviewState.isSubmitting ? "Processing..." : "Cancel payment"}
                             </Button>
                           </div>
                         ) : null}
@@ -902,9 +900,9 @@ function AdminUsersOverviewPage() {
                       <>
                         <div className="mt-4 grid gap-4">
                           <SelectField
-                            label="Moneda del comprobante"
+                            label="Receipt currency"
                             value={reviewCurrency}
-                            options={[{label:'Dólares (USD)',value:'USD'}, ...(reviewAmounts.rate ? [{label:'Pesos colombianos (COP)',value:'COP'}] : [])]}
+                            options={[{label:"US dollars (USD)",value:'USD'}, ...(reviewAmounts.rate ? [{label:"Colombian pesos (COP)",value:'COP'}] : [])]}
                             onChange={event => {
                               const next = event.target.value;
                               setPaymentReviewState(current => ({...current, reviewedAmount:Number.isFinite(reviewAmounts.verifiedUsd) ? String(next === 'COP' ? reviewAmounts.verifiedCop : reviewAmounts.verifiedUsd) : ''}));
@@ -912,7 +910,7 @@ function AdminUsersOverviewPage() {
                             }}
                           />
                           <InputField
-                            label={'Valor verificado (' + reviewCurrency + ')'}
+                            label={"Verified amount (" + reviewCurrency + ')'}
                             disabled={paymentReviewState.isSubmitting}
                             type="number"
                             step="0.01"
@@ -925,18 +923,18 @@ function AdminUsersOverviewPage() {
                             }
                             min="0.01"
                             max={reviewCurrency === 'COP' ? reviewAmounts.originalCop : reviewAmounts.originalUsd}
-                            helperText="Ingresa el importe recibido según el comprobante. Puedes aprobar un abono menor al pago generado."
+                            helperText="Enter the amount received according to the receipt. You can approve a partial amount below the generated payment value."
                           />
                           <div className="rounded-xl border border-brand-200 bg-brand-50 p-5" aria-live="polite">
                             {reviewAmounts.valid ? <>
-                              <p className="font-semibold text-brand-900">{reviewAmounts.remainingUsd <= 0 ? 'Pago completo: cubrirá el saldo pendiente' : 'Abono parcial: quedará saldo pendiente'}</p>
-                              <p className="mt-2 text-sm text-slate-700">A reconocer: {formatReviewMoney(reviewAmounts.verifiedUsd, reviewAmounts.rate)}</p>
-                              <p className="mt-2 text-sm text-slate-700">Saldo después de aprobar: {formatReviewMoney(reviewAmounts.remainingUsd, reviewAmounts.rate)}</p>
-                            </> : <p className="text-sm text-rose-700">Ingresa un importe mayor que cero y que no supere el valor del pago seleccionado.</p>}
+                              <p className="font-semibold text-brand-900">{reviewAmounts.remainingUsd <= 0 ? "Full payment: the outstanding balance will be covered" : "Partial payment: an outstanding balance will remain"}</p>
+                              <p className="mt-2 text-sm text-slate-700">Amount to credit: {formatReviewMoney(reviewAmounts.verifiedUsd, reviewAmounts.rate)}</p>
+                              <p className="mt-2 text-sm text-slate-700">Balance after approval: {formatReviewMoney(reviewAmounts.remainingUsd, reviewAmounts.rate)}</p>
+                            </> : <p className="text-sm text-rose-700">Enter an amount greater than zero that does not exceed the selected payment amount.</p>}
                           </div>
                           <TextAreaField
-                            label="Motivo de rechazo"
-                            placeholder="Describe por qué el comprobante no es válido o que debe corregir el participante."
+                            label="Reason for rejection"
+                            placeholder="Describe why the receipt is invalid or what the participant needs to correct."
                             value={paymentReviewState.rejectionReason}
                             onChange={(event) =>
                               setPaymentReviewState((current) => ({
@@ -971,7 +969,7 @@ function AdminUsersOverviewPage() {
                                 await openPaymentReviewModal(paymentReviewState.user, selectedPayment.id);
                                 setPaymentReviewState((current) => ({
                                   ...current,
-                                  success: 'El pago fue cancelado correctamente.',
+                                  success: "Payment cancelled successfully.",
                                 }));
                               } catch (error) {
                                 setPaymentReviewState((current) => ({
@@ -980,14 +978,14 @@ function AdminUsersOverviewPage() {
                                   error:
                                     error?.response?.data?.message ||
                                     error?.message ||
-                                    'No fue posible cancelar el pago.',
+                                    "Unable to cancel the payment.",
                                   success: '',
                                 }));
                               }
                             }}
                             disabled={paymentReviewState.isSubmitting}
                           >
-                            {paymentReviewState.isSubmitting ? 'Procesando...' : 'Cancelar pago'}
+                            {paymentReviewState.isSubmitting ? "Processing..." : "Cancel payment"}
                           </Button>
                           <Button
                             variant="ghost"
@@ -1002,7 +1000,7 @@ function AdminUsersOverviewPage() {
                               if (!paymentReviewState.rejectionReason.trim()) {
                                 setPaymentReviewState((current) => ({
                                   ...current,
-                                  error: 'Debes escribir el motivo de rechazo antes de continuar.',
+                                  error: "Enter a reason for rejection before continuing.",
                                   success: '',
                                 }));
                                 return;
@@ -1024,7 +1022,7 @@ function AdminUsersOverviewPage() {
                                 await openPaymentReviewModal(paymentReviewState.user, selectedPayment.id);
                                 setPaymentReviewState((current) => ({
                                   ...current,
-                                  success: 'El pago fue rechazado correctamente.',
+                                  success: "Payment rejected successfully.",
                                 }));
                               } catch (error) {
                                 setPaymentReviewState((current) => ({
@@ -1033,14 +1031,14 @@ function AdminUsersOverviewPage() {
                                   error:
                                     error?.response?.data?.message ||
                                     error?.message ||
-                                    'No fue posible rechazar el pago.',
+                                    "Unable to reject the payment.",
                                   success: '',
                                 }));
                               }
                             }}
                             disabled={paymentReviewState.isSubmitting}
                           >
-                            {paymentReviewState.isSubmitting ? 'Procesando...' : 'Rechazar soporte'}
+                            {paymentReviewState.isSubmitting ? "Processing..." : "Reject receipt"}
                           </Button>
                           <Button
                             variant="primary"
@@ -1059,7 +1057,7 @@ function AdminUsersOverviewPage() {
                                   success: '',
                                 }));
 
-                                if (!reviewAmounts.valid) throw new Error('Revisa el valor verificado antes de aprobar el pago.');
+                                if (!reviewAmounts.valid) throw new Error("Check the verified amount before approving the payment.");
                                 await paymentService.approvePayment(selectedPayment.id, {
                                   reviewedAmount: reviewAmounts.valid ? reviewAmounts.verifiedUsd : undefined,
                                 });
@@ -1067,7 +1065,7 @@ function AdminUsersOverviewPage() {
                                 await openPaymentReviewModal(paymentReviewState.user, selectedPayment.id);
                                 setPaymentReviewState((current) => ({
                                   ...current,
-                                  success: 'El pago fue aprobado correctamente.',
+                                  success: "Payment approved successfully.",
                                 }));
                               } catch (error) {
                                 setPaymentReviewState((current) => ({
@@ -1076,14 +1074,14 @@ function AdminUsersOverviewPage() {
                                   error:
                                     error?.response?.data?.message ||
                                     error?.message ||
-                                    'No fue posible aprobar el pago.',
+                                    "Unable to approve the payment.",
                                   success: '',
                                 }));
                               }
                             }}
                             disabled={paymentReviewState.isSubmitting}
                           >
-                            {paymentReviewState.isSubmitting ? 'Procesando...' : 'Validar pago'}
+                            {paymentReviewState.isSubmitting ? "Processing..." : "Review payment"}
                           </Button>
                         </div>
                       </>
@@ -1091,21 +1089,21 @@ function AdminUsersOverviewPage() {
                       <div className="mt-4 space-y-4">
                         {canSendSelectedPayPhoneLink ? (
                           <Alert
-                            title="Pendiente de envío de link"
-                            description="Este pago PayPhone fue registrado por el participante y está esperando que administración envíe el link de pago."
+                            title="Awaiting payment link"
+                            description="The participant registered this PayPhone payment and is waiting for an administrator to send the payment link."
                             variant="info"
                           />
                         ) : (
                           <Alert
-                            title="Pendiente de pago"
-                            description="Todavía no hay un comprobante listo para validación. Cuando el participante cargue el soporte, el estado cambiará a pendiente de validación."
+                            title="Awaiting payment"
+                            description="No receipt is available for review yet. Once the participant uploads it, the status will change to pending review."
                             variant="warning"
                           />
                         )}
 
                         {canSendSelectedPayPhoneLink ? (
                           <InputField
-                            label="Link de pago"
+                            label="Payment link"
                             placeholder="https://..."
                             value={paymentReviewState.paymentLink}
                             onChange={(event) =>
@@ -1116,7 +1114,7 @@ function AdminUsersOverviewPage() {
                                 success: '',
                               }))
                             }
-                            helperText="Pega aquí el enlace que recibirá el participante por correo."
+                            helperText="Paste the link that the participant will receive by email."
                           />
                         ) : null}
 
@@ -1135,7 +1133,7 @@ function AdminUsersOverviewPage() {
                                 if (!normalizedPaymentLink) {
                                   setPaymentReviewState((current) => ({
                                     ...current,
-                                    error: 'Debes pegar el link de pago antes de enviarlo.',
+                                    error: "Paste the payment link before sending it.",
                                     success: '',
                                   }));
                                   return;
@@ -1157,7 +1155,7 @@ function AdminUsersOverviewPage() {
                                   setPaymentReviewState((current) => ({
                                     ...current,
                                     success:
-                                      'El link de PayPhone fue marcado como enviado. Estado actual: pendiente de pago.',
+                                      "The PayPhone link was marked as sent. Current status: awaiting payment.",
                                   }));
                                 } catch (error) {
                                   setPaymentReviewState((current) => ({
@@ -1166,14 +1164,14 @@ function AdminUsersOverviewPage() {
                                     error:
                                       error?.response?.data?.message ||
                                       error?.message ||
-                                      'No fue posible marcar el envío del link PayPhone.',
+                                      "Unable to mark the PayPhone link as sent.",
                                     success: '',
                                   }));
                                 }
                               }}
                               disabled={paymentReviewState.isSubmitting}
                             >
-                              {paymentReviewState.isSubmitting ? 'Procesando...' : 'Enviar link'}
+                              {paymentReviewState.isSubmitting ? "Processing..." : "Send link"}
                             </Button>
                           ) : null}
                           {canCancelSelectedPayment ? (
@@ -1200,7 +1198,7 @@ function AdminUsersOverviewPage() {
                                   await openPaymentReviewModal(paymentReviewState.user, selectedPayment.id);
                                   setPaymentReviewState((current) => ({
                                     ...current,
-                                    success: 'El pago fue cancelado correctamente.',
+                                    success: "Payment cancelled successfully.",
                                   }));
                                 } catch (error) {
                                   setPaymentReviewState((current) => ({
@@ -1209,14 +1207,14 @@ function AdminUsersOverviewPage() {
                                     error:
                                       error?.response?.data?.message ||
                                       error?.message ||
-                                      'No fue posible cancelar el pago.',
+                                      "Unable to cancel the payment.",
                                     success: '',
                                   }));
                                 }
                               }}
                               disabled={paymentReviewState.isSubmitting}
                             >
-                              {paymentReviewState.isSubmitting ? 'Procesando...' : 'Cancelar pago'}
+                              {paymentReviewState.isSubmitting ? "Processing..." : "Cancel payment"}
                             </Button>
                           ) : null}
                         </div>
@@ -1295,7 +1293,7 @@ function AdminUsersOverviewPage() {
         error:
           error?.response?.data?.message ||
           error?.message ||
-          'No fue posible cargar el detalle de pagos del participante.',
+          "Unable to load the participant's payment details.",
         success: '',
         user,
         registration: null,
@@ -1342,7 +1340,7 @@ function AdminUsersOverviewPage() {
         error:
           error?.response?.data?.message ||
           error?.message ||
-          'No fue posible cargar los artículos del participante.',
+          "Unable to load the participant's papers.",
         user,
         registration: null,
         papers: [],
@@ -1388,7 +1386,7 @@ function AdminUsersOverviewPage() {
         error:
           error?.response?.data?.message ||
           error?.message ||
-          'No fue posible obtener el acceso al comprobante.',
+          "Unable to access the receipt.",
       }));
     }
   }
@@ -1431,7 +1429,7 @@ function AdminUsersOverviewPage() {
         error:
           submitError?.response?.data?.message ||
           submitError?.message ||
-          'No fue posible actualizar el estado del usuario.',
+          "Unable to update the account status.",
       }));
     }
   }
@@ -1548,12 +1546,12 @@ function applyAdminUserFilters(users, filters) {
 
 function buildUserActions(user) {
   return [
-    { type: 'view-details', label: 'Ver detalle del usuario' },
-    { type: 'review-payments', label: 'Validar pago' },
-    { type: 'view-papers', label: 'Ver artículos' },
+    { type: 'view-details', label: "View participant details" },
+    { type: 'review-payments', label: "Review payment" },
+    { type: 'view-papers', label: "View papers" },
     {
       type: user?.active === false ? 'activate-user' : 'deactivate-user',
-      label: user?.active === false ? 'Activar usuario' : 'Inhabilitar usuario',
+      label: user?.active === false ? "Enable account" : "Disable account",
     },
   ];
 }
@@ -1594,7 +1592,7 @@ function PaymentStatusCell({ status }) {
   if (!status) {
     return (
       <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-        Sin pago registrado
+        No payment recorded
       </span>
     );
   }
@@ -1604,7 +1602,7 @@ function PaymentStatusCell({ status }) {
 
 function resolveLatestPaymentStatusLabel(status) {
   if (!status) {
-    return 'Sin pago registrado';
+    return "No payment recorded";
   }
 
   return translatePaymentStatus(status);
@@ -1620,12 +1618,12 @@ function resolveSelectedPayment(paymentReviewState) {
 
 function formatMethod(value) {
   const map = {
-    bank_transfer: 'Transferencia bancaria',
+    bank_transfer: "Bank transfer",
     paypal: 'PayPal',
     payphone: 'PayPhone',
   };
 
-  return map[value] || value || 'No registrado';
+  return map[value] || value || "Not provided";
 }
 
 function isPaymentApproved(payment) {
@@ -1689,7 +1687,7 @@ function ReadOnlyCard({ label, value }) {
   return (
     <div className="rounded-2xl bg-white px-4 py-4">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-2 text-sm font-medium text-slate-950">{value || 'No registrado'}</p>
+      <p className="mt-2 text-sm font-medium text-slate-950">{value || "Not provided"}</p>
     </div>
   );
 }
@@ -1698,8 +1696,8 @@ function PaymentProofViewer({ payment, proofAccess, isLoading }) {
   if (isLoading) {
     return (
       <Alert
-        title="Cargando comprobante"
-        description="Solicitando acceso temporal al archivo desde el backend."
+        title="Loading receipt"
+        description="Requesting temporary access to the file."
         variant="info"
       />
     );
@@ -1708,8 +1706,8 @@ function PaymentProofViewer({ payment, proofAccess, isLoading }) {
   if (!payment) {
     return (
       <Alert
-        title="Selecciona un pago"
-        description="Elige uno de los pagos del lado izquierdo para revisar su comprobante."
+        title="Select a payment"
+        description="Choose a payment on the left to review its receipt."
         variant="info"
       />
     );
@@ -1720,8 +1718,8 @@ function PaymentProofViewer({ payment, proofAccess, isLoading }) {
   if (!proofUrl) {
     return (
       <Alert
-        title="No hay comprobante disponible"
-        description="Este pago no tiene un soporte cargado por el participante."
+        title="No receipt available"
+        description="The participant has not uploaded a receipt for this payment."
         variant="warning"
       />
     );
@@ -1737,14 +1735,14 @@ function PaymentProofViewer({ payment, proofAccess, isLoading }) {
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
         {isPdf ? (
           <iframe
-            title={`Comprobante de pago ${payment.id}`}
+            title={`Payment receipt ${payment.id}`}
             src={proofUrl}
             className="h-[28rem] w-full rounded-xl bg-white"
           />
         ) : (
           <img
             src={proofUrl}
-            alt={`Comprobante de pago ${payment.id}`}
+            alt={`Payment receipt ${payment.id}`}
             className="max-h-[28rem] w-full rounded-xl object-contain bg-white"
           />
         )}
@@ -1755,7 +1753,7 @@ function PaymentProofViewer({ payment, proofAccess, isLoading }) {
         rel="noreferrer"
         className="inline-flex text-sm font-semibold text-brand-700 transition hover:text-brand-900"
       >
-        Abrir comprobante en una pestaña nueva
+        Open receipt in a new tab
       </a>
     </div>
   );

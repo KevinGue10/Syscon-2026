@@ -54,7 +54,7 @@ export function StatusBadge({ status, label }) {
       className="inline-flex rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em]"
       style={getStatusBadgeStyle(status)}
     >
-      {label || status || 'Sin estado'}
+      {label || status || "No status"}
     </span>
   );
 }

@@ -474,7 +474,7 @@ const createBankTransferPayment = async (payload, currentUser) => {
 
   const amounts = await resolveRequestedAmounts(payload, registration);
   if (!Number.isFinite(amounts.amountCop) || amounts.amountCop <= 0) {
-    throw new AppError('No hay una tasa de cambio válida para generar la transferencia en pesos.', 409);
+    throw new AppError("No valid exchange rate is available to generate the transfer amount in pesos.", 409);
   }
   const reusablePayment = await findReusablePendingPayment({
     registrationId: registration.id,

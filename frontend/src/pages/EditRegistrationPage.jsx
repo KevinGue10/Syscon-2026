@@ -170,7 +170,7 @@ function EditRegistrationPage() {
         reset(buildFormValues(detailsResponse.user, activeRegistration, registrationFields, articleFields));
       } catch (error) {
         setFormError(
-          resolveApiError(error, 'No fue posible cargar la información actual de tu inscripción.'),
+          resolveApiError(error, "Unable to load your current registration information."),
         );
         setPageState({
           isLoading: false,
@@ -205,35 +205,35 @@ function EditRegistrationPage() {
 
   const guidanceItems = [
     {
-      title: 'Actualiza tus datos personales',
+      title: "Update your personal details",
       description:
-        'Corrige la información visible de tu perfil para que tu inscripción quede clara y consistente.',
+        "Review your profile information to keep your registration clear and up to date.",
     },
     {
-      title: 'Ajusta tu modalidad de inscripción',
+      title: "Adjust your registration options",
       description:
-        'Puedes revisar el tipo de participación, la modalidad y tu categoría para mantener vigente tu registro.',
+        "Review your participation type, attendance format and category to keep your registration up to date.",
     },
     {
-      title: 'Confirma tu información actual',
+      title: "Confirm your current information",
       description:
-        'Antes de guardar, revisa el resumen final para validar que todo quede como esperas.',
+        "Before saving, check the final summary to make sure everything is correct.",
     },
   ];
 
   const summaryRows = [
-    { label: 'Tipo de participación', value: labelFromOptions(values.participationType, participantOptions) },
-    { label: 'Modalidad', value: labelFromOptions(values.attendanceType, attendanceTypes) },
+    { label: "Participation type", value: labelFromOptions(values.participationType, participantOptions) },
+    { label: "Attendance format", value: labelFromOptions(values.attendanceType, attendanceTypes) },
     {
-      label: 'Categoría de inscripción',
+      label: "Registration category",
       value: labelFromOptions(values.registrationCategory, occupationTypes),
     },
     {
-      label: 'Miembro IEEE',
-      value: values.isIeeeMember ? 'Sí' : 'No',
+      label: "IEEE member",
+      value: values.isIeeeMember ? "Yes" : 'No',
     },
     {
-      label: 'Artículos registrados',
+      label: "Registered papers",
       value: `${shouldShowArticlesStep ? paperFields.length || 0 : 0}`,
     },
   ];
@@ -296,7 +296,7 @@ function EditRegistrationPage() {
           setPaymentPreview(previewResponse.paymentSummary);
         } catch (error) {
           setFormError(
-            resolveApiError(error, 'No fue posible calcular el saldo pendiente antes de continuar.'),
+            resolveApiError(error, "Unable to calculate the outstanding balance before continuing."),
           );
           return;
         } finally {
@@ -439,7 +439,7 @@ function EditRegistrationPage() {
         error,
         setError,
         setFormError,
-        fallbackMessage: 'No fue posible guardar los cambios de tu inscripción.',
+        fallbackMessage: "Unable to save your registration changes.",
       });
     }
   };
@@ -450,8 +450,8 @@ function EditRegistrationPage() {
     return (
       <section className="container-shell py-16">
         <Alert
-          title="Cargando edición de inscripción"
-          description="Estamos preparando tu información actual para que puedas revisarla y ajustarla."
+          title="Loading registration editor"
+          description="Preparing your current information for review and editing."
           variant="info"
         />
       </section>
@@ -462,8 +462,8 @@ function EditRegistrationPage() {
     return (
       <section className="container-shell py-16">
         <Alert
-          title="No encontramos una inscripción activa"
-          description="Cuando tengas una inscripción registrada, podrás editarla desde esta misma pantalla."
+          title="No active registration found"
+          description="Once you have registered, you can edit your registration on this screen."
           variant="warning"
         />
       </section>
@@ -476,14 +476,13 @@ function EditRegistrationPage() {
         <div className="space-y-6">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-              Editar información
+              Edit information
             </p>
             <h1 className="mt-3 text-4xl font-semibold text-slate-950">
-              Actualiza tu inscripción de IEEE SYSCON LATAM 2026
+              Update your IEEE SYSCON LATAM 2026 registration
             </h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
-              Revisa la información cargada en tu cuenta, ajusta los datos que necesites y guarda
-              los cambios para mantener tu inscripción al día.
+              Review your account information, make any necessary changes and save them to keep your registration up to date.
             </p>
           </div>
 
@@ -506,82 +505,82 @@ function EditRegistrationPage() {
               }}
             >
               {formError ? (
-                <Alert title="No fue posible guardar los cambios" description={formError} variant="danger" />
+                <Alert title="Unable to save changes" description={formError} variant="danger" />
               ) : null}
 
               {currentStep === 0 ? (
                 <div className="grid gap-5 md:grid-cols-2">
                   <InputField
-                    label="Nombres"
+                    label="First name"
                     error={errors.firstName?.message}
-                    {...register('firstName', { required: 'El nombre es obligatorio' })}
+                    {...register('firstName', { required: "First name is required" })}
                   />
                   <InputField
-                    label="Apellidos"
+                    label="Last name"
                     error={errors.lastName?.message}
-                    {...register('lastName', { required: 'Los apellidos son obligatorios' })}
+                    {...register('lastName', { required: "Last name is required" })}
                   />
                   <InputField
-                    label="Correo electrónico"
+                    label="Email address"
                     readOnly
-                    helperText="Este es el correo con el que accedes actualmente a la plataforma."
+                    helperText="This is the email address you currently use to access the platform."
                     {...register('email')}
                   />
                   <InputField
-                    label="Teléfono"
+                    label="Phone"
                     error={errors.phoneNumber?.message}
-                    {...register('phoneNumber', { required: 'El teléfono es obligatorio' })}
+                    {...register('phoneNumber', { required: "Phone number is required" })}
                   />
                   <SelectField
-                    label="País"
+                    label="Country"
                     options={countryOptions}
                     error={errors.countryId?.message}
-                    {...register('countryId', { required: 'El país es obligatorio' })}
+                    {...register('countryId', { required: "Country is required" })}
                   />
                   <InputField
-                    label="Ciudad"
+                    label="City"
                     error={errors.city?.message}
-                    {...register('city', { required: 'La ciudad es obligatoria' })}
+                    {...register('city', { required: "City is required" })}
                   />
                   <InputField
-                    label="Dirección"
+                    label="Address"
                     error={errors.address?.message}
-                    {...register('address', { required: 'La dirección es obligatoria' })}
+                    {...register('address', { required: "Address is required" })}
                   />
                   <InputField
-                    label="Fecha de nacimiento"
+                    label="Date of birth"
                     type="date"
                     error={errors.birthDate?.message}
-                    {...register('birthDate', { required: 'La fecha de nacimiento es obligatoria' })}
+                    {...register('birthDate', { required: "Date of birth is required" })}
                   />
                   <SelectField
-                    label="Género"
+                    label="Gender"
                     options={genderOptions}
                     error={errors.gender?.message}
-                    {...register('gender', { required: 'El género es obligatorio' })}
+                    {...register('gender', { required: "Gender is required" })}
                   />
                   <SelectField
-                    label="Tipo de documento"
+                    label="ID document type"
                     options={documentTypeOptions}
                     error={errors.docType?.message}
-                    {...register('docType', { required: 'El tipo de documento es obligatorio' })}
+                    {...register('docType', { required: "ID document type is required" })}
                   />
                   <InputField
-                    label="Número de documento"
+                    label="ID document number"
                     error={errors.docNumber?.message}
-                    {...register('docNumber', { required: 'El número de documento es obligatorio' })}
+                    {...register('docNumber', { required: "ID document number is required" })}
                   />
                   <InputField
-                    label="Afiliación"
-                    helperText="Ingresa la entidad, institución o empresa a la que estás afiliado."
+                    label="Affiliation"
+                    helperText="Enter the organization, institution or company you are affiliated with."
                     error={errors.affiliation?.message}
-                    {...register('affiliation', { required: 'La afiliación es obligatoria' })}
+                    {...register('affiliation', { required: "Affiliation is required" })}
                   />
                   <InputField
-                    label="Ocupación"
-                    helperText="Indica a qué te dedicas o cuál es tu actividad principal."
+                    label="Occupation"
+                    helperText="Enter your profession or main activity."
                     error={errors.occupation?.message}
-                    {...register('occupation', { required: 'La ocupación es obligatoria' })}
+                    {...register('occupation', { required: "Occupation is required" })}
                   />
                 </div>
               ) : null}
@@ -590,38 +589,38 @@ function EditRegistrationPage() {
                 <div className="space-y-5">
                   <div className="grid gap-5 md:grid-cols-2">
                     <div className="flex flex-col gap-2">
-                      <span className="text-sm font-semibold text-slate-700">Conferencia</span>
+                      <span className="text-sm font-semibold text-slate-700">Conference</span>
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                         <p className="text-sm font-semibold text-slate-900">
                           {pageState.registration.eventEdition?.name || 'IEEE SYSCON LATAM 2026'}
                         </p>
                         <p className="mt-1 text-sm text-slate-500">
-                          Tu inscripción se encuentra asociada a esta edición activa del evento.
+                          Your registration belongs to this active conference edition.
                         </p>
                       </div>
                     </div>
                     <SelectField
-                      label="Tipo de participación"
+                      label="Participation type"
                       options={participantOptions}
                       error={errors.participationType?.message}
                       {...register('participationType', {
-                        required: 'El tipo de participación es obligatorio',
+                        required: "Participation type is required",
                       })}
                     />
                     <SelectField
-                      label="Modalidad"
+                      label="Attendance format"
                       options={attendanceTypes}
                       error={errors.attendanceType?.message}
                       {...register('attendanceType', {
-                        required: 'La modalidad es obligatoria',
+                        required: "Attendance format is required",
                       })}
                     />
                     <SelectField
-                      label="Categoría de inscripción"
+                      label="Registration category"
                       options={occupationTypes}
                       error={errors.registrationCategory?.message}
                       {...register('registrationCategory', {
-                        required: 'La categoría de inscripción es obligatoria',
+                        required: "Registration category is required",
                       })}
                     />
                   </div>
@@ -629,18 +628,18 @@ function EditRegistrationPage() {
                   <label className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4">
                     <input type="checkbox" className="mt-1 h-4 w-4" {...register('isIeeeMember')} />
                     <span className="block text-sm font-semibold text-slate-800">
-                      Confirmo que soy miembro IEEE
+                      I confirm that I am an IEEE member
                     </span>
                   </label>
 
                   {isIeeeMember ? (
                     <InputField
-                      label="Número de membresía IEEE"
+                      label="IEEE membership number"
                       error={errors.membershipNumber?.message}
                       {...register('membershipNumber', {
                         validate: (value) =>
                           isIeeeMember && !value
-                            ? 'El número de membresía es obligatorio'
+                            ? "Membership number is required"
                             : true,
                       })}
                     />
@@ -659,9 +658,9 @@ function EditRegistrationPage() {
                 <div className="space-y-6">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                    <h2 className="text-xl font-semibold text-slate-950">Artículos registrados</h2>
+                    <h2 className="text-xl font-semibold text-slate-950">Registered papers</h2>
                     <p className="mt-2 text-sm leading-7 text-slate-500">
-                      Agrega nuevos artículos o elimina los actuales antes de guardar los cambios.
+                      Add new papers or remove existing ones before saving your changes.
                     </p>
                     </div>
                     <Button
@@ -677,14 +676,14 @@ function EditRegistrationPage() {
                         })
                       }
                     >
-                      Agregar artículo
+                      Add paper
                     </Button>
                   </div>
 
                   {!paperFields.length ? (
                     <Alert
-                      title="No tienes artículos registrados"
-                      description="Tu inscripción actual no tiene artículos asociados. Puedes agregar uno ahora."
+                      title="You have no registered papers"
+                      description="Your current registration has no associated papers. You can add one now."
                       variant="info"
                     />
                   ) : (
@@ -694,15 +693,15 @@ function EditRegistrationPage() {
                           <div className="mb-4 flex items-center justify-between gap-3">
                             <div>
                               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                                Artículo {index + 1}
+                                Paper {index + 1}
                               </p>
                               {paper.existingPaperId ? (
                                 <p className="mt-1 text-sm text-slate-500">
-                                  Este artículo ya está asociado a tu inscripción.
+                                  This paper is already associated with your registration.
                                 </p>
                               ) : (
                                 <p className="mt-1 text-sm text-slate-500">
-                                  Completa la información para registrar un nuevo artículo.
+                                  Complete the information to register a new paper.
                                 </p>
                               )}
                             </div>
@@ -712,35 +711,35 @@ function EditRegistrationPage() {
                               className="border border-slate-200"
                               onClick={() => removePaperField(index)}
                             >
-                              Eliminar
+                              Remove
                             </Button>
                           </div>
 
                           <div className="grid gap-5 md:grid-cols-2">
                             <InputField
-                              label="Título"
+                              label="Title"
                               className="md:col-span-2"
                               error={errors.papers?.[index]?.title?.message}
                               {...register(`papers.${index}.title`, {
-                                required: 'El título es obligatorio',
+                                required: "Title is required",
                               })}
                             />
                             <InputField
-                              label="Código del artículo"
+                              label="Paper code"
                               error={errors.papers?.[index]?.paperCode?.message}
                               {...register(`papers.${index}.paperCode`, {
-                                required: 'El código es obligatorio',
+                                required: "Paper code is required",
                               })}
                             />
                             <InputField
-                              label="Páginas"
+                              label="Pages"
                               type="number"
                               min="1"
                               error={errors.papers?.[index]?.pages?.message}
                               {...register(`papers.${index}.pages`, {
                                 min: {
                                   value: 1,
-                                  message: 'Debe ser mayor que cero',
+                                  message: "Must be greater than zero",
                                 },
                               })}
                             />
@@ -749,19 +748,19 @@ function EditRegistrationPage() {
                               {...register(`papers.${index}.existingPaperId`)}
                             />
                             <TextAreaField
-                              label="Autores"
+                              label="Authors"
                               className="md:col-span-2"
                               error={errors.papers?.[index]?.authorsText?.message}
-                              placeholder="Separa los autores por coma"
+                              placeholder="Separate author names with commas"
                               {...register(`papers.${index}.authorsText`, {
-                                required: 'Debes ingresar al menos un autor',
+                                required: "Enter at least one author",
                                 validate: (value) =>
                                   value
                                     .split(',')
                                     .map((item) => item.trim())
                                     .filter(Boolean).length
                                     ? true
-                                    : 'Debes ingresar al menos un autor válido',
+                                    : "Enter at least one valid author",
                               })}
                             />
                           </div>
@@ -784,8 +783,8 @@ function EditRegistrationPage() {
               {currentStep === 3 ? (
                 <div className="space-y-6">
                   <Alert
-                    title="Resumen de cambios"
-                    description="Verifica tu información antes de guardar la actualización. Este resumen de pago se recalculó con los cambios actuales del formulario."
+                    title="Changes summary"
+                    description="Review your information before saving. This payment summary reflects the current form values."
                     variant="info"
                   />
                   <div className="grid gap-4">
@@ -793,11 +792,11 @@ function EditRegistrationPage() {
                       <SummaryRow key={row.label} label={row.label} value={row.value} />
                     ))}
                     <SummaryRow
-                      label="Saldo pendiente"
+                      label="Outstanding balance"
                       value={formatCurrency(paymentPreview?.pendingAmount || 0)}
                     />
                     <SummaryRow
-                      label="Estado de pago"
+                      label="Payment status"
                       value={translatePaymentStatus(paymentPreview?.paymentStatus)}
                     />
                   </div>
@@ -820,7 +819,7 @@ function EditRegistrationPage() {
                     setCurrentStep(previousStep);
                   }}
                 >
-                  {currentStep === 0 ? 'Volver' : 'Atrás'}
+                  {currentStep === 0 ? "Back" : "Back"}
                 </Button>
                 {!isFinalStep ? (
                   <Button
@@ -829,7 +828,7 @@ function EditRegistrationPage() {
                     onClick={validateStep}
                     disabled={isPreviewLoading}
                   >
-                    {isPreviewLoading ? 'Calculando...' : 'Continuar'}
+                    {isPreviewLoading ? 'Calculando...' : "Continue"}
                   </Button>
                 ) : (
                   <Button
@@ -838,7 +837,7 @@ function EditRegistrationPage() {
                     disabled={isSubmitting || isPreviewLoading}
                     onClick={submitEdition}
                   >
-                    {isSubmitting ? 'Guardando...' : 'Guardar cambios'}
+                    {isSubmitting ? "Saving..." : "Save changes"}
                   </Button>
                 )}
               </div>
@@ -851,14 +850,13 @@ function EditRegistrationPage() {
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,74,74,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(57,141,222,0.18),transparent_30%)]" />
             <div className="relative">
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#a6dce5]">
-                Edición guiada
+                Guided editing
               </p>
               <h2 className="mt-3 text-2xl font-semibold text-white">
-                Actualiza tu información con tranquilidad
+                Keep your information up to date
               </h2>
               <p className="mt-4 text-sm leading-7 text-white/78">
-                Esta pantalla conserva la misma estructura de tu registro para que puedas ubicar
-                rápido cada dato y mantener tu inscripción al día.
+                This screen follows the same structure as your registration, making it easy to find and update each field.
               </p>
               <div className="mt-6 space-y-4">
                 {guidanceItems.map((item, index) => (
@@ -867,7 +865,7 @@ function EditRegistrationPage() {
                     className="rounded-2xl border border-white/10 bg-white/6 px-5 py-4 backdrop-blur-sm"
                   >
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ffb184]">
-                      Paso recomendado {index + 1}
+                      Recommended step {index + 1}
                     </p>
                     <p className="mt-2 text-base font-semibold text-white">{item.title}</p>
                     <p className="mt-2 text-sm leading-7 text-white/72">{item.description}</p>
@@ -876,10 +874,10 @@ function EditRegistrationPage() {
               </div>
               <div className="mt-6 rounded-2xl border border-dashed border-[#ff944d]/55 bg-[#002c45]/70 px-5 py-4">
                 <p className="text-sm font-semibold text-white">
-                  Artículos actualmente asociados: {paperFields.length || 0}
+                  Currently associated papers: {paperFields.length || 0}
                 </p>
                 <p className="mt-1 text-sm text-white/72">
-                  Podrás revisar esta información antes de guardar los cambios de tu inscripción.
+                  You can review this information before saving your registration changes.
                 </p>
               </div>
             </div>
@@ -889,7 +887,7 @@ function EditRegistrationPage() {
 
       <Modal
         isOpen={isSuccessModalOpen}
-        title="Usuario editado exitosamente"
+        title="User updated successfully"
         onClose={() => {
           setIsSuccessModalOpen(false);
           navigate('/dashboard');
@@ -897,7 +895,7 @@ function EditRegistrationPage() {
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            La información fue actualizada correctamente.
+            Information updated successfully.
           </p>
           <div className="flex flex-wrap justify-end gap-3">
             <Button
@@ -908,7 +906,7 @@ function EditRegistrationPage() {
                 navigate('/payments');
               }}
             >
-              Ir a pagar
+              Proceed to payment
             </Button>
             <Button
               variant="primary"
@@ -917,7 +915,7 @@ function EditRegistrationPage() {
                 navigate('/dashboard');
               }}
             >
-              Ir al panel
+              Go to dashboard
             </Button>
           </div>
         </div>
@@ -936,7 +934,7 @@ function DynamicCustomFields({ fields, register, errors, scope }) {
       {fields.map((field) => {
         const name = customFieldName(scope, field.id);
         const error = getNestedError(errors, name)?.message;
-        const rules = field.isRequired ? { required: `${field.label} es obligatorio` } : {};
+        const rules = field.isRequired ? { required: `${field.label} is required` } : {};
 
         if (field.fieldType === 'select') {
           const options = Array.isArray(field.optionsJson)
@@ -1002,7 +1000,7 @@ function SummaryRow({ label, value }) {
   return (
     <div className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-3">
       <span className="text-sm text-slate-500">{label}</span>
-      <span className="text-sm font-semibold text-slate-950">{value || 'Pendiente'}</span>
+      <span className="text-sm font-semibold text-slate-950">{value || "Pending"}</span>
     </div>
   );
 }
@@ -1168,7 +1166,7 @@ function resolveInputType(fieldType) {
 }
 
 function labelFromOptions(value, options) {
-  return options.find((option) => option.value === value)?.label || value || 'Pendiente';
+  return options.find((option) => option.value === value)?.label || value || "Pending";
 }
 
 function resolveApiError(error, fallbackMessage) {
@@ -1197,7 +1195,7 @@ function applyBackendErrors({ error, setError, setFormError, fallbackMessage }) 
 
     setFormError(
       hasFieldErrors
-        ? apiMessage || 'Revisa los campos marcados para continuar.'
+        ? apiMessage || "Check the highlighted fields to continue."
         : validationErrors.map((item) => item.message || item.msg).join(' '),
     );
     return;

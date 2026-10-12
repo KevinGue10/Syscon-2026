@@ -57,8 +57,8 @@ const generateSecureTemporaryPassword = (length = 16) => {
 const register = asyncHandler(async (req, res) => {
   const existingUser = await User.findOne({ where: { email: req.body.email.toLowerCase() } });
   if (existingUser) {
-    throw new AppError('Revisa los campos marcados.', 409, [
-      { field: 'email', message: 'El correo ya se encuentra registrado.' },
+    throw new AppError("Check the highlighted fields.", 409, [
+      { field: 'email', message: "This email address is already registered." },
     ]);
   }
 
@@ -106,7 +106,7 @@ const register = asyncHandler(async (req, res) => {
 
   return sendSuccess(res, {
     statusCode: 201,
-    message: 'Cuenta creada correctamente.',
+    message: "Account created successfully.",
     data: {
       token,
       user: sanitizeUser(user),
@@ -117,19 +117,19 @@ const register = asyncHandler(async (req, res) => {
 const login = asyncHandler(async (req, res) => {
   const user = await User.findOne({ where: { email: req.body.email.toLowerCase() } });
   if (!user) {
-    throw new AppError('Credenciales invalidas.', 401);
+    throw new AppError("Invalid credentials.", 401);
   }
 
-  ensureUserIsActive(user, 'Tu cuenta se encuentra inhabilitada. Contacta al administrador.');
+  ensureUserIsActive(user, "Your account is disabled. Contact an administrator.");
 
   const isPasswordValid = await bcrypt.compare(req.body.password, user.passwordHash);
   if (!isPasswordValid) {
-    throw new AppError('Credenciales invalidas.', 401);
+    throw new AppError("Invalid credentials.", 401);
   }
 
   const token = signToken({ userId: user.id, role: user.role });
   return sendSuccess(res, {
-    message: 'Inicio de sesión correcto.',
+    message: "Signed in successfully.",
     data: {
       token,
       user: sanitizeUser(user),
@@ -139,7 +139,7 @@ const login = asyncHandler(async (req, res) => {
 
 const me = asyncHandler(async (req, res) => {
   return sendSuccess(res, {
-    message: 'Usuario obtenido correctamente.',
+    message: "User retrieved successfully.",
     data: {
       user: sanitizeUser(req.user),
     },
@@ -152,12 +152,12 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
   if (!user) {
     return sendSuccess(res, {
-      message: 'Si el correo existe, se enviará una contraseña provisional.',
+      message: "If the email address exists, a temporary password will be sent.",
       data: {},
     });
   }
 
-  ensureUserIsActive(user, 'Tu cuenta se encuentra inhabilitada. Contacta al administrador.');
+  ensureUserIsActive(user, "Your account is disabled. Contact an administrator.");
 
   const provisionalPassword = generateSecureTemporaryPassword();
   const passwordHash = await bcrypt.hash(provisionalPassword, 10);
@@ -169,7 +169,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
   if (emailResult?.skipped || emailResult?.error) {
     throw new AppError(
-      'No fue posible enviar el correo de restablecimiento. Verifica la configuración SMTP.',
+      "Unable to send the password reset email. Check the SMTP configuration.",
       503
     );
   }
@@ -186,7 +186,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
   });
 
   return sendSuccess(res, {
-    message: 'Si el correo existe, se enviará una contraseña provisional.',
+    message: "If the email address exists, a temporary password will be sent.",
     data: {},
   });
 });
@@ -194,19 +194,19 @@ const forgotPassword = asyncHandler(async (req, res) => {
 const changePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   const user = req.user;
-  ensureUserIsActive(user, 'Tu cuenta se encuentra inhabilitada. Contacta al administrador.');
+  ensureUserIsActive(user, "Your account is disabled. Contact an administrator.");
 
   const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
   if (!isCurrentPasswordValid) {
-    throw new AppError('Revisa los campos marcados.', 400, [
-      { field: 'currentPassword', message: 'La contraseña actual no es correcta.' },
+    throw new AppError("Check the highlighted fields.", 400, [
+      { field: 'currentPassword', message: "The current password is incorrect." },
     ]);
   }
 
   const isSamePassword = await bcrypt.compare(newPassword, user.passwordHash);
   if (isSamePassword) {
-    throw new AppError('Revisa los campos marcados.', 400, [
-      { field: 'newPassword', message: 'La nueva contraseña no puede ser igual a la actual.' },
+    throw new AppError("Check the highlighted fields.", 400, [
+      { field: 'newPassword', message: "The new password cannot be the same as the current password." },
     ]);
   }
 
@@ -222,7 +222,7 @@ const changePassword = asyncHandler(async (req, res) => {
   });
 
   return sendSuccess(res, {
-    message: 'Contraseña actualizada correctamente. Inicia sesión de nuevo por seguridad.',
+    message: "Password updated successfully. Please sign in again for security.",
     data: {},
   });
 });

@@ -29,41 +29,40 @@ export function PaymentSummaryCard({
       }}
     >
       <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#a6dce5]">
-        Resumen de pago
+        Payment summary
       </p>
-      <h2 className="mt-3 text-3xl font-semibold text-white">Factura resumida de tu inscripción</h2>
+      <h2 className="mt-3 text-3xl font-semibold text-white">Your registration payment summary</h2>
       <p className="mt-4 text-sm leading-7 text-white/78">
-        Puedes pagar el saldo completo o registrar un abono parcial. La referencia principal sigue
-        siendo el estado actual de tu inscripción.
+        You can pay the full balance or make a partial payment. Your current registration status remains the main reference.
       </p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        <MetricCard label="Valor total" value={formatCurrency(registrationTotal)} />
-        <MetricCard label="Valor pagado" value={formatCurrency(paidAmount)} />
-        <MetricCard label="Saldo pendiente" value={formatCurrency(pendingAmount)} accent />
+        <MetricCard label="Total amount" value={formatCurrency(registrationTotal)} />
+        <MetricCard label="Amount paid" value={formatCurrency(paidAmount)} />
+        <MetricCard label="Outstanding balance" value={formatCurrency(pendingAmount)} accent />
       </div>
 
       <div className="mt-6 rounded-[1.75rem] border border-white/10 bg-white/10 p-6">
         <InputField
-          label="Monto base a pagar ahora"
+          label="Base amount to pay now"
           type="number"
           min="0"
           step="0.01"
           value={paymentAmount}
           onChange={(event) => onPaymentAmountChange(event.target.value)}
-          helperText="Puedes registrar un abono parcial sobre el saldo pendiente."
+          helperText="You can make a partial payment toward your outstanding balance."
           className="[&>span:first-child]:text-white [&_input]:border-white/10 [&_input]:bg-white/10 [&_input]:text-white [&_input]:placeholder:text-white/45 [&_input]:focus:border-white/25 [&_input]:focus:ring-white/10 [&_span:last-child]:text-white/70"
         />
 
         <div className="mt-6 space-y-4">
-          <SummaryLine label="Pago inscripción conferencia" value={formatCurrency(baseAmount)} />
+          <SummaryLine label="Conference registration payment" value={formatCurrency(baseAmount)} />
           <SummaryLine
-            label="Descuento por cupón"
+            label="Coupon discount"
             value={`-${formatCurrency(discountAmount)}`}
             muted={!discountAmount}
           />
           <SummaryLine
-            label="Cargo por factura e impuestos (19%)"
+            label="Invoice and tax charge (19%)"
             value={formatCurrency(taxesAmount)}
             muted={!includeTaxes}
           />
@@ -72,8 +71,8 @@ export function PaymentSummaryCard({
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/10 p-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <InputField
-              label="Cupón de descuento"
-              placeholder="Ej. SYSCON2026"
+              label="Discount coupon"
+              placeholder="e.g. SYSCON2026"
               value={couponCode}
               onChange={(event) => onCouponCodeChange(event.target.value)}
               className="flex-1 [&>span:first-child]:text-white [&_input]:border-white/10 [&_input]:bg-white/10 [&_input]:text-white [&_input]:uppercase [&_input]:placeholder:text-white/45 [&_input]:focus:border-white/25 [&_input]:focus:ring-white/10"
@@ -84,7 +83,7 @@ export function PaymentSummaryCard({
               disabled={couponState.isApplying || !couponCode.trim()}
               className="inline-flex h-[3.25rem] items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-5 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {couponState.isApplying ? 'Aplicando...' : 'Aplicar cupón'}
+              {couponState.isApplying ? "Applying..." : "Apply coupon"}
             </button>
           </div>
 
@@ -98,10 +97,10 @@ export function PaymentSummaryCard({
           {couponState.applied ? (
             <div className="mt-4 rounded-2xl border border-emerald-300/20 bg-emerald-400/10 px-4 py-3">
               <p className="text-sm font-semibold text-white">
-                Cupón aplicado: {couponState.applied.code}
+                Coupon applied: {couponState.applied.code}
               </p>
               <p className="mt-1 text-sm text-white/72">
-                Descuento reconocido por backend: {formatCurrency(discountAmount)}
+                Confirmed discount: {formatCurrency(discountAmount)}
               </p>
             </div>
           ) : null}
@@ -116,24 +115,22 @@ export function PaymentSummaryCard({
             onChange={(event) => onIncludeTaxesChange(event.target.checked)}
           />
           <span>
-            <span className="block text-sm font-semibold text-white">Solicitar factura</span>
+            <span className="block text-sm font-semibold text-white">Request an invoice</span>
             <span className="mt-1 block text-sm leading-6 text-white/72">
-              Si deseas factura, activa esta opción. La generación de la factura aplica un cobro
-              adicional de impuestos del 19% sobre el monto base de este pago.
+              Select this option if you need an invoice. A 19% tax charge will be added to the base amount of this payment.
             </span>
           </span>
         </label>
 
         <div className="mt-6 border-t border-white/10 pt-5">
-          <SummaryLine label="Pago total a procesar" value={formatCurrency(totalToCharge)} emphasized />
+          <SummaryLine label="Total payment to process" value={formatCurrency(totalToCharge)} emphasized />
         </div>
 
         {canRedeemCoupon ? (
           <div className="mt-6 rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-4">
-            <p className="text-sm font-semibold text-white">Saldo cubierto por cupón</p>
+            <p className="text-sm font-semibold text-white">Balance covered by coupon</p>
             <p className="mt-1 text-sm leading-6 text-white/72">
-              No necesitas pasar por una pasarela de pago. Puedes liquidar la deuda y dejar la
-              inscripción sin saldo pendiente.
+              No external payment is required. You can settle the balance and leave your registration with no outstanding amount.
             </p>
             <button
               type="button"
@@ -141,7 +138,7 @@ export function PaymentSummaryCard({
               disabled={isRedeemingCoupon}
               className="mt-4 inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isRedeemingCoupon ? 'Liquidando...' : 'Liquidar deuda con cupón'}
+              {isRedeemingCoupon ? "Settling..." : "Settle balance with coupon"}
             </button>
           </div>
         ) : null}

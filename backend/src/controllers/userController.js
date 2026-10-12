@@ -8,7 +8,7 @@ const updateMe = asyncHandler(async (req, res) => {
   const user = await userService.updateCurrentUser(req.user, req.body);
 
   return sendSuccess(res, {
-    message: 'Información del usuario actualizada correctamente.',
+    message: "User information updated successfully.",
     data: { user },
   });
 });
@@ -31,7 +31,7 @@ const updateFullDetails = asyncHandler(async (req, res) => {
   });
 
   return sendSuccess(res, {
-    message: 'Información actualizada correctamente.',
+    message: "Information updated successfully.",
     data: result,
   });
 });

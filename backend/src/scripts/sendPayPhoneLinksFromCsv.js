@@ -113,7 +113,7 @@ const normalizeRow = (row) => {
   }
 
   return {
-    firstName: [firstName, lastName].filter(Boolean).join(' ') || firstName || 'participante',
+    firstName: [firstName, lastName].filter(Boolean).join(' ') || firstName || 'participant',
     email,
     paymentLink,
     amountUsd,

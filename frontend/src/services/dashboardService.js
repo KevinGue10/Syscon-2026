@@ -50,13 +50,13 @@ export const dashboardService = {
 
     return {
       metrics: [
-        { label: 'Inscripciones totales', value: String(summary.totalRegistrations || 0) },
+        { label: "Total registrations", value: String(summary.totalRegistrations || 0) },
         {
-          label: 'Artículos registrados',
+          label: "Registered papers",
           value: String(metrics.papersCount || summary.papersCount || summary.acceptedPapers || 0),
         },
-        { label: 'Ingresos recaudados', value: formatCurrency(summary.revenueCollected || 0) },
-        { label: 'Saldos pendientes', value: formatCurrency(summary.pendingBalances || 0) },
+        { label: "Revenue collected", value: formatCurrency(summary.revenueCollected || 0) },
+        { label: "Outstanding balances", value: formatCurrency(summary.pendingBalances || 0) },
       ],
       recentRegistrations: recentActivity,
     };

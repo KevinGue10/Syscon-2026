@@ -54,7 +54,7 @@ function LoginPage() {
     if (!normalizedEmail) {
       setRecoveryState({
         isSubmitting: false,
-        error: 'Ingresa el correo con el que accedes a la plataforma.',
+        error: "Enter the email address you use to access the platform.",
         success: '',
       });
       return;
@@ -63,7 +63,7 @@ function LoginPage() {
     if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
       setRecoveryState({
         isSubmitting: false,
-        error: 'Ingresa un correo válido para continuar.',
+        error: "Enter a valid email address to continue.",
         success: '',
       });
       return;
@@ -85,7 +85,7 @@ function LoginPage() {
         error: '',
         success:
           response.message ||
-          'Si el correo existe, se enviará una contraseña provisional a tu bandeja de entrada.',
+          "If the email address exists, a temporary password will be sent to your inbox.",
       });
     } catch (requestError) {
       setRecoveryState({
@@ -93,7 +93,7 @@ function LoginPage() {
         error:
           requestError?.response?.data?.message ||
           requestError?.message ||
-          'No fue posible procesar la recuperacion de contraseña.',
+          "Unable to process password recovery.",
         success: '',
       });
     }
@@ -104,47 +104,47 @@ function LoginPage() {
       <div className="mx-auto max-w-xl">
         <Card className="p-8 sm:p-10">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-            Acceso
+            Account access
           </p>
-          <h1 className="mt-3 text-4xl font-semibold text-slate-950">Ingresa a la plataforma</h1>
+          <h1 className="mt-3 text-4xl font-semibold text-slate-950">Sign in to the platform</h1>
           <p className="mt-4 text-sm text-slate-600">
-            Ingresa con tu correo y contraseña para acceder a tu panel de participante.
+            Enter your email and password to access your participant dashboard.
           </p>
 
           <form className="mt-8 grid gap-5" onSubmit={handleSubmit(onSubmit)}>
             {sessionExpired ? (
               <Alert
-                title="Sesión expirada"
-                description="Por seguridad cerramos tu sesión automáticamente. Ingresa de nuevo para continuar."
+                title="Session expired"
+                description="For your security, we signed you out automatically. Please sign in again to continue."
                 variant="warning"
               />
             ) : null}
-            {error ? <Alert title="No fue posible iniciar sesión" description={error} variant="danger" /> : null}
+            {error ? <Alert title="Unable to sign in" description={error} variant="danger" /> : null}
 
             <InputField
               label="Email"
               type="email"
-              placeholder="correo@dominio.com"
+              placeholder="email@example.com"
               error={errors.email?.message}
               {...register('email', {
-                required: 'El correo es obligatorio',
+                required: "Email address is required",
                 pattern: {
                   value: /^\S+@\S+\.\S+$/,
-                  message: 'Ingresa un correo válido',
+                  message: "Enter a valid email address",
                 },
               })}
             />
 
             <InputField
-              label="Contraseña"
+              label="Password"
               type="password"
-              placeholder="Mínimo 8 caracteres"
+              placeholder="At least 8 characters"
               error={errors.password?.message}
               {...register('password', {
-                required: 'La contraseña es obligatoria',
+                required: "Password is required",
                 minLength: {
                   value: 8,
-                  message: 'La contraseña debe tener al menos 8 caracteres',
+                  message: "Password must be at least 8 characters long",
                 },
               })}
             />
@@ -162,20 +162,20 @@ function LoginPage() {
                 }}
                 className="text-sm font-semibold text-brand-600 transition hover:text-brand-800"
               >
-                {showRecovery ? 'Ocultar recuperacion de contraseña' : '¿Olvidaste tu contraseña?'}
+                {showRecovery ? "Hide password recovery" : "Forgot your password?"}
               </button>
             </div>
 
             {showRecovery ? (
               <div className="rounded-3xl border border-brand-100 bg-brand-50/70 p-5">
-                <p className="text-sm font-semibold text-slate-950">Recuperar contraseña</p>
+                <p className="text-sm font-semibold text-slate-950">Recover password</p>
                 <p className="mt-2 text-sm leading-7 text-slate-600">
-                  Ingresa tu correo y te enviaremos una contraseña temporal para recuperar el acceso.
+                  Enter your email address and we will send you a temporary password to restore access.
                 </p>
                 {recoveryState.error ? (
                   <div className="mt-4">
                     <Alert
-                      title="No fue posible recuperar la contraseña"
+                      title="Unable to recover your password"
                       description={recoveryState.error}
                       variant="danger"
                     />
@@ -184,7 +184,7 @@ function LoginPage() {
                 {recoveryState.success ? (
                   <div className="mt-4">
                     <Alert
-                      title="Solicitud procesada"
+                      title="Request processed"
                       description={recoveryState.success}
                       variant="success"
                     />
@@ -192,9 +192,9 @@ function LoginPage() {
                 ) : null}
                 <div className="mt-4 grid gap-4">
                   <InputField
-                    label="Correo para recuperacion"
+                    label="Recovery email address"
                     type="email"
-                    placeholder="correo@dominio.com"
+                    placeholder="email@example.com"
                     value={recoveryEmail}
                     onChange={(event) => {
                       setRecoveryEmail(event.target.value);
@@ -212,17 +212,17 @@ function LoginPage() {
                     onClick={handleForgotPassword}
                     disabled={recoveryState.isSubmitting}
                   >
-                    {recoveryState.isSubmitting ? 'Solicitando...' : 'Solicitar recuperacion'}
+                    {recoveryState.isSubmitting ? 'Solicitando...' : "Request password recovery"}
                   </Button>
                 </div>
                 <p className="mt-3 text-xs uppercase tracking-[0.18em] text-slate-500">
-                  Recibirás una contraseña provisional y luego podrás cambiarla desde tu cuenta.
+                  You will receive a temporary password that you can change from your account.
                 </p>
               </div>
             ) : null}
 
             <Button type="submit" variant="primary" disabled={isSubmitting} className="mt-2">
-              {isSubmitting ? 'Ingresando...' : 'Ingresar'}
+              {isSubmitting ? 'Ingresando...' : "Sign in"}
             </Button>
           </form>
         </Card>
@@ -235,7 +235,7 @@ function resolveLoginError(error) {
   return (
     error?.response?.data?.message ||
     error?.message ||
-    'No fue posible iniciar sesión.'
+    "Unable to sign in."
   );
 }
 

@@ -1,42 +1,42 @@
 export const participantTypes = [
   {
     id: 'attendee',
-    title: 'Asistente',
-    description: 'Participación general en sesiones, networking y agenda de conferencia.',
+    title: "Attendee",
+    description: "General participation in sessions, networking and the conference program.",
   },
   {
     id: 'author',
-    title: 'Autor',
-    description: 'Registro para autores con carga de artículos y resumen de pago posterior.',
+    title: "Author",
+    description: "Registration for authors, including papers and a payment summary.",
   },
 ];
 
 export const registrationSteps = [
-  'Cuenta',
-  'Inscripción',
-  'Artículos',
-  'Resumen',
+  "Account",
+  "Registration",
+  "Papers",
+  "Summary",
 ];
 
 export const attendanceTypes = [
-  { value: 'in_person', label: 'Presencial' },
+  { value: 'in_person', label: "In person" },
   { value: 'virtual', label: 'Virtual' },
 ];
 
 export const occupationTypes = [
-  { value: 'professional', label: 'Profesional' },
-  { value: 'student', label: 'Estudiante' },
+  { value: 'professional', label: "Professional" },
+  { value: 'student', label: "Student" },
 ];
 
 export const genderOptions = [
-  { value: 'female', label: 'Femenino' },
-  { value: 'male', label: 'Masculino' },
-  { value: 'other', label: 'Otro' },
+  { value: 'female', label: "Female" },
+  { value: 'male', label: "Male" },
+  { value: 'other', label: "Other" },
 ];
 
 export const documentTypeOptions = [
-  { value: 'CC', label: 'Cédula de ciudadanía' },
-  { value: 'CE', label: 'Cédula de extranjería' },
-  { value: 'TI', label: 'Tarjeta de identidad' },
-  { value: 'PP', label: 'Pasaporte' },
+  { value: 'CC', label: "Colombian citizenship ID" },
+  { value: 'CE', label: "Foreign resident ID" },
+  { value: 'TI', label: "Identity card" },
+  { value: 'PP', label: "Passport" },
 ];

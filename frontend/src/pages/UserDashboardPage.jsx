@@ -68,7 +68,7 @@ function UserDashboardPage() {
         setError(
           loadError?.response?.data?.message ||
             loadError?.message ||
-            'No fue posible cargar la información del panel.',
+            "Unable to load dashboard information.",
         );
       } finally {
         if (isMounted) {
@@ -94,8 +94,8 @@ function UserDashboardPage() {
     return (
       <section className="container-shell py-16">
         <Alert
-          title="Cargando panel del participante"
-          description="Consultando perfil, inscripciones, artículos y estado de pago desde el backend."
+          title="Loading participant dashboard"
+          description="Loading your profile, registrations, papers and payment status."
           variant="info"
         />
       </section>
@@ -105,7 +105,7 @@ function UserDashboardPage() {
   if (error && !dashboard) {
     return (
       <section className="container-shell py-16">
-        <Alert title="No fue posible cargar el panel" description={error} variant="danger" />
+        <Alert title="Unable to load the dashboard" description={error} variant="danger" />
       </section>
     );
   }
@@ -116,43 +116,43 @@ function UserDashboardPage() {
         <div className="space-y-6">
           <Card className="p-8">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-              Perfil del participante
+              Participant profile
             </p>
             <h1 className="mt-3 text-3xl font-semibold text-slate-950">
-              {dashboard?.profile?.name || 'Participante del evento'}
+              {dashboard?.profile?.name || "Conference participant"}
             </h1>
             <div className="mt-6 space-y-3 text-sm text-slate-600">
-              <p>Email: {dashboard?.profile?.email || 'No registrado'}</p>
-              <p>Organizacion: {dashboard?.profile?.organization || 'No registrada'}</p>
-              <p>País: {dashboard?.profile?.country || resolveCountryName(dashboard?.profile) || 'No registrado'}</p>
+              <p>Email: {dashboard?.profile?.email || "Not provided"}</p>
+              <p>Organization: {dashboard?.profile?.organization || "Not provided"}</p>
+              <p>Country: {dashboard?.profile?.country || resolveCountryName(dashboard?.profile) || "Not provided"}</p>
             </div>
             <Button
               variant="primary"
               className="mt-6 w-full sm:w-fit"
               onClick={() => navigate('/registration-details')}
             >
-              Visualizar datos de registro
+              View registration information
             </Button>
             <Button
               variant="ghost"
               className="mt-3 w-full border border-slate-200 sm:w-fit"
               onClick={() => navigate('/change-password')}
             >
-              Cambiar contraseña
+              Change password
             </Button>
           </Card>
 
           <Card className="p-8">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-              Estado de pago
+              Payment status
             </p>
             <div className="mt-5 space-y-4">
-              <Metric label="Inscripciones" value={`${registrations.length}`} />
+              <Metric label="Registrations" value={`${registrations.length}`} />
               <Metric
-                label="Artículos registrados"
+                label="Registered papers"
                 value={`${dashboard?.metrics?.activePapers || 0}`}
               />
-              <Metric label="Saldo pendiente" value={formatCurrency(outstandingBalance)} />
+              <Metric label="Outstanding balance" value={formatCurrency(outstandingBalance)} />
             </div>
             {outstandingBalance > 0 ? (
               <Button
@@ -160,7 +160,7 @@ function UserDashboardPage() {
                 className="mt-6 w-full sm:w-fit"
                 onClick={() => navigate('/payments')}
               >
-                Ir a pagos
+                Go to payments
               </Button>
             ) : null}
           </Card>
@@ -169,8 +169,8 @@ function UserDashboardPage() {
         <div className="space-y-6">
           {!registrations.length ? (
             <Alert
-              title="No hay inscripciones registradas"
-              description="Completa el flujo de inscripción para visualizar artículos y estado de pago."
+              title="No registrations found"
+              description="Complete registration to view your papers and payment status."
               variant="warning"
             />
           ) : null}
@@ -178,28 +178,28 @@ function UserDashboardPage() {
           <Card className="p-8">
             <div className="mb-6">
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-                Historial de inscripción
+                Registration history
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                Resumen de artículos y pagos
+                Paper and payment summary
               </h2>
             </div>
             <Table
               columns={[
-                { key: 'id', label: 'ID de inscripción' },
+                { key: 'id', label: "Registration ID" },
                 {
                   key: 'participantType',
-                  label: 'Tipo',
+                  label: "Type",
                   render: (value) => translateParticipationType(value),
                 },
                 {
                   key: 'papers',
-                  label: 'Artículos',
+                  label: "Papers",
                   render: (value) => value?.length || 0,
                 },
                 {
                   key: 'paymentStatus',
-                  label: 'Pago',
+                  label: "Payment",
                   render: (value) => (
                     <StatusBadge
                       status={value}
@@ -209,7 +209,7 @@ function UserDashboardPage() {
                 },
                 {
                   key: 'pricing',
-                  label: 'Saldo',
+                  label: "Balance",
                   render: (value, row) =>
                     formatCurrency(resolveDashboardPendingBalance(row)),
                 },

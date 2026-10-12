@@ -31,7 +31,7 @@ export function Navbar() {
             <p className="font-display text-sm font-semibold text-brand-900">
               SYSCON LATAM 2026
             </p>
-            <p className="text-xs text-slate-500">Cartagena · 3–4 diciembre 2026</p>
+            <p className="text-xs text-slate-500">Cartagena · December 3–4, 2026</p>
           </div>
         </Link>
 
@@ -51,7 +51,7 @@ export function Navbar() {
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{user?.role}</p>
               </div>
               <Button variant="ghost" onClick={logout} className="border border-slate-200">
-                Cerrar sesión
+                Sign out
               </Button>
             </>
           ) : !isAuthenticated ? (
@@ -59,7 +59,7 @@ export function Navbar() {
               to="/register"
               className="hidden rounded-2xl bg-[#c83e00] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a93200] sm:inline-flex"
             >
-              Regístrate ahora
+              Register now
             </Link>
           ) : null}
         </div>

@@ -19,7 +19,7 @@ const USER_PROFILE_FIELDS = [
   'occupation',
 ];
 
-const ensureUserIsActive = (user, message = 'El usuario se encuentra inhabilitado.') => {
+const ensureUserIsActive = (user, message = "The account is disabled.") => {
   if (!user?.active) {
     throw new AppError(message, 403);
   }
@@ -43,7 +43,7 @@ const getUserProfile = async (userId, options = {}) => {
   });
 
   if (!user) {
-    throw new AppError('Usuario no encontrado.', 404);
+    throw new AppError("User not found.", 404);
   }
 
   return user;
@@ -64,8 +64,8 @@ const validateUniqueDocNumber = async (docNumber, userId, options = {}) => {
   });
 
   if (existing) {
-    throw new AppError('Revisa los campos marcados.', 422, [
-      { field: 'docNumber', message: 'El número de documento ya se encuentra registrado.' },
+    throw new AppError("Check the highlighted fields.", 422, [
+      { field: 'docNumber', message: "This ID document number is already registered." },
     ]);
   }
 };
@@ -108,11 +108,11 @@ const setUserActiveStatus = async (userId, active, actor, options = {}) => {
   const user = await User.findByPk(userId, { transaction });
 
   if (!user) {
-    throw new AppError('Usuario no encontrado.', 404);
+    throw new AppError("User not found.", 404);
   }
 
   if (actor?.id === user.id && active === false) {
-    throw new AppError('No puedes inhabilitar tu propio usuario.', 400);
+    throw new AppError("You cannot disable your own account.", 400);
   }
 
   const normalizedActive = Boolean(active);

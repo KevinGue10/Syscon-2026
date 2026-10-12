@@ -105,8 +105,8 @@ const updateRegistration = async (registrationId, payload, currentUser, options 
   const oldValue = registration.toJSON();
 
   if (payload.isIeeeMember === true && !payload.membershipNumber && !registration.membershipNumber) {
-    throw new AppError('Revisa los campos marcados.', 422, [
-      { field: 'membershipNumber', message: 'El número de membresía es obligatorio para miembros IEEE.' },
+    throw new AppError("Check the highlighted fields.", 422, [
+      { field: 'membershipNumber', message: "An IEEE membership number is required for IEEE members." },
     ]);
   }
 

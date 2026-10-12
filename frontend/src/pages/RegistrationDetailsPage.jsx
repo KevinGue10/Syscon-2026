@@ -64,7 +64,7 @@ function RegistrationDetailsPage() {
           error:
             error?.response?.data?.message ||
             error?.message ||
-            'No fue posible cargar el detalle del usuario.',
+            "Unable to load participant details.",
           message: '',
           user: null,
           registrations: [],
@@ -93,7 +93,7 @@ function RegistrationDetailsPage() {
         setRemoteState({
           isLoading: false,
           error: '',
-          message: response.message || 'Detalle del registro obtenido correctamente.',
+          message: response.message || "Registration details retrieved successfully.",
           user: response.user,
           registrations: response.registrations,
         });
@@ -103,7 +103,7 @@ function RegistrationDetailsPage() {
           error:
             error?.response?.data?.message ||
             error?.message ||
-            'No fue posible cargar las inscripciones del participante.',
+            "Unable to load the participant's registrations.",
           message: '',
           user: null,
           registrations: [],
@@ -132,28 +132,28 @@ function RegistrationDetailsPage() {
   const activeRegistration = registrations[0] || null;
 
   const pageTitle = isAdminRemoteView
-    ? 'Detalle de la inscripción del participante'
-    : 'Tu información de inscripción';
+    ? "Participant registration details"
+    : "Your registration information";
 
   const pageDescription = isAdminRemoteView
-    ? 'Aquí puedes revisar de forma clara los datos personales, la inscripción, los pagos y los artículos asociados al participante.'
-    : 'Aquí puedes revisar los datos que registraste, el estado de tu inscripción y la información de tus artículos.';
+    ? "Review the participant's personal details, registration, payments and associated papers here."
+    : "Review your registered details, registration status and paper information here.";
 
   const personalRows = useMemo(
     () => [
-      { label: 'Nombres', value: profile?.firstName },
-      { label: 'Apellidos', value: profile?.lastName },
-      { label: 'Correo electrónico', value: profile?.email },
-      { label: 'Teléfono', value: profile?.phoneNumber },
-      { label: 'País', value: resolveCountry(profile) },
-      { label: 'Ciudad', value: profile?.city },
-      { label: 'Dirección', value: profile?.address },
-      { label: 'Fecha de nacimiento', value: profile?.birthDate },
-      { label: 'Genero', value: translateGender(profile?.gender) },
-      { label: 'Tipo de documento', value: translateDocumentType(profile?.docType) },
-      { label: 'Número de documento', value: profile?.docNumber },
-      { label: 'Afiliación', value: profile?.affiliation || profile?.organization },
-      { label: 'Ocupación', value: translateOccupation(profile?.occupation) },
+      { label: "First name", value: profile?.firstName },
+      { label: "Last name", value: profile?.lastName },
+      { label: "Email address", value: profile?.email },
+      { label: "Phone", value: profile?.phoneNumber },
+      { label: "Country", value: resolveCountry(profile) },
+      { label: "City", value: profile?.city },
+      { label: "Address", value: profile?.address },
+      { label: "Date of birth", value: profile?.birthDate },
+      { label: "Gender", value: translateGender(profile?.gender) },
+      { label: "ID document type", value: translateDocumentType(profile?.docType) },
+      { label: "ID document number", value: profile?.docNumber },
+      { label: "Affiliation", value: profile?.affiliation || profile?.organization },
+      { label: "Occupation", value: translateOccupation(profile?.occupation) },
     ],
     [profile],
   );
@@ -162,11 +162,11 @@ function RegistrationDetailsPage() {
     return (
       <section className="container-shell py-16">
         <Alert
-          title={isAdminRemoteView ? 'Cargando detalle del usuario' : 'Cargando tus inscripciones'}
+          title={isAdminRemoteView ? "Loading participant details" : "Loading your registrations"}
           description={
             isAdminRemoteView
-              ? 'Consultando información de inscripciones, pagos y artículos desde el backend.'
-              : 'Consultando tus datos de registro y artículos desde el backend.'
+              ? "Loading registration, payment and paper information."
+              : "Loading your registration and paper details."
           }
           variant="info"
         />
@@ -177,7 +177,7 @@ function RegistrationDetailsPage() {
   if ((isAdminRemoteView || isUserRemoteView) && remoteState.error) {
     return (
       <section className="container-shell py-16">
-        <Alert title="No fue posible cargar el detalle" description={remoteState.error} variant="danger" />
+        <Alert title="Unable to load details" description={remoteState.error} variant="danger" />
       </section>
     );
   }
@@ -186,8 +186,8 @@ function RegistrationDetailsPage() {
     return (
       <section className="container-shell py-16">
         <Alert
-          title="No hay datos de registro disponibles"
-          description="Todavía no se encuentra una inscripción disponible para mostrar."
+          title="No registration information available"
+          description="No registration is available to display yet."
           variant="warning"
         />
       </section>
@@ -198,14 +198,14 @@ function RegistrationDetailsPage() {
     <section className="container-shell py-16">
       <div className="mb-8">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-          Datos de registro
+          Registration information
         </p>
         <h1 className="mt-3 text-4xl font-semibold text-slate-950">{pageTitle}</h1>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">{pageDescription}</p>
         {!isAdminRemoteView ? (
           <div className="mt-6">
             <Button variant="primary" onClick={() => navigate('/registration-details/edit')}>
-              Editar información
+              Edit information
             </Button>
           </div>
         ) : null}
@@ -213,7 +213,7 @@ function RegistrationDetailsPage() {
 
       <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <Card className="p-8">
-          <h2 className="text-2xl font-semibold text-slate-950">Información personal</h2>
+          <h2 className="text-2xl font-semibold text-slate-950">Personal information</h2>
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             {personalRows.map((row) => (
               <ReadOnlyRow key={row.label} label={row.label} value={row.value} />
@@ -222,12 +222,12 @@ function RegistrationDetailsPage() {
 
           {profile.customFieldValues?.length ? (
             <div className="mt-8">
-              <h3 className="text-lg font-semibold text-slate-950">Campos adicionales del usuario</h3>
+              <h3 className="text-lg font-semibold text-slate-950">Additional participant fields</h3>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 {profile.customFieldValues.map((field) => (
                   <ReadOnlyRow
                     key={field.id || `${field.customFieldId}-${field.value}`}
-                    label={field.customField?.label || `Campo ${field.customFieldId}`}
+                    label={field.customField?.label || `Field ${field.customFieldId}`}
                     value={field.value}
                   />
                 ))}
@@ -240,17 +240,17 @@ function RegistrationDetailsPage() {
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,74,74,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(57,141,222,0.18),transparent_30%)]" />
           <div className="relative">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#a6dce5]">
-              Resumen general
+              Overview
             </p>
-            <h2 className="mt-3 text-2xl font-semibold text-white">Estado actual de tu inscripción</h2>
+            <h2 className="mt-3 text-2xl font-semibold text-white">Current registration status</h2>
             <div className="mt-6 grid gap-4">
               <SummaryPill
-                label="Artículos registrados"
+                label="Registered papers"
                 value={`${activeRegistration.papers?.length || 0}`}
                 accent="red"
               />
               <SummaryPill
-                label="Saldo pendiente"
+                label="Outstanding balance"
                 value={formatCurrency(
                   activeRegistration.paymentSummary?.pendingAmount ||
                     activeRegistration.pricing?.balance ||
@@ -275,23 +275,23 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
   const invoiceTaxAmount = resolveInvoiceTaxAmount(registration);
 
   const registrationRows = [
-    { label: 'Conferencia', value: registration.eventEdition?.name || 'IEEE SYSCON LATAM 2026' },
+    { label: "Conference", value: registration.eventEdition?.name || 'IEEE SYSCON LATAM 2026' },
     {
-      label: 'Tipo de participacion',
+      label: "Participation type",
       value: translateParticipationType(registration.participantType || registration.participationType),
     },
-    { label: 'Modalidad', value: translateAttendanceType(registration.attendanceType) },
-    { label: 'Tipo de miembro', value: translateMemberType(registration.memberType) },
-    { label: 'Número de membresia', value: registration.membershipNumber || 'No aplica' },
-    { label: 'Estado de inscripción', value: translateRegistrationStatus(registration.status) },
-    { label: 'Estado de pago', value: translatePaymentStatus(registration.paymentStatus) },
-    { label: 'Requiere factura', value: formatBooleanPreference(requiresInvoice) },
+    { label: "Attendance format", value: translateAttendanceType(registration.attendanceType) },
+    { label: "Membership type", value: translateMemberType(registration.memberType) },
+    { label: "Membership number", value: registration.membershipNumber || "Not applicable" },
+    { label: "Registration status", value: translateRegistrationStatus(registration.status) },
+    { label: "Payment status", value: translatePaymentStatus(registration.paymentStatus) },
+    { label: "Invoice requested", value: formatBooleanPreference(requiresInvoice) },
     {
-      label: 'Cargo de factura e impuestos',
-      value: requiresInvoice ? formatCurrency(invoiceTaxAmount) : 'No aplica',
+      label: "Invoice and tax charge",
+      value: requiresInvoice ? formatCurrency(invoiceTaxAmount) : "Not applicable",
     },
     {
-      label: 'Saldo pendiente',
+      label: "Outstanding balance",
       value: formatCurrency(
         registration.paymentSummary?.pendingAmount || registration.pricing?.balance || registration.pendingAmount,
       ),
@@ -305,13 +305,13 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-            Tu inscripción
+            Your registration
           </p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-950">Inscripción activa</h2>
+          <h2 className="mt-2 text-2xl font-semibold text-slate-950">Active registration</h2>
         </div>
         <div className="rounded-2xl bg-slate-100 px-4 py-3 text-right">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Estado de pago
+            Payment status
           </p>
           <div className="mt-2 flex justify-end">
             <StatusBadge
@@ -324,7 +324,7 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
 
       <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
         <div>
-          <h3 className="text-lg font-semibold text-slate-950">Datos de inscripción</h3>
+          <h3 className="text-lg font-semibold text-slate-950">Registration details</h3>
           <div className="mt-4 grid gap-4">
             {registrationRows.map((row) => (
               <ReadOnlyRow key={row.label} label={row.label} value={row.value} />
@@ -333,12 +333,12 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
 
           {registration.customFieldValues?.length ? (
             <div className="mt-8">
-              <h3 className="text-lg font-semibold text-slate-950">Campos adicionales de la inscripción</h3>
+              <h3 className="text-lg font-semibold text-slate-950">Additional registration fields</h3>
               <div className="mt-4 grid gap-4">
                 {registration.customFieldValues.map((field) => (
                   <ReadOnlyRow
                     key={field.id || `${field.customFieldId}-${field.value}`}
-                    label={field.customField?.label || `Campo ${field.customFieldId}`}
+                    label={field.customField?.label || `Field ${field.customFieldId}`}
                     value={field.value}
                   />
                 ))}
@@ -349,18 +349,18 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
 
         <div className="space-y-8">
           <div>
-            <h3 className="text-lg font-semibold text-slate-950">Resumen financiero</h3>
+            <h3 className="text-lg font-semibold text-slate-950">Financial summary</h3>
             <div className="mt-4 grid gap-4">
               <ReadOnlyRow
-                label="Valor total"
+                label="Total amount"
                 value={formatCurrency(paymentSummary?.totalAmount || registration.totalAmount)}
               />
               <ReadOnlyRow
-                label="Valor pagado"
+                label="Amount paid"
                 value={formatCurrency(paymentSummary?.paidAmount || registration.paidAmount)}
               />
               <ReadOnlyRow
-                label="Valor pendiente"
+                label="Outstanding amount"
                 value={formatCurrency(paymentSummary?.pendingAmount || registration.pendingAmount)}
               />
             </div>
@@ -368,19 +368,19 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
 
           {isAdminRemoteView ? (
             <div>
-              <h3 className="text-lg font-semibold text-slate-950">Pagos registrados</h3>
+              <h3 className="text-lg font-semibold text-slate-950">Registered payments</h3>
               <div className="mt-4">
                 <Table
                   columns={[
-                    { key: 'paymentMethod', label: 'Método' },
+                    { key: 'paymentMethod', label: "Method" },
                     {
                       key: 'amountUsd',
-                      label: 'Monto USD',
+                      label: "Amount in USD",
                       render: (value) => formatCurrency(value),
                     },
                     {
                       key: 'status',
-                      label: 'Estado',
+                      label: "Status",
                       render: (value) => (
                         <StatusBadge
                           status={value}
@@ -388,10 +388,10 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
                         />
                       ),
                     },
-                    { key: 'transactionReference', label: 'Referencia' },
+                    { key: 'transactionReference', label: "Reference" },
                   ]}
                   rows={registration.payments || []}
-                  emptyMessage="No hay pagos registrados."
+                  emptyMessage="No payments recorded."
                 />
               </div>
             </div>
@@ -400,21 +400,21 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
       </div>
 
       <div className="mt-10">
-        <h3 className="text-lg font-semibold text-slate-950">Artículos registrados</h3>
+        <h3 className="text-lg font-semibold text-slate-950">Registered papers</h3>
         <div className="mt-4">
           <Table
             columns={[
-              { key: 'title', label: 'Título' },
-              { key: 'paperCode', label: 'Código' },
+              { key: 'title', label: "Title" },
+              { key: 'paperCode', label: "Code" },
               {
                 key: 'authors',
-                label: 'Autores',
+                label: "Authors",
                 render: (value) => (Array.isArray(value) ? value.join(', ') : value),
               },
-              { key: 'pages', label: 'Páginas' },
+              { key: 'pages', label: "Pages" },
             ]}
             rows={registration.papers || []}
-            emptyMessage="No se registraron artículos."
+            emptyMessage="No papers registered."
           />
         </div>
 
@@ -423,7 +423,7 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
             {registration.papers.map((paper, paperIndex) => (
               <div key={paper.id || paperIndex} className="rounded-2xl bg-slate-50 p-5">
                 <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  Artículo {paperIndex + 1}
+                  Paper {paperIndex + 1}
                 </p>
                 <p className="mt-2 text-base font-semibold text-slate-950">{paper.title}</p>
                 {paper.customFieldValues?.length ? (
@@ -431,7 +431,7 @@ function RegistrationSection({ registration, isAdminRemoteView }) {
                     {paper.customFieldValues.map((field) => (
                       <ReadOnlyRow
                         key={field.id || `${field.customFieldId}-${field.value}`}
-                        label={field.customField?.label || `Campo ${field.customFieldId}`}
+                        label={field.customField?.label || `Field ${field.customFieldId}`}
                         value={field.value}
                       />
                     ))}
@@ -450,7 +450,7 @@ function ReadOnlyRow({ label, value }) {
   return (
     <div className="rounded-2xl bg-slate-50 px-4 py-3">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-2 text-sm font-medium text-slate-950">{value || 'No registrado'}</p>
+      <p className="mt-2 text-sm font-medium text-slate-950">{value || "Not provided"}</p>
     </div>
   );
 }
@@ -482,7 +482,7 @@ function resolveCountry(profile) {
     return `ID ${profile.countryId}`;
   }
 
-  return 'No registrado';
+  return "Not provided";
 }
 
 function resolveInvoiceRequirement(registration) {
@@ -593,14 +593,14 @@ function normalizeBooleanPreference(value) {
 
 function formatBooleanPreference(value) {
   if (value === true) {
-    return 'Sí';
+    return "Yes";
   }
 
   if (value === false) {
     return 'No';
   }
 
-  return 'No registrado';
+  return "Not provided";
 }
 
 function firstDefinedValue(values) {

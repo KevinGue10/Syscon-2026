@@ -1,97 +1,97 @@
 export function translateParticipationType(value) {
   const map = {
-    attendee: 'Asistente',
-    author: 'Autor',
+    attendee: "Attendee",
+    author: "Author",
   };
 
-  return map[value] || value || 'No registrado';
+  return map[value] || value || "Not provided";
 }
 
 export function translateAttendanceType(value) {
   const map = {
-    in_person: 'Presencial',
+    in_person: "In person",
     virtual: 'Virtual',
   };
 
-  return map[value] || value || 'No registrado';
+  return map[value] || value || "Not provided";
 }
 
 export function translateMemberType(value) {
   const map = {
-    ieee_member: 'Miembro IEEE',
-    non_ieee_member: 'No miembro IEEE',
-    student: 'Estudiante',
-    professional: 'Profesional',
+    ieee_member: "IEEE member",
+    non_ieee_member: "Non-IEEE member",
+    student: "Student",
+    professional: "Professional",
   };
 
-  return map[value] || value || 'No registrado';
+  return map[value] || value || "Not provided";
 }
 
 export function translateRegistrationStatus(value) {
   const map = {
-    draft: 'Borrador',
-    submitted: 'Enviada',
-    confirmed: 'Confirmada',
+    draft: "Draft",
+    submitted: "Submitted",
+    confirmed: "Confirmed",
   };
 
-  return map[value] || value || 'No registrado';
+  return map[value] || value || "Not provided";
 }
 
 export function translatePaymentStatus(value) {
   const map = {
-    pending_link: 'Pendiente de link',
-    pending_payment: 'Pendiente de pago',
-    pending_validation: 'Pendiente de validación',
-    pending: 'Pendiente',
-    partial: 'Parcial',
-    paid: 'Pagado',
-    cancelled: 'Cancelado',
-    approved: 'Aprobado',
-    rejected: 'Rechazado',
-    pendingLink: 'Pendiente de link',
-    pendingPayment: 'Pendiente de pago',
-    pendingValidation: 'Pendiente de validación',
-    Partial: 'Parcial',
-    Paid: 'Pagado',
-    Pending: 'Pendiente',
+    pending_link: "Awaiting payment link",
+    pending_payment: "Awaiting payment",
+    pending_validation: "Pending review",
+    pending: "Pending",
+    partial: "Partial",
+    paid: "Paid",
+    cancelled: "Cancelled",
+    approved: "Approved",
+    rejected: "Rejected",
+    pendingLink: "Awaiting payment link",
+    pendingPayment: "Awaiting payment",
+    pendingValidation: "Pending review",
+    Partial: "Partial",
+    Paid: "Paid",
+    Pending: "Pending",
   };
 
-  return map[value] || value || 'No registrado';
+  return map[value] || value || "Not provided";
 }
 
 export function translateGender(value) {
   const map = {
-    female: 'Femenino',
-    Female: 'Femenino',
-    male: 'Masculino',
-    Male: 'Masculino',
-    other: 'Otro',
-    Other: 'Otro',
+    female: "Female",
+    Female: "Female",
+    male: "Male",
+    Male: "Male",
+    other: "Other",
+    Other: "Other",
   };
 
-  return map[value] || value || 'No registrado';
+  return map[value] || value || "Not provided";
 }
 
 export function translateDocumentType(value) {
   const map = {
-    CC: 'Cédula de ciudadanía',
-    CE: 'Cédula de extranjería',
-    TI: 'Tarjeta de identidad',
-    PP: 'Pasaporte',
+    CC: "Colombian citizenship ID",
+    CE: "Foreign resident ID",
+    TI: "Identity card",
+    PP: "Passport",
   };
 
-  return map[value] || value || 'No registrado';
+  return map[value] || value || "Not provided";
 }
 
 export function translateOccupation(value) {
   const map = {
-    professional: 'Profesional',
-    Professional: 'Profesional',
-    student: 'Estudiante',
-    Student: 'Estudiante',
-    engineer: 'Ingeniero',
-    Engineer: 'Ingeniero',
+    professional: "Professional",
+    Professional: "Professional",
+    student: "Student",
+    Student: "Student",
+    engineer: "Engineer",
+    Engineer: "Engineer",
   };
 
-  return map[value] || value || 'No registrado';
+  return map[value] || value || "Not provided";
 }

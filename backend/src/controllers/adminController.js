@@ -55,18 +55,18 @@ const buildPersonalInformation = (user) => ({
 
 const formatRecentRegistrationType = (registration) => {
   if (registration.participationType === PARTICIPANT_TYPES.AUTHOR) {
-    return 'Autor';
+    return "Author";
   }
 
   if (registration.isIeeeMember) {
-    return 'Miembro IEEE';
+    return "IEEE member";
   }
 
   if (registration.memberType === MEMBER_TYPES.STUDENT) {
-    return 'Estudiante';
+    return "Student";
   }
 
-  return 'Asistente';
+  return "Attendee";
 };
 
 const getDashboardSummaryData = async () => {
@@ -101,7 +101,7 @@ const getRecentActivityData = async (limit = 10) => {
     id: `REG-${registration.id}`,
     participant: registration.user
       ? `${registration.user.firstName} ${registration.user.lastName}`
-      : 'Participante sin nombre',
+      : "Unnamed participant",
     type: formatRecentRegistrationType(registration),
     papers: registration.papers?.length || 0,
     paymentStatus: registration.paymentStatus,
@@ -150,7 +150,7 @@ const listUsers = asyncHandler(async (req, res) => {
   }
 
   return sendSuccess(res, {
-    message: 'Usuarios obtenidos correctamente.',
+    message: "Users retrieved successfully.",
     data: {
       users: users.map((user) => ({
         ...user.toJSON(),
@@ -178,7 +178,7 @@ const getUserRegistrationDetails = asyncHandler(async (req, res) => {
   if (!user) {
     return sendError(res, {
       statusCode: 404,
-      message: 'Usuario no encontrado.',
+      message: "User not found.",
     });
   }
 
@@ -252,7 +252,7 @@ const getUserRegistrationDetails = asyncHandler(async (req, res) => {
   };
 
   return sendSuccess(res, {
-    message: 'Detalle del usuario obtenido correctamente.',
+    message: "User details retrieved successfully.",
     data,
   });
 });
@@ -263,7 +263,7 @@ const listRegistrations = asyncHandler(async (req, res) => {
     order: [['createdAt', 'DESC']],
   });
   return sendSuccess(res, {
-    message: 'Inscripciones obtenidas correctamente.',
+    message: "Registrations retrieved successfully.",
     data: { registrations },
   });
 });
@@ -274,7 +274,7 @@ const listPayments = asyncHandler(async (req, res) => {
     order: [['createdAt', 'DESC']],
   });
   return sendSuccess(res, {
-    message: 'Pagos obtenidos correctamente.',
+    message: "Payments retrieved successfully.",
     data: { payments },
   });
 });
@@ -285,7 +285,7 @@ const listPapers = asyncHandler(async (req, res) => {
     order: [['createdAt', 'DESC']],
   });
   return sendSuccess(res, {
-    message: 'Artículos obtenidos correctamente.',
+    message: "Papers retrieved successfully.",
     data: { papers },
   });
 });
@@ -306,7 +306,7 @@ const getDashboard = asyncHandler(async (req, res) => {
   ]);
 
   return sendSuccess(res, {
-    message: 'Métricas obtenidas correctamente.',
+    message: "Metrics retrieved successfully.",
     data: {
       metrics: {
       usersCount,
@@ -333,7 +333,7 @@ const updateUserActiveStatus = asyncHandler(async (req, res) => {
   });
 
   return sendSuccess(res, {
-    message: user.active ? 'Usuario habilitado correctamente.' : 'Usuario inhabilitado correctamente.',
+    message: user.active ? "Account enabled successfully." : "Account disabled successfully.",
     data: { user },
   });
 });
@@ -342,7 +342,7 @@ const getDashboardSummary = asyncHandler(async (req, res) => {
   const summary = await getDashboardSummaryData();
 
   return sendSuccess(res, {
-    message: 'Resumen del panel obtenido correctamente.',
+    message: "Dashboard summary retrieved successfully.",
     data: { summary },
   });
 });
@@ -353,7 +353,7 @@ const getDashboardRecentActivity = asyncHandler(async (req, res) => {
   const recentActivity = await getRecentActivityData(limit);
 
   return sendSuccess(res, {
-    message: 'Actividad reciente obtenida correctamente.',
+    message: "Recent activity retrieved successfully.",
     data: { recentActivity },
   });
 });
@@ -369,7 +369,7 @@ const createPricingRule = asyncHandler(async (req, res) => {
   });
   return sendSuccess(res, {
     statusCode: 201,
-    message: 'Regla de precios creada correctamente.',
+    message: "Pricing rule created successfully.",
     data: { pricingRule },
   });
 });
@@ -379,7 +379,7 @@ const updatePricingRule = asyncHandler(async (req, res) => {
   if (!pricingRule) {
     return sendError(res, {
       statusCode: 404,
-      message: 'Regla de precios no encontrada.',
+      message: "Pricing rule not found.",
     });
   }
 
@@ -408,7 +408,7 @@ const updatePricingRule = asyncHandler(async (req, res) => {
   });
 
   return sendSuccess(res, {
-    message: 'Regla de precios actualizada correctamente.',
+    message: "Pricing rule updated successfully.",
     data: { pricingRule },
   });
 });
@@ -419,7 +419,7 @@ const listPricingRules = asyncHandler(async (req, res) => {
     order: [['createdAt', 'DESC']],
   });
   return sendSuccess(res, {
-    message: 'Reglas de precios obtenidas correctamente.',
+    message: "Pricing rules retrieved successfully.",
     data: { pricingRules },
   });
 });
@@ -557,7 +557,7 @@ const exportPapers = asyncHandler(async (req, res) => {
 const listEventEditions = asyncHandler(async (req, res) => {
   const eventEditions = await EventEdition.findAll({ order: [['year', 'DESC']] });
   return sendSuccess(res, {
-    message: 'Ediciones del evento obtenidas correctamente.',
+    message: "Conference editions retrieved successfully.",
     data: { eventEditions },
   });
 });
@@ -565,7 +565,7 @@ const listEventEditions = asyncHandler(async (req, res) => {
 const listCountries = asyncHandler(async (req, res) => {
   const countries = await Country.findAll({ order: [['name', 'ASC']] });
   return sendSuccess(res, {
-    message: 'Países obtenidos correctamente.',
+    message: "Countries retrieved successfully.",
     data: { countries },
   });
 });
@@ -573,7 +573,7 @@ const listCountries = asyncHandler(async (req, res) => {
 const listDollarRates = asyncHandler(async (req, res) => {
   const rates = await DollarRate.findAll({ order: [['effectiveDate', 'DESC']] });
   return sendSuccess(res, {
-    message: 'Tasas de cambio obtenidas correctamente.',
+    message: "Exchange rates retrieved successfully.",
     data: { rates },
   });
 });
@@ -593,7 +593,7 @@ const listCustomFields = asyncHandler(async (req, res) => {
     order: [['displayOrder', 'ASC'], ['id', 'ASC']],
   });
   return sendSuccess(res, {
-    message: 'Campos personalizados obtenidos correctamente.',
+    message: "Custom fields retrieved successfully.",
     data: { customFields },
   });
 });
@@ -609,7 +609,7 @@ const createCustomField = asyncHandler(async (req, res) => {
   });
   return sendSuccess(res, {
     statusCode: 201,
-    message: 'Campo personalizado creado correctamente.',
+    message: "Custom field created successfully.",
     data: { customField },
   });
 });
@@ -619,7 +619,7 @@ const updateCustomField = asyncHandler(async (req, res) => {
   if (!customField) {
     return sendError(res, {
       statusCode: 404,
-      message: 'Campo personalizado no encontrado.',
+      message: "Custom field not found.",
     });
   }
 
@@ -635,7 +635,7 @@ const updateCustomField = asyncHandler(async (req, res) => {
   });
 
   return sendSuccess(res, {
-    message: 'Campo personalizado actualizado correctamente.',
+    message: "Custom field updated successfully.",
     data: { customField },
   });
 });

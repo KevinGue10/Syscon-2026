@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 
 export const SelectField = forwardRef(function SelectField(
-  { label, error, options, placeholder = 'Selecciona una opción', className = '', ...props },
+  { label, error, options, placeholder = "Select an option", className = '', ...props },
   ref,
 ) {
   return (

@@ -1,9 +1,9 @@
 ﻿const { buildSysconEmail } = require('./sysconEmailLayout');
 const buildPasswordResetTemplate = ({ firstName, provisionalPassword, appBaseUrl, logoUrl }) => buildSysconEmail({
-  title: 'Tu contraseña fue restablecida', name:firstName,
-  intro:'Recibimos una solicitud de restablecimiento de contraseña. La clave anterior dejó de ser válida y generamos una contraseña provisional para acceder a tu cuenta.',
-  details:[{label:'Contraseña provisional',value:provisionalPassword}],
-  note:'Por seguridad, inicia sesión y cambia esta contraseña lo antes posible. Si no solicitaste este cambio, contacta inmediatamente al equipo administrador.',
+  title: "Your password has been reset", name:firstName,
+  intro:"We received a password reset request. Your previous password is no longer valid, and we generated a temporary password for your account.",
+  details:[{label:"Temporary password",value:provisionalPassword}],
+  note:"For your security, sign in and change this password as soon as possible. If you did not request this change, contact an administrator immediately.",
   actionUrl:appBaseUrl, appBaseUrl, logoUrl,
 });
 module.exports = { buildPasswordResetTemplate };

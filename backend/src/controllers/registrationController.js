@@ -13,7 +13,7 @@ const createRegistration = asyncHandler(async (req, res) => {
   const result = await registrationService.createRegistration(req.body, req.user);
   return sendSuccess(res, {
     statusCode: 201,
-    message: 'Inscripción creada correctamente.',
+    message: "Registration created successfully.",
     data: {
       registration: result.registration,
       paymentSummary: result.breakdown,
@@ -24,7 +24,7 @@ const createRegistration = asyncHandler(async (req, res) => {
 const getMyRegistrations = asyncHandler(async (req, res) => {
   const result = await registrationService.getMyRegistrations(req.user);
   return sendSuccess(res, {
-    message: 'Inscripciones obtenidas correctamente.',
+    message: "Registrations retrieved successfully.",
     data: {
       user: result.user,
       registrations: result.registrations,
@@ -35,7 +35,7 @@ const getMyRegistrations = asyncHandler(async (req, res) => {
 const getRegistrationById = asyncHandler(async (req, res) => {
   const registration = await registrationService.getRegistrationById(req.params.id, req.user);
   return sendSuccess(res, {
-    message: 'Inscripción obtenida correctamente.',
+    message: "Registration retrieved successfully.",
     data: { registration },
   });
 });
@@ -54,7 +54,7 @@ const updateRegistration = asyncHandler(async (req, res) => {
   }
 
   return sendSuccess(res, {
-    message: 'Inscripción actualizada correctamente.',
+    message: "Registration updated successfully.",
     data: {
       ...(updatedUser ? { user: updatedUser } : {}),
       registration: result.registration,
@@ -81,7 +81,7 @@ const updateFullDetails = asyncHandler(async (req, res) => {
   });
 
   return sendSuccess(res, {
-    message: 'Información actualizada correctamente.',
+    message: "Information updated successfully.",
     data: result,
   });
 });
@@ -90,7 +90,7 @@ const addPaper = asyncHandler(async (req, res) => {
   const result = await registrationService.addPaperToRegistration(req.params.id, req.body, req.user);
   return sendSuccess(res, {
     statusCode: 201,
-    message: 'Artículo agregado correctamente.',
+    message: "Paper added successfully.",
     data: {
       paper: result.paper,
       paymentSummary: result.summary.breakdown,
@@ -101,7 +101,7 @@ const addPaper = asyncHandler(async (req, res) => {
 const deletePaper = asyncHandler(async (req, res) => {
   const result = await registrationService.removePaper(req.params.id, req.user);
   return sendSuccess(res, {
-    message: 'Artículo eliminado correctamente.',
+    message: "Paper removed successfully.",
     data: {
       registration: result.registration,
       paymentSummary: result.breakdown,
@@ -114,7 +114,7 @@ const getPaymentSummary = asyncHandler(async (req, res) => {
   const result = await calculateRegistrationTotals(req.params.id);
   const registration = await registrationService.getRegistrationById(req.params.id, req.user);
   return sendSuccess(res, {
-    message: 'Resumen de pago obtenido correctamente.',
+    message: "Payment summary retrieved successfully.",
     data: {
       registration,
       paymentSummary: result.breakdown,
@@ -128,7 +128,7 @@ const previewPaymentSummary = asyncHandler(async (req, res) => {
   const result = await previewRegistrationTotals(req.body);
 
   return sendSuccess(res, {
-    message: 'Resumen de pago previsualizado correctamente.',
+    message: "Payment summary preview calculated successfully.",
     data: {
       registration: result.registration,
       paymentSummary: result.breakdown,
@@ -144,7 +144,7 @@ const previewExistingPaymentSummary = asyncHandler(async (req, res) => {
   });
 
   return sendSuccess(res, {
-    message: 'Resumen de pago previsualizado correctamente.',
+    message: "Payment summary preview calculated successfully.",
     data: {
       registration: result.registration,
       paymentSummary: result.breakdown,

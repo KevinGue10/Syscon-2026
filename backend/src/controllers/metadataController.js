@@ -6,7 +6,7 @@ const env = require('../config/env');
 const listCountries = asyncHandler(async (req, res) => {
   const countries = await Country.findAll({ order: [['name', 'ASC']] });
   return sendSuccess(res, {
-    message: 'Países obtenidos correctamente.',
+    message: "Countries retrieved successfully.",
     data: { countries },
   });
 });
@@ -17,7 +17,7 @@ const listEventEditions = asyncHandler(async (req, res) => {
     order: [['year', 'DESC']],
   });
   return sendSuccess(res, {
-    message: 'Ediciones del evento obtenidas correctamente.',
+    message: "Conference editions retrieved successfully.",
     data: { eventEditions },
   });
 });
@@ -36,7 +36,7 @@ const listCustomFields = asyncHandler(async (req, res) => {
     order: [['displayOrder', 'ASC'], ['id', 'ASC']],
   });
   return sendSuccess(res, {
-    message: 'Campos personalizados obtenidos correctamente.',
+    message: "Custom fields retrieved successfully.",
     data: { customFields },
   });
 });
@@ -51,7 +51,7 @@ const getBankTransferDetails = asyncHandler(async (req, res) => {
   }, {});
 
   return sendSuccess(res, {
-    message: 'Datos bancarios obtenidos correctamente.',
+    message: "Bank details retrieved successfully.",
     data: {
       bankTransferDetails,
       isConfigured: Object.keys(bankTransferDetails).length > 0,

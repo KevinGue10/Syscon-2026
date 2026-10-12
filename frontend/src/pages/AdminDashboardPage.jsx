@@ -38,7 +38,7 @@ function AdminDashboardPage() {
         setError(
           loadError?.response?.data?.message ||
             loadError?.message ||
-            'No fue posible cargar el panel de administración.',
+            "Unable to load the administration dashboard.",
         );
       } finally {
         if (isMounted) {
@@ -58,8 +58,8 @@ function AdminDashboardPage() {
     return (
       <section className="container-shell py-16">
         <Alert
-          title="Cargando panel de administración"
-          description="Consultando resumen general y actividad reciente desde el backend."
+          title="Loading administration dashboard"
+          description="Loading the overview and recent activity."
           variant="info"
         />
       </section>
@@ -69,7 +69,7 @@ function AdminDashboardPage() {
   if (error) {
     return (
       <section className="container-shell py-16">
-        <Alert title="No fue posible cargar el panel" description={error} variant="danger" />
+        <Alert title="Unable to load the dashboard" description={error} variant="danger" />
       </section>
     );
   }
@@ -79,14 +79,14 @@ function AdminDashboardPage() {
       <div className="mb-8 flex flex-wrap items-center justify-between gap-5">
         <div>
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-          Consola de administración
+          Administration console
         </p>
         <h1 className="mt-3 text-4xl font-semibold text-slate-950">
-          Panorama operativo y de registros
+          Registration and operations overview
         </h1>
         </div>
         <Link to="/change-password" className="inline-flex rounded-lg border border-brand-200 bg-white px-5 py-3 text-sm font-semibold text-brand-800 transition hover:bg-brand-50">
-          Cambiar mi contraseña
+          Change my password
         </Link>
       </div>
 
@@ -96,9 +96,9 @@ function AdminDashboardPage() {
             <p className="text-sm text-slate-500">{metric.label}</p>
             <p
               className={`mt-3 text-3xl font-semibold ${
-                metric.label === 'Ingresos recaudados'
+                metric.label === "Revenue collected"
                   ? 'text-emerald-600'
-                  : metric.label === 'Saldos pendientes'
+                  : metric.label === "Outstanding balances"
                     ? 'text-rose-600'
                     : 'text-slate-950'
               }`}
@@ -114,21 +114,21 @@ function AdminDashboardPage() {
         <Card className="p-8">
           <div className="mb-6">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-              Cola de registros
+              Registration queue
             </p>
             <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-              Actividad reciente de participantes
+              Recent participant activity
             </h2>
           </div>
           <Table
             columns={[
               { key: 'id', label: 'ID' },
-              { key: 'participant', label: 'Participante' },
-              { key: 'type', label: 'Tipo' },
-              { key: 'papers', label: 'Artículos' },
+              { key: 'participant', label: "Participant" },
+              { key: 'type', label: "Type" },
+              { key: 'papers', label: "Papers" },
               {
                 key: 'paymentStatus',
-                label: 'Estado de pago',
+                label: "Payment status",
                 render: (value) => (
                   <StatusBadge
                     status={value}
@@ -138,12 +138,12 @@ function AdminDashboardPage() {
               },
             ]}
             rows={dashboard.recentRegistrations}
-            emptyMessage="No hay actividad reciente para mostrar."
+            emptyMessage="No recent activity to display."
           />
           <div className="mt-6 flex justify-end">
             <Link to="/admin/users-overview">
               <Button variant="ghost" className="border border-slate-200">
-                Ver detalle completo
+                View full details
               </Button>
             </Link>
           </div>
@@ -151,17 +151,17 @@ function AdminDashboardPage() {
 
         <Card className="p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-            Próximas integraciones
+            Upcoming integrations
           </p>
           <div className="mt-6 space-y-4">
-            <PlaceholderItem title="Asignación de revisores">
-              Espacio reservado para la asignación de artículos a revisores y el flujo de aprobación.
+            <PlaceholderItem title="Reviewer assignments">
+              Reserved for paper assignments to reviewers and the approval workflow.
             </PlaceholderItem>
-            <PlaceholderItem title="Conciliación financiera">
-              Espacio reservado para estado de pasarela, exportación de facturas y aprobaciones financieras.
+            <PlaceholderItem title="Financial reconciliation">
+              Reserved for payment gateway status, invoice exports and financial approvals.
             </PlaceholderItem>
-            <PlaceholderItem title="Centro de comunicaciones">
-              Espacio reservado para correos masivos, recordatorios y notificaciones de aceptación.
+            <PlaceholderItem title="Communications center">
+              Reserved for bulk emails, reminders and acceptance notifications.
             </PlaceholderItem>
           </div>
         </Card>

@@ -1,15 +1,15 @@
 export const primaryNavigation = [
-  { label: 'Inicio', path: '/' },
-  { label: 'Registro', path: '/register' },
-  { label: 'Ingreso', path: '/login' },
+  { label: "Home", path: '/' },
+  { label: "Register", path: '/register' },
+  { label: "Sign in", path: '/login' },
 ];
 
-export const authenticatedNavigation = [{ label: 'Inicio', path: '/' }];
+export const authenticatedNavigation = [{ label: "Home", path: '/' }];
 
 export const dashboardNavigation = {
-  user: [{ label: 'Panel', path: '/dashboard' }],
+  user: [{ label: "Dashboard", path: '/dashboard' }],
   admin: [
-    { label: 'Administración', path: '/admin' },
-    { label: 'Cambiar contraseña', path: '/change-password' },
+    { label: "Administration", path: '/admin' },
+    { label: "Change password", path: '/change-password' },
   ],
 };

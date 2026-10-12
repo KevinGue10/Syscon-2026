@@ -145,7 +145,7 @@ function RegisterPage() {
           setValue('eventEditionId', String(editionId));
         }
       } catch (error) {
-        setFormError(resolveApiError(error, 'No fue posible cargar los catalogos del backend.'));
+        setFormError(resolveApiError(error, "Unable to load registration options."));
       } finally {
         setIsLoadingMetadata(false);
       }
@@ -222,34 +222,34 @@ function RegisterPage() {
   }));
 
   const summaryRows = [
-    { label: 'Tipo de participación', value: labelFromOptions(values.participationType, participantOptions) },
-    { label: 'Modalidad', value: labelFromOptions(values.attendanceType, attendanceTypes) },
+    { label: "Participation type", value: labelFromOptions(values.participationType, participantOptions) },
+    { label: "Attendance format", value: labelFromOptions(values.attendanceType, attendanceTypes) },
     {
-      label: 'Categoría de inscripción',
+      label: "Registration category",
       value: labelFromOptions(values.registrationCategory, occupationTypes),
     },
-    { label: 'Artículos preparados', value: `${shouldShowArticlesStep ? paperFields.length : 0}` },
+    { label: "Prepared papers", value: `${shouldShowArticlesStep ? paperFields.length : 0}` },
     {
-      label: 'Miembro IEEE',
-      value: values.isIeeeMember ? 'Sí' : 'No',
+      label: "IEEE member",
+      value: values.isIeeeMember ? "Yes" : 'No',
     },
   ];
 
   const guidanceItems = [
     {
-      title: 'Información personal',
+      title: "Personal information",
       description:
-        'Ingresa los datos del participante tal como deben quedar en el registro oficial del evento.',
+        "Enter participant details as they should appear in the official conference registration.",
     },
     {
-      title: 'Datos de inscripción',
+      title: "Registration details",
       description:
-        'Selecciona modalidad, tipo de participación y perfil de miembro para calcular la tarifa correspondiente.',
+        "Select your attendance format, participation type and membership status to calculate the applicable fee.",
     },
     {
-      title: 'Artículos y soporte',
+      title: "Papers and supporting information",
       description:
-        'Si vas a registrar ponencias o artículos, ten a mano el código, autores y número de páginas.',
+        "If you are registering papers, have the codes, author names and page counts ready.",
     },
   ];
 
@@ -314,7 +314,7 @@ function RegisterPage() {
           setPaymentPreview(previewResponse.paymentSummary);
         } catch (error) {
           setFormError(
-            resolveApiError(error, 'No fue posible calcular el saldo pendiente antes de continuar.'),
+            resolveApiError(error, "Unable to calculate the outstanding balance before continuing."),
           );
           return;
         } finally {
@@ -440,7 +440,7 @@ function RegisterPage() {
         paymentSummary: paymentSummaryData,
         message:
           paymentSummaryResponse.raw?.message ||
-          'La cuenta y la inscripción fueron creadas correctamente.',
+          "Your account and registration were created successfully.",
       });
       setPaymentPreview(paymentSummaryData);
     } catch (error) {
@@ -448,7 +448,7 @@ function RegisterPage() {
         error,
         setError,
         setFormError,
-        fallbackMessage: 'No fue posible completar el registro.',
+        fallbackMessage: "Unable to complete registration.",
       });
     }
   };
@@ -461,15 +461,13 @@ function RegisterPage() {
         <div className="space-y-6">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-              Formulario de inscripción
+              Registration form
             </p>
             <h1 className="mt-3 text-4xl font-semibold text-slate-950">
-              Completa tu registro para participar en IEEE SYSCON LATAM 2026
+              Complete your registration for IEEE SYSCON LATAM 2026
             </h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
-              Diligencia tu información personal, define el tipo de participación y agrega los
-              artículos que vayas a presentar. Al finalizar, tu inscripción quedará asociada a la
-              cuenta creada en la plataforma.
+              Enter your personal information, select your participation type and add the papers you will present. Your registration will be linked to the account created on the platform.
             </p>
           </div>
 
@@ -478,8 +476,8 @@ function RegisterPage() {
           <Card className="p-8">
             {isLoadingMetadata ? (
               <Alert
-                title="Cargando metadatos"
-                description="Obteniendo países, edición activa y campos configurados desde el backend."
+                title="Loading registration options"
+                description="Loading countries, the active edition and configured fields."
                 variant="info"
               />
             ) : null}
@@ -500,109 +498,109 @@ function RegisterPage() {
               }}
             >
               {formError ? (
-                <Alert title="Error de registro" description={formError} variant="danger" />
+                <Alert title="Registration error" description={formError} variant="danger" />
               ) : null}
 
               {currentStep === 0 ? (
                 <div className="grid gap-5 md:grid-cols-2">
                   <InputField
-                    label="Nombres"
+                    label="First name"
                     error={errors.firstName?.message}
-                    {...register('firstName', { required: 'El nombre es obligatorio' })}
+                    {...register('firstName', { required: "First name is required" })}
                   />
                   <InputField
-                    label="Apellidos"
+                    label="Last name"
                     error={errors.lastName?.message}
-                    {...register('lastName', { required: 'Los apellidos son obligatorios' })}
+                    {...register('lastName', { required: "Last name is required" })}
                   />
                   <InputField
-                    label="Correo electrónico"
+                    label="Email address"
                     type="email"
                     error={errors.email?.message}
                     {...register('email', {
-                      required: 'El correo es obligatorio',
+                      required: "Email address is required",
                       pattern: {
                         value: /^\S+@\S+\.\S+$/,
-                        message: 'Ingresa un correo válido',
+                        message: "Enter a valid email address",
                       },
                     })}
                   />
                   <InputField
-                    label="Contraseña"
+                    label="Password"
                     type="password"
                     error={errors.password?.message}
-                    helperText="Debe tener al menos 8 caracteres."
+                    helperText="Must contain at least 8 characters."
                     {...register('password', {
-                      required: 'La contraseña es obligatoria',
+                      required: "Password is required",
                       minLength: {
                         value: 8,
-                        message: 'La contraseña debe tener al menos 8 caracteres',
+                        message: "Password must be at least 8 characters long",
                       },
                     })}
                   />
                   <InputField
-                    label="Teléfono"
+                    label="Phone"
                     error={errors.phoneNumber?.message}
-                    {...register('phoneNumber', { required: 'El teléfono es obligatorio' })}
+                    {...register('phoneNumber', { required: "Phone number is required" })}
                   />
                   <SelectField
-                    label="País"
+                    label="Country"
                     options={countryOptions}
                     error={errors.countryId?.message}
-                    {...register('countryId', { required: 'El país es obligatorio' })}
+                    {...register('countryId', { required: "Country is required" })}
                   />
                   <InputField
-                    label="Ciudad"
+                    label="City"
                     error={errors.city?.message}
-                    {...register('city', { required: 'La ciudad es obligatoria' })}
+                    {...register('city', { required: "City is required" })}
                   />
                   <InputField
-                    label="Dirección"
+                    label="Address"
                     error={errors.address?.message}
-                    {...register('address', { required: 'La dirección es obligatoria' })}
+                    {...register('address', { required: "Address is required" })}
                   />
                   <InputField
-                    label="Fecha de nacimiento"
+                    label="Date of birth"
                     type="date"
                     error={errors.birthDate?.message}
                     {...register('birthDate', {
-                      required: 'La fecha de nacimiento es obligatoria',
+                      required: "Date of birth is required",
                     })}
                   />
                   <SelectField
-                    label="Género"
+                    label="Gender"
                     options={genderOptions}
                     error={errors.gender?.message}
-                    {...register('gender', { required: 'El género es obligatorio' })}
+                    {...register('gender', { required: "Gender is required" })}
                   />
                   <SelectField
-                    label="Tipo de documento"
+                    label="ID document type"
                     options={documentTypeOptions}
                     error={errors.docType?.message}
                     {...register('docType', {
-                      required: 'El tipo de documento es obligatorio',
+                      required: "ID document type is required",
                     })}
                   />
                   <InputField
-                    label="Número de documento"
+                    label="ID document number"
                     error={errors.docNumber?.message}
                     {...register('docNumber', {
-                      required: 'El número de documento es obligatorio',
+                      required: "ID document number is required",
                     })}
                   />
                   <InputField
-                    label="Afiliación"
-                    helperText="Ingresa la entidad, institución o empresa a la que estás afiliado."
+                    label="Affiliation"
+                    helperText="Enter the organization, institution or company you are affiliated with."
                     error={errors.affiliation?.message}
-                    {...register('affiliation', { required: 'La afiliación es obligatoria' })}
+                    {...register('affiliation', { required: "Affiliation is required" })}
                   />
                   <InputField
-                    label="Ocupación"
-                    helperText="Indica a qué te dedicas o cuál es tu actividad principal."
-                    placeholder="Ejemplo: Engineer"
+                    label="Occupation"
+                    helperText="Enter your profession or main activity."
+                    placeholder="Example: Engineer"
                     error={errors.occupation?.message}
                     {...register('occupation', {
-                      required: 'La ocupación es obligatoria',
+                      required: "Occupation is required",
                     })}
                   />
                   <div className="md:col-span-2">
@@ -620,38 +618,38 @@ function RegisterPage() {
                 <div className="space-y-5">
                   <div className="grid gap-5 md:grid-cols-2">
                     <div className="flex flex-col gap-2">
-                      <span className="text-sm font-semibold text-slate-700">Conferencia</span>
+                      <span className="text-sm font-semibold text-slate-700">Conference</span>
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                         <p className="text-sm font-semibold text-slate-900">
                           {eventEditionOptions[0]?.label || 'IEEE SYSCON LATAM 2026'}
                         </p>
                         <p className="mt-1 text-sm text-slate-500">
-                          Esta inscripción corresponde a la edición activa del evento.
+                          This registration belongs to the active conference edition.
                         </p>
                       </div>
                     </div>
                     <SelectField
-                      label="Tipo de participación"
+                      label="Participation type"
                       options={participantOptions}
                       error={errors.participationType?.message}
                       {...register('participationType', {
-                        required: 'El tipo de participación es obligatorio',
+                        required: "Participation type is required",
                       })}
                     />
                     <SelectField
-                      label="Modalidad"
+                      label="Attendance format"
                       options={attendanceTypes}
                       error={errors.attendanceType?.message}
                       {...register('attendanceType', {
-                        required: 'La modalidad es obligatoria',
+                        required: "Attendance format is required",
                       })}
                     />
                     <SelectField
-                      label="Categoría de inscripción"
+                      label="Registration category"
                       options={occupationTypes}
                       error={errors.registrationCategory?.message}
                       {...register('registrationCategory', {
-                        required: 'La categoría de inscripción es obligatoria',
+                        required: "Registration category is required",
                       })}
                     />
                   </div>
@@ -660,19 +658,19 @@ function RegisterPage() {
                     <input type="checkbox" className="mt-1 h-4 w-4" {...register('isIeeeMember')} />
                     <span>
                       <span className="block text-sm font-semibold text-slate-800">
-                        Confirmo que soy miembro IEEE
+                        I confirm that I am an IEEE member
                       </span>
                     </span>
                   </label>
 
                   {isIeeeMember ? (
                     <InputField
-                      label="Número de membresía IEEE"
+                      label="IEEE membership number"
                       error={errors.membershipNumber?.message}
                       {...register('membershipNumber', {
                         validate: (value) =>
                           isIeeeMember && !value
-                            ? 'El número de membresía es obligatorio'
+                            ? "Membership number is required"
                             : true,
                       })}
                     />
@@ -691,9 +689,9 @@ function RegisterPage() {
                 <div className="space-y-6">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <h2 className="text-xl font-semibold text-slate-950">Artículos</h2>
+                      <h2 className="text-xl font-semibold text-slate-950">Papers</h2>
                       <p className="mt-2 text-sm leading-7 text-slate-500">
-                        Agrega nuevos artículos antes de finalizar tu registro.
+                        Add new papers before completing your registration.
                       </p>
                     </div>
                     <Button
@@ -708,14 +706,14 @@ function RegisterPage() {
                         })
                       }
                     >
-                      Agregar artículo
+                      Add paper
                     </Button>
                   </div>
 
                   {!paperFields.length ? (
                     <Alert
-                      title="Sin artículos cargados"
-                      description="Puedes continuar sin artículos si el participante solo asistirá al evento."
+                      title="No papers added"
+                      description="You can continue without papers if you are attending only."
                       variant="info"
                     />
                   ) : null}
@@ -724,7 +722,7 @@ function RegisterPage() {
                     <Card key={paper.id} className="border border-slate-100 bg-slate-50 p-5">
                       <div className="mb-4 flex items-center justify-between gap-3">
                         <h3 className="text-lg font-semibold text-slate-950">
-                          Artículo {index + 1}
+                          Paper {index + 1}
                         </h3>
                         <Button
                           type="button"
@@ -732,52 +730,52 @@ function RegisterPage() {
                           className="border border-slate-200"
                           onClick={() => removePaper(index)}
                         >
-                          Eliminar
+                          Remove
                         </Button>
                       </div>
 
                       <div className="grid gap-5 md:grid-cols-2">
                         <InputField
-                          label="Título"
+                          label="Title"
                           className="md:col-span-2"
                           error={errors.papers?.[index]?.title?.message}
                           {...register(`papers.${index}.title`, {
-                            required: 'El título es obligatorio',
+                            required: "Title is required",
                           })}
                         />
                         <InputField
-                          label="Código del artículo"
+                          label="Paper code"
                           error={errors.papers?.[index]?.paperCode?.message}
                           {...register(`papers.${index}.paperCode`, {
-                            required: 'El código es obligatorio',
+                            required: "Paper code is required",
                           })}
                         />
                         <InputField
-                          label="Páginas"
+                          label="Pages"
                           type="number"
                           min="1"
                           error={errors.papers?.[index]?.pages?.message}
                           {...register(`papers.${index}.pages`, {
                             min: {
                               value: 1,
-                              message: 'Debe ser mayor que cero',
+                              message: "Must be greater than zero",
                             },
                           })}
                         />
                         <TextAreaField
-                          label="Autores"
+                          label="Authors"
                           className="md:col-span-2"
                           error={errors.papers?.[index]?.authorsText?.message}
-                          placeholder="Separa los autores por coma"
+                          placeholder="Separate author names with commas"
                           {...register(`papers.${index}.authorsText`, {
-                            required: 'Debes ingresar al menos un autor',
+                            required: "Enter at least one author",
                             validate: (value) =>
                               value
                                 .split(',')
                                 .map((item) => item.trim())
                                 .filter(Boolean).length
                                 ? true
-                                : 'Debes ingresar al menos un autor válido',
+                                : "Enter at least one valid author",
                           })}
                         />
                       </div>
@@ -798,8 +796,8 @@ function RegisterPage() {
               {currentStep === 3 ? (
                 <div className="space-y-6">
                   <Alert
-                    title="Resumen de inscripción"
-                    description="Revisa la información antes de finalizar el registro. Este resumen de pago se recalculó con la información actual del formulario."
+                    title="Registration summary"
+                    description="Review your information before completing registration. This payment summary reflects the current form values."
                     variant="info"
                   />
                   <div className="grid gap-4">
@@ -807,11 +805,11 @@ function RegisterPage() {
                       <SummaryRow key={row.label} label={row.label} value={row.value} />
                     ))}
                     <SummaryRow
-                      label="Estado de pago"
+                      label="Payment status"
                       value={translatePaymentStatus(paymentPreview?.paymentStatus)}
                     />
                     <SummaryRow
-                      label="Saldo pendiente"
+                      label="Outstanding balance"
                       value={formatCurrency(paymentPreview?.pendingAmount || 0)}
                     />
                   </div>
@@ -830,7 +828,7 @@ function RegisterPage() {
                   }}
                   disabled={currentStep === 0}
                 >
-                  Atrás
+                  Back
                 </Button>
                 {!isFinalStep ? (
                   <Button
@@ -839,7 +837,7 @@ function RegisterPage() {
                     onClick={validateStep}
                     disabled={isPreviewLoading}
                   >
-                    {isPreviewLoading ? 'Calculando...' : 'Continuar'}
+                    {isPreviewLoading ? 'Calculando...' : "Continue"}
                   </Button>
                 ) : (
                   <Button
@@ -848,7 +846,7 @@ function RegisterPage() {
                     disabled={isSubmitting || isLoadingMetadata || isPreviewLoading}
                     onClick={submitRegistration}
                   >
-                    {isSubmitting ? 'Enviando...' : 'Crear cuenta e inscripción'}
+                    {isSubmitting ? "Submitting..." : "Create account and registration"}
                   </Button>
                 )}
               </div>
@@ -861,14 +859,13 @@ function RegisterPage() {
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,74,74,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(57,141,222,0.18),transparent_30%)]" />
             <div className="relative">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#a6dce5]">
-              Antes de continuar
+              Before continuing
             </p>
             <h2 className="mt-3 text-2xl font-semibold text-white">
-              Prepara tu información para agilizar el proceso
+              Have your information ready to speed up registration
             </h2>
             <p className="mt-4 text-sm leading-7 text-white/78">
-              El formulario se completa por etapas. Puedes avanzar paso a paso y registrar la
-              información clave del participante y, si aplica, de los artículos asociados.
+              The form is divided into steps. Enter the participant's key information and any associated papers as you proceed.
             </p>
             <div className="mt-6 space-y-4">
               {guidanceItems.map((item, index) => (
@@ -877,7 +874,7 @@ function RegisterPage() {
                   className="rounded-2xl border border-white/10 bg-white/6 px-5 py-4 backdrop-blur-sm"
                 >
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ffb184]">
-                    Paso recomendado {index + 1}
+                    Recommended step {index + 1}
                   </p>
                   <p className="mt-2 text-base font-semibold text-white">{item.title}</p>
                   <p className="mt-2 text-sm leading-7 text-white/72">{item.description}</p>
@@ -886,11 +883,10 @@ function RegisterPage() {
             </div>
             <div className="mt-6 rounded-2xl border border-dashed border-[#ff944d]/55 bg-[#002c45]/70 px-5 py-4">
               <p className="text-sm font-semibold text-white">
-                  Artículos agregados actualmente: {shouldShowArticlesStep ? paperFields.length : 0}
+                  Papers currently added: {shouldShowArticlesStep ? paperFields.length : 0}
               </p>
               <p className="mt-1 text-sm text-white/72">
-                Si el participante solo asistirá al evento, puedes continuar sin registrar
-                artículos.
+                If you are attending only, you can continue without registering any papers.
               </p>
             </div>
             </div>
@@ -900,28 +896,28 @@ function RegisterPage() {
 
       <Modal
         isOpen={Boolean(successState)}
-        title="Registro creado correctamente"
+        title="Registration created successfully"
         onClose={() => setSuccessState(null)}
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            {successState?.message || 'La cuenta y la inscripción fueron procesadas correctamente.'}
+            {successState?.message || "Your account and registration were processed successfully."}
           </p>
           {successState ? (
             <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
               <p>
-                <span className="font-semibold">Estado de pago:</span>{' '}
+                <span className="font-semibold">Payment status:</span>{' '}
                 {translatePaymentStatus(successState.registration.paymentStatus)}
               </p>
               <p>
-                <span className="font-semibold">Saldo pendiente:</span>{' '}
+                <span className="font-semibold">Outstanding balance:</span>{' '}
                 {formatCurrency(successState.paymentSummary.pendingAmount)}
               </p>
             </div>
           ) : null}
           <div className="flex gap-3">
             <Button variant="primary" onClick={() => navigate('/dashboard')}>
-              Ir al panel
+              Go to dashboard
             </Button>
             <Button
               variant="ghost"
@@ -932,7 +928,7 @@ function RegisterPage() {
                 setCurrentStep(0);
               }}
             >
-              Crear otro
+              Create another
             </Button>
           </div>
         </div>
@@ -951,7 +947,7 @@ function DynamicCustomFields({ fields, register, errors, scope }) {
       {fields.map((field) => {
         const name = customFieldName(scope, field.id);
         const error = getNestedError(errors, name)?.message;
-        const rules = field.isRequired ? { required: `${field.label} es obligatorio` } : {};
+        const rules = field.isRequired ? { required: `${field.label} is required` } : {};
 
         if (field.fieldType === 'textarea') {
           return (
@@ -1017,7 +1013,7 @@ function SummaryRow({ label, value }) {
   return (
     <div className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-3">
       <span className="text-sm text-slate-500">{label}</span>
-      <span className="text-sm font-semibold text-slate-950">{value || 'Pendiente'}</span>
+      <span className="text-sm font-semibold text-slate-950">{value || "Pending"}</span>
     </div>
   );
 }
@@ -1073,7 +1069,7 @@ function resolveMemberType({ occupation, isIeeeMember }) {
 }
 
 function labelFromOptions(value, options) {
-  return options.find((option) => option.value === value)?.label || value || 'Pendiente';
+  return options.find((option) => option.value === value)?.label || value || "Pending";
 }
 
 function applyBackendErrors({ error, setError, setFormError, fallbackMessage }) {
@@ -1105,18 +1101,18 @@ function applyBackendErrors({ error, setError, setFormError, fallbackMessage }) 
 
     setFormError(
       hasFieldErrors
-        ? specificMessage || apiMessage || 'Revisa los campos marcados para continuar.'
+        ? specificMessage || apiMessage || "Check the highlighted fields to continue."
         : collectedMessages.join(' '),
     );
     return;
   }
 
-  if (apiMessage?.toLowerCase().includes('email is already registered')) {
+  if (apiMessage?.toLowerCase().includes('email address is already registered')) {
     setError('email', {
       type: 'server',
-      message: 'Este correo ya se encuentra registrado.',
+      message: "This email address is already registered.",
     });
-    setFormError('Este correo ya se encuentra registrado.');
+    setFormError("This email address is already registered.");
     return;
   }
 

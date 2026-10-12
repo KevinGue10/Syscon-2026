@@ -37,7 +37,7 @@ const errorMiddleware = (error, req, res, next) => {
   if (error instanceof ValidationError) {
     return sendError(res, {
       statusCode: 400,
-      message: 'Revisa los campos marcados.',
+      message: "Check the highlighted fields.",
       errors: error.errors.map((item) => ({
         field: item.path || item.validatorKey || 'database',
         message: item.message,
@@ -49,7 +49,7 @@ const errorMiddleware = (error, req, res, next) => {
 
   return sendError(res, {
     statusCode,
-    message: error.message || 'No fue posible procesar la solicitud.',
+    message: error.message || "Unable to process the request.",
     errors: error.errors || undefined,
   });
 };

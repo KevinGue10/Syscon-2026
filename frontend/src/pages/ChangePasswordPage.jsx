@@ -45,7 +45,7 @@ function ChangePasswordPage() {
 
       setServerState({
         error: '',
-        success: 'Tu contraseña fue actualizada. Por seguridad debes iniciar sesión de nuevo.',
+        success: "Your password has been updated. Please sign in again for security.",
       });
 
       setTimeout(() => {
@@ -75,18 +75,17 @@ function ChangePasswordPage() {
       <div className="mx-auto max-w-2xl">
         <Card className="p-8 sm:p-10">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-            Seguridad
+            Security
           </p>
-          <h1 className="mt-3 text-4xl font-semibold text-slate-950">Cambiar contraseña</h1>
+          <h1 className="mt-3 text-4xl font-semibold text-slate-950">Change password</h1>
           <p className="mt-4 text-sm leading-7 text-slate-600">
-            Actualiza tu contraseña de acceso. Después del cambio cerraremos tu sesión por
-            seguridad y te enviaremos de nuevo al ingreso.
+            Update your account password. After the change, we will sign you out and return you to the sign-in page.
           </p>
 
           <form className="mt-8 grid gap-5" onSubmit={handleSubmit(onSubmit)}>
             {serverState.error ? (
               <Alert
-                title="No fue posible cambiar la contraseña"
+                title="Unable to change your password"
                 description={serverState.error}
                 variant="danger"
               />
@@ -94,52 +93,52 @@ function ChangePasswordPage() {
 
             {serverState.success ? (
               <Alert
-                title="Contraseña actualizada"
+                title="Password updated"
                 description={serverState.success}
                 variant="success"
               />
             ) : null}
 
             <InputField
-              label="Contraseña actual"
+              label="Current password"
               type="password"
               autoComplete="current-password"
               error={errors.currentPassword?.message}
               {...register('currentPassword', {
-                required: 'La contraseña actual es obligatoria',
+                required: "Current password is required",
               })}
             />
 
             <InputField
-              label="Nueva contraseña"
+              label="New password"
               type="password"
               autoComplete="new-password"
               error={errors.newPassword?.message}
-              helperText="Usa al menos 8 caracteres."
+              helperText="Use at least 8 characters."
               {...register('newPassword', {
-                required: 'La nueva contraseña es obligatoria',
+                required: "New password is required",
                 minLength: {
                   value: 8,
-                  message: 'La nueva contraseña debe tener al menos 8 caracteres',
+                  message: "New password must be at least 8 characters long",
                 },
               })}
             />
 
             <InputField
-              label="Confirmar nueva contraseña"
+              label="Confirm new password"
               type="password"
               autoComplete="new-password"
               error={errors.confirmPassword?.message}
               {...register('confirmPassword', {
-                required: 'Debes confirmar la nueva contraseña',
+                required: "Please confirm your new password",
                 validate: (value) =>
-                  value === newPassword || 'La confirmación no coincide con la nueva contraseña',
+                  value === newPassword || "The confirmation does not match the new password",
               })}
             />
 
             <div className="mt-2 flex flex-wrap gap-3">
               <Button type="submit" variant="primary" disabled={isSubmitting}>
-                {isSubmitting ? 'Guardando...' : 'Actualizar contraseña'}
+                {isSubmitting ? "Saving..." : "Update password"}
               </Button>
               <Button
                 type="button"
@@ -147,7 +146,7 @@ function ChangePasswordPage() {
                 className="border border-slate-200"
                 onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/dashboard')}
               >
-                Volver al panel
+                Back to dashboard
               </Button>
             </div>
           </form>
@@ -166,6 +165,6 @@ function resolveBackendPasswordError(error) {
     fieldErrorMessage ||
     error?.response?.data?.message ||
     error?.message ||
-    'No fue posible actualizar la contraseña.'
+    "Unable to update your password."
   );
 }

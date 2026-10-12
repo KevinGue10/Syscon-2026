@@ -10,7 +10,7 @@ const validationMiddleware = (req, res, next) => {
 
   return sendError(res, {
     statusCode: 422,
-    message: 'Revisa los campos marcados.',
+    message: "Check the highlighted fields.",
     errors: errors.array().map((error) => ({
       field: error.path,
       message: error.msg,
