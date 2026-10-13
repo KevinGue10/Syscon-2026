@@ -118,7 +118,15 @@ const listUsers = asyncHandler(async (req, res) => {
   const users = await User.findAll({
     where,
     attributes: { exclude: ['passwordHash'] },
-    include: [{ association: 'country', required: false }],
+    include: [
+      { association: 'country', required: false },
+      {
+        association: 'registrations',
+        required: false,
+        separate: true,
+        order: [['createdAt', 'DESC'], ['id', 'DESC']],
+      },
+    ],
     order: [['createdAt', 'DESC']],
   });
 
