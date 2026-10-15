@@ -39,7 +39,7 @@ test('Cobru authenticated requests, serialized methods, URL, caching and failure
     return new Response(JSON.stringify(url.endsWith('/token/refresh/') ? { access: 'test-access' } :
       { pk: 27150, url: 'slug123', amount: '1950000.00', state: 0, currency_code: 'COP' }), { status: 200 });
   });
-  const created = await cobru.createPayment({ paymentId: 7, registrationId: 9, amountCop: 1950000 });
+  const created = await cobru.createPayment({ paymentId: 7, registrationId: 9, amountCop: 1950000, participantName: 'Eduardo Ahumada Tello' });
   assert.equal(created.paymentUrl, 'https://dev.cobru.co/slug123');
   assert.deepEqual(JSON.parse(calls[0].options.body), { refresh: 'test-refresh' });
   assert.equal(calls[1].options.headers.Authorization, 'Bearer test-access');
@@ -47,6 +47,8 @@ test('Cobru authenticated requests, serialized methods, URL, caching and failure
   const body = JSON.parse(calls[1].options.body);
   assert.equal(typeof body.payment_method_enabled, 'string');
   assert.equal(JSON.parse(body.payment_method_enabled).pse, true);
+  assert.equal(JSON.parse(body.payment_method_enabled).credit_card, true);
+  assert.equal(body.description, 'SYSCON LATAM 2026 - Eduardo Ahumada Tello');
   assert.equal(body.amount, 1950000);
   assert.equal(body.client_assume_costs, false);
   assert.equal(body.iva, 0);
@@ -96,11 +98,15 @@ const fixture = t => {
   t.mock.method(models.Payment, 'findByPk', async () => payment);
   t.mock.method(models.Payment, 'update', async () => [1]);
   t.mock.method(models.Registration, 'findByPk', async () => registration);
+  t.mock.method(models.User, 'findByPk', async id => {
+    assert.equal(id, registration.userId);
+    return { firstName: 'Eduardo', lastName: 'Ahumada Tello' };
+  });
   t.mock.method(models.DollarRate, 'findOne', async () => ({ id: 2, rate: 3900 }));
   t.mock.method(models.AuditLog, 'create', async () => ({}));
   t.mock.method(cobru, 'assertConfigured', () => {});
   t.mock.method(cobru, 'consultPayment', async () => detail);
-  t.mock.method(cobru, 'createPayment', async () => { remoteCreates++; return { pk: '27150', slug: 'slug123', paymentUrl: 'https://dev.cobru.co/slug123', snapshot: {} }; });
+  t.mock.method(cobru, 'createPayment', async input => { assert.equal(input.participantName, 'Eduardo Ahumada Tello'); remoteCreates++; return { pk: '27150', slug: 'slug123', paymentUrl: 'https://dev.cobru.co/slug123', snapshot: {} }; });
   const service = createService({
     assertRegistrationAccess: (r, user) => { if (r.userId !== user.id) throw new Error('access denied'); },
     syncRegistrationPaymentPreferences: async () => {},

@@ -88,7 +88,7 @@ const authenticatedRequest = async (pathname, options = {}) => {
   }
 };
 
-const createPayment = async ({ paymentId, registrationId, amountCop }) => {
+const createPayment = async ({ paymentId, registrationId, amountCop, participantName }) => {
   assertConfigured();
   const callback = new URL(env.cobru.callbackUrl);
   callback.searchParams.set('token', env.cobru.callbackToken);
@@ -99,7 +99,7 @@ const createPayment = async ({ paymentId, registrationId, amountCop }) => {
     method: 'POST',
     body: {
       amount: amountCop,
-      description: `SYSCON registration ${registrationId} / payment ${paymentId}`,
+      description: `SYSCON LATAM 2026 - ${String(participantName || '').replace(/\s+/g, ' ').trim().slice(0, 100) || 'Conference registration'}`,
       expiration_days: env.cobru.expirationDays,
       client_assume_costs: false,
       // Taxes already form part of the locally calculated amount; do not charge twice.

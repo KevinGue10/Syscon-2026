@@ -1,4 +1,4 @@
-const { Payment, Registration, DollarRate, AuditLog } = require('../models');
+const { Payment, Registration, DollarRate, AuditLog, User } = require('../models');
 const sequelize = require('../config/database');
 const { Op } = require('sequelize');
 const { PAYMENT_STATUSES } = require('../constants/enums');
@@ -61,6 +61,8 @@ module.exports = ({ assertRegistrationAccess, syncRegistrationPaymentPreferences
       });
     });
     if (payment.paymentUrl) return buildPaymentResponse(payment, payment.registrationId);
+    const participant = await User.findByPk(registration.userId, { attributes: ['firstName', 'lastName'] });
+    const participantName = [participant?.firstName, participant?.lastName].filter(Boolean).join(' ');
     // Claim the reservation atomically. Competing/repeated requests must never
     // create a second remote charge for an ambiguous first attempt.
     const [claimed] = await Payment.update({ transactionReference: `SYSCON-${payment.id}` }, {
@@ -68,7 +70,7 @@ module.exports = ({ assertRegistrationAccess, syncRegistrationPaymentPreferences
     });
     if (!claimed) throw new AppError('Cobru creation is in progress or needs reconciliation before retrying.', 409);
     try {
-      const created = await cobru.createPayment({ paymentId: payment.id, registrationId: payment.registrationId, amountCop: Number(payment.amountCop) });
+      const created = await cobru.createPayment({ paymentId: payment.id, registrationId: payment.registrationId, amountCop: Number(payment.amountCop), participantName });
       await sequelize.transaction(async transaction => {
         const locked = await Payment.findByPk(payment.id, { transaction, lock: transaction.LOCK.UPDATE });
         await locked.update({ providerPaymentId: created.pk, paymentUrl: created.paymentUrl }, { transaction });
