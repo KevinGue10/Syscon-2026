@@ -7,15 +7,27 @@ const rates = [
   { id: 1, name: 'IEEE Member Author', participationType: 'author', memberType: 'ieee_member', isIeeeMember: true, baseAmount: 350, startsAt: '2026-10-08', endsAt: '2026-11-03' },
   { id: 2, name: 'Non-IEEE Member Author', participationType: 'author', memberType: 'non_ieee_member', isIeeeMember: false, baseAmount: 400, startsAt: '2026-10-08', endsAt: '2026-11-03' },
 ];
-test('membership-based rates match professional registrations and retain IEEE discrimination', async t => {
+test('membership-based rates match students and professionals and retain IEEE discrimination', async t => {
   t.mock.method(PricingRule, 'findAll', async () => rates);
   const request = { eventEditionId: 1, participantType: 'author', memberType: 'professional', isIeeeMember: true, onDate: '2026-10-08' };
   assert.equal((await getPricingRule(request)).baseAmount, 350);
   assert.equal((await getPricingRule({ ...request, isIeeeMember: false })).baseAmount, 400);
   assert.equal((await getPricingRule({ ...request, memberType: 'ieee_member' })).baseAmount, 350);
-  await assert.rejects(getPricingRule({ ...request, memberType: 'student' }), /No active pricing rule/);
+  assert.equal((await getPricingRule({ ...request, memberType: 'student' })).baseAmount, 350);
+  assert.equal((await getPricingRule({ ...request, memberType: 'student', isIeeeMember: false })).baseAmount, 400);
+  await assert.rejects(getPricingRule({ ...request, participantType: 'attendee' }), /No active pricing rule/);
   await assert.rejects(getPricingRule({ ...request, onDate: '2026-10-07' }), /No active pricing rule/);
   await assert.rejects(getPricingRule({ ...request, onDate: '2026-11-04' }), /No active pricing rule/);
+});
+
+test('student author payment preview uses the IEEE tariff including paper charges', async t => {
+  t.mock.method(PricingRule, 'findAll', async () => rates.map(rule => ({ ...rule, startsAt: null, endsAt: null })));
+  t.mock.method(PricingRule, 'findOne', async ({ where }) => ({ baseAmount: where.name === 'Additional Paper' ? 150 : 100 }));
+  const payload = { eventEditionId: 1, participationType: 'author', memberType: 'student', isIeeeMember: true, papers: [{ pages: 6 }] };
+  assert.equal((await previewRegistrationTotals(payload)).breakdown.totalAmount, 350);
+  assert.equal((await previewRegistrationTotals({ ...payload, memberType: 'professional' })).breakdown.totalAmount, 350);
+  assert.equal((await previewRegistrationTotals({ ...payload, isIeeeMember: false })).breakdown.totalAmount, 400);
+  assert.equal((await previewRegistrationTotals({ ...payload, papers: [{ pages: 7 }, { pages: 6 }] })).breakdown.totalAmount, 600);
 });
 test('legacy professional rates still match; a new quote without a rate fails instead of quoting zero', async t => {
   t.mock.method(PricingRule, 'findAll', async () => [{ ...rates[0], memberType: 'professional' }]);

@@ -1,5 +1,5 @@
 const { PricingRule, Registration } = require('../models');
-const { PAYMENT_STATUSES, REGISTRATION_PAYMENT_STATUSES, MEMBER_TYPES } = require('../constants/enums');
+const { PAYMENT_STATUSES, REGISTRATION_PAYMENT_STATUSES } = require('../constants/enums');
 const AppError = require('../utils/errors');
 
 const toNumber = (value) => Number(value || 0);
@@ -21,18 +21,10 @@ const calculateTaxAmountFromGross = ({ amountUsd, requiresInvoice = false }) => 
   return Number(((taxableGrossAmount * INVOICE_TAX_RATE) / (1 + INVOICE_TAX_RATE)).toFixed(2));
 };
 
-const normalizePricingMemberType = (memberType) => {
-  if (memberType === MEMBER_TYPES.STUDENT) {
-    return MEMBER_TYPES.STUDENT;
-  }
-
-  return MEMBER_TYPES.PROFESSIONAL;
-};
-
 const matchesRuleField = (ruleValue, targetValue) => ruleValue === null || ruleValue === targetValue;
 
 const getRuleSpecificityScore = (rule) =>
-  ['participationType', 'memberType', 'isIeeeMember'].reduce(
+  ['participationType', 'isIeeeMember'].reduce(
     (score, field) => score + (rule[field] === null ? 0 : 1),
     0
   );
@@ -41,7 +33,6 @@ const isBaseRuleMatch = ({
   rule,
   normalizedDate,
   participantType,
-  normalizedMemberType,
   isIeeeMember,
 }) => {
   const noDates = !rule.startsAt && !rule.endsAt;
@@ -54,10 +45,6 @@ const isBaseRuleMatch = ({
     !isChargeRule &&
     isDateMatch &&
     matchesRuleField(rule.participationType, participantType) &&
-    matchesRuleField(
-      rule.memberType === null ? null : normalizePricingMemberType(rule.memberType),
-      normalizedMemberType
-    ) &&
     matchesRuleField(rule.isIeeeMember, isIeeeMember)
   );
 };
@@ -71,7 +58,8 @@ const getPricingRule = async ({
   transaction,
 }) => {
   const normalizedDate = new Date(onDate).toISOString().slice(0, 10);
-  const normalizedMemberType = normalizePricingMemberType(memberType);
+  // Student/professional is registration data, not a pricing discriminator.
+  // Legacy rules may still store a memberType; only IEEE membership determines it.
   const rules = await PricingRule.findAll({
     where: {
       eventEditionId,
@@ -86,7 +74,6 @@ const getPricingRule = async ({
       rule,
       normalizedDate,
       participantType,
-      normalizedMemberType,
       isIeeeMember,
     })
   );

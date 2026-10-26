@@ -398,7 +398,6 @@ const updatePricingRule = asyncHandler(async (req, res) => {
     where: {
       eventEditionId: pricingRule.eventEditionId,
       participationType: pricingRule.participationType,
-      ...(pricingRule.memberType ? { memberType: pricingRule.memberType } : {}),
       ...(pricingRule.name === 'Additional Paper' || pricingRule.name === 'Additional Page'
         ? {}
         : { isIeeeMember: pricingRule.isIeeeMember }),
