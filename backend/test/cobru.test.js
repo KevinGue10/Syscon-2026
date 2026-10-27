@@ -40,6 +40,8 @@ test('Cobru authenticated requests, serialized methods, URL, caching and failure
       { pk: 27150, url: 'slug123', amount: '1950000.00', state: 0, currency_code: 'COP' }), { status: 200 });
   });
   const created = await cobru.createPayment({ paymentId: 7, registrationId: 9, amountCop: 1950000, participantName: 'Eduardo Ahumada Tello' });
+  await assert.rejects(cobru.createPayment({ paymentId: 8, amountCop: 1950000.25 }), /positive integer/);
+  assert.equal(calls.length, 2, 'Fractional amounts must fail before contacting Cobru');
   assert.equal(created.paymentUrl, 'https://dev.cobru.co/slug123');
   assert.deepEqual(JSON.parse(calls[0].options.body), { refresh: 'test-refresh' });
   assert.equal(calls[1].options.headers.Authorization, 'Bearer test-access');
@@ -205,6 +207,16 @@ test('creation rejects missing rates and user-supplied amounts at the API bounda
   const valid = { body: { registrationId: 9 } };
   for (const validation of cobruCreatePaymentValidation) await validation.run(valid);
   assert(validationResult(valid).isEmpty());
+});
+
+test('Cobru rounds fractional COP before persistence', async t => {
+  const f = fixture(t);
+  t.mock.method(models.Payment, 'findOne', async () => null);
+  t.mock.method(models.DollarRate, 'findOne', async () => ({ id: 3, rate: 3194.4417 }));
+  f.payment.paymentUrl = null;
+  await f.service.createCobruPayment({ registrationId: 9 }, { id: 1 });
+  assert.equal(f.stats().createdInput.amounts.amountCop, 1277777);
+  assert.equal(f.payment.amountCop, 1277777);
 });
 
 test('rejected and expired Cobru states update local status without crediting balance', async t => {

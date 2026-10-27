@@ -72,7 +72,8 @@ const request = async (pathname, { method = 'GET', body, token } = {}) => {
         else if (Array.isArray(value)) providerErrors[field] = value.filter(item => typeof item === 'string').slice(0, 5).map(redact);
       }
     }
-    console.error('[COBRU ERROR]', { endpoint: pathname, status: response.status, providerErrors });
+    console.error('[COBRU ERROR]', { endpoint: pathname, status: response.status,
+      ...(pathname === '/cobru/' ? { amountCop: body?.amount } : {}), providerErrors });
     const error = new AppError(`Cobru request failed (HTTP ${response.status}).`, 502);
     error.providerStatus = response.status;
     throw error;
@@ -112,6 +113,9 @@ const authenticatedRequest = async (pathname, options = {}) => {
 
 const createPayment = async ({ paymentId, registrationId, amountCop, participantName }) => {
   assertConfigured();
+  if (!Number.isSafeInteger(amountCop) || amountCop <= 0) {
+    throw new AppError('Cobru requires a positive integer amount in COP. Reconcile existing fractional payment quotes before retrying.', 409);
+  }
   const callback = new URL(env.cobru.callbackUrl);
   callback.searchParams.set('token', env.cobru.callbackToken);
   callback.searchParams.set('paymentId', String(paymentId));
