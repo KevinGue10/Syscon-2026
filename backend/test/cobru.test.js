@@ -61,6 +61,20 @@ test('Cobru authenticated requests, serialized methods, URL, caching and failure
   assert(cobru.verifyCallbackToken('test-secret'));
   assert(!cobru.verifyCallbackToken('forged'));
   assert.throws(() => cobru.consultPayment('../evil'), /Invalid.*slug/);
+  let diagnostic;
+  t.mock.method(console, 'error', (label, value) => { diagnostic = { label, ...value }; });
+  t.mock.method(global, 'fetch', async () => new Response(JSON.stringify({
+    amount: ['Invalid amount.'],
+    callback: ['Invalid URL https://example.com/callback?token=test-secret'],
+    detail: 'test-key test-refresh test-secret test-access',
+    access: 'never-log-this',
+  }), { status: 400 }));
+  await assert.rejects(cobru.createPayment({ paymentId: 7, amountCop: 1950000 }), /HTTP 400/);
+  assert.equal(diagnostic.endpoint, '/cobru/');
+  assert.deepEqual(diagnostic.providerErrors.amount, ['Invalid amount.']);
+  for (const secret of ['test-key', 'test-refresh', 'test-secret', 'test-access', 'never-log-this', 'https://']) {
+    assert(!JSON.stringify(diagnostic).includes(secret));
+  }
   t.mock.method(global, 'fetch', async () => new Response('{}', { status: 403 }));
   await assert.rejects(cobru.createPayment({ paymentId: 7, registrationId: 9, amountCop: 1950000 }), /HTTP 403/);
   t.mock.method(global, 'fetch', async () => { throw new Error('timeout'); });

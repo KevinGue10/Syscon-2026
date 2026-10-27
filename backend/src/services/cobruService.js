@@ -51,6 +51,28 @@ const request = async (pathname, { method = 'GET', body, token } = {}) => {
     throw new AppError('Cobru did not return a valid response. Reconcile before retrying payment creation.', 502);
   }
   if (!response.ok) {
+    // Keep provider validation diagnostics server-side; never log request bodies
+    // or credential-bearing callback URLs echoed by the provider.
+    const redact = value => {
+      let result = String(value);
+      for (const secret of [env.cobru.apiKey, env.cobru.refreshToken, env.cobru.callbackToken, token, body?.description]) {
+        if (secret) result = result.split(secret).join('[redacted]');
+      }
+      return result.replace(/https?:\/\/[^\s"'<>]+/gi, '[url]')
+        .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]').slice(0, 500);
+    };
+    const allowedFields = ['detail', 'message', 'error', 'code', 'non_field_errors',
+      'amount', 'description', 'expiration_days', 'client_assume_costs', 'iva',
+      'payment_method_enabled', 'payer_redirect_url', 'callback', 'refresh'];
+    const providerErrors = {};
+    if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+      for (const field of allowedFields) {
+        const value = payload[field];
+        if (typeof value === 'string') providerErrors[field] = redact(value);
+        else if (Array.isArray(value)) providerErrors[field] = value.filter(item => typeof item === 'string').slice(0, 5).map(redact);
+      }
+    }
+    console.error('[COBRU ERROR]', { endpoint: pathname, status: response.status, providerErrors });
     const error = new AppError(`Cobru request failed (HTTP ${response.status}).`, 502);
     error.providerStatus = response.status;
     throw error;
