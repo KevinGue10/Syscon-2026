@@ -12,6 +12,7 @@ import { dashboardService } from '../services/dashboardService';
 import { paymentService } from '../services/paymentService';
 import { TextAreaField } from '../components/TextAreaField';
 import { formatCurrency } from '../utils/currency';
+import { downloadCsv } from '../utils/csv';
 import { StatusBadge } from '../utils/statusStyles.jsx';
 import {
   translateAttendanceType,
@@ -324,6 +325,34 @@ function AdminUsersOverviewPage() {
               Clear
             </Button>
           </div>
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-slate-500">Download includes all {filteredUsers.length} participants matching the applied filters, across all pages.</p>
+          <Button
+            variant="ghost"
+            className="border border-slate-200"
+            disabled={!filteredUsers.length}
+            onClick={() => downloadCsv([
+              ['ID', 'Status', 'Payment status', 'Full name', 'Email', 'Country', 'City', 'Affiliation', 'Occupation', 'Gender', 'ID document', 'Phone', 'IEEE member', 'Membership', 'Attendance'],
+              ...filteredUsers.map((user) => {
+                const registration = resolvePrimaryRegistration(user);
+                return [
+                  user.id, user.active ? 'Active' : 'Inactive',
+                  resolveLatestPaymentStatusLabel(user.latestPaymentStatus),
+                  `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Not provided',
+                  user.email, resolveCountryName(user) || 'Not provided', user.city, user.affiliation,
+                  translateOccupation(user.occupation), translateGender(user.gender),
+                  `${translateDocumentType(user.docType)}${user.docNumber ? ` - ${user.docNumber}` : ''}`,
+                  user.phoneNumber, registration?.isIeeeMember ? 'Yes' : 'No',
+                  registration?.membershipNumber || 'Not applicable',
+                  translateAttendanceType(registration?.attendanceType),
+                ];
+              }),
+            ], `syscon-participants-${new Date().toISOString().slice(0, 10)}.csv`)}
+          >
+            Download CSV ({filteredUsers.length})
+          </Button>
         </div>
 
         <div className="mt-6">
