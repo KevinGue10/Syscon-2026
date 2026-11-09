@@ -48,7 +48,7 @@ module.exports = ({ assertRegistrationAccess, syncRegistrationPaymentPreferences
       });
       const exchangeRate = Number(rate?.rate);
       if (!Number.isFinite(exchangeRate) || exchangeRate <= 0) throw new AppError('A valid USD/COP rate is required for Cobru.', 409);
-      // Cobru's create endpoint accepts integer COP, not fractional pesos.
+       // Cobru's create endpoint accepts integer COP, not fractional pesos.
       // Persist the same rounded amount that will be sent and reconciled.
       const amountCop = Math.round(pending * exchangeRate);
       if (amountCop <= 0 || amountCop > 9999999999.99) throw new AppError('COP amount is outside the supported range.', 400);

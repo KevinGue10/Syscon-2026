@@ -611,11 +611,11 @@ function buildBankDetails(bankTransferDetails) {
       value: bankTransferDetails.accountNumber || '',
     },
     {
-      label: 'RUC',
+      label: 'NIT',
       value:
-        bankTransferDetails.ruc ||
         bankTransferDetails.taxId ||
         bankTransferDetails.taxIdentificationNumber ||
+        bankTransferDetails.ruc ||
         '',
     },
     { label: "SWIFT code", value: bankTransferDetails.swiftCode || bankTransferDetails.swift || '' },
