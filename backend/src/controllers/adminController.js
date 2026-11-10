@@ -13,6 +13,7 @@ const {
 const { PAPER_STATUSES, PARTICIPANT_TYPES, MEMBER_TYPES, PAYMENT_STATUSES, USER_ROLES } = require('../constants/enums');
 const asyncHandler = require('../utils/asyncHandler');
 const { buildWorkbook } = require('../services/exportService');
+const { selectExportPayment } = require('../utils/paymentExport');
 const { calculateRegistrationTotals } = require('../services/pricingService');
 const { createAuditLog } = require('../services/auditService');
 const { setUserActiveStatus } = require('../services/userService');
@@ -132,10 +133,11 @@ const listUsers = asyncHandler(async (req, res) => {
 
   const userIds = users.map((user) => user.id);
   const latestPaymentStatusByUserId = new Map();
+  const paymentsByUserId = new Map();
 
   if (userIds.length) {
     const payments = await Payment.findAll({
-      attributes: ['id', 'status', 'createdAt'],
+      attributes: ['id', 'status', 'createdAt', 'amountUsd', 'amountCop'],
       include: [
         {
           association: 'registration',
@@ -149,6 +151,10 @@ const listUsers = asyncHandler(async (req, res) => {
 
     for (const payment of payments) {
       const paymentUserId = payment.registration?.userId;
+      if (paymentUserId) {
+        if (!paymentsByUserId.has(paymentUserId)) paymentsByUserId.set(paymentUserId, []);
+        paymentsByUserId.get(paymentUserId).push(payment);
+      }
       if (!paymentUserId || latestPaymentStatusByUserId.has(paymentUserId)) {
         continue;
       }
@@ -163,6 +169,13 @@ const listUsers = asyncHandler(async (req, res) => {
       users: users.map((user) => ({
         ...user.toJSON(),
         latestPaymentStatus: latestPaymentStatusByUserId.get(user.id) || null,
+        exportPayment: (() => {
+          const payment = selectExportPayment(paymentsByUserId.get(user.id) || []);
+          return payment ? {
+            id: payment.id, status: payment.status, amountUsd: payment.amountUsd,
+            amountCop: payment.amountCop, createdAt: payment.createdAt,
+          } : null;
+        })(),
       })),
     },
   });

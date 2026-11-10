@@ -334,7 +334,7 @@ function AdminUsersOverviewPage() {
             className="border border-slate-200"
             disabled={!filteredUsers.length}
             onClick={() => downloadCsv([
-              ['ID', 'Status', 'Payment status', 'Full name', 'Email', 'Country', 'City', 'Affiliation', 'Occupation', 'Gender', 'ID document', 'Phone', 'IEEE member', 'Membership', 'Attendance'],
+              ['ID', 'Status', 'Payment status', 'Full name', 'Email', 'Country', 'City', 'Affiliation', 'Occupation', 'Gender', 'ID document', 'Phone', 'IEEE member', 'Membership', 'Attendance', 'Payment status', 'Payment amount (USD)', 'Payment amount (COP)', 'Payment created at (UTC)'],
               ...filteredUsers.map((user) => {
                 const registration = resolvePrimaryRegistration(user);
                 return [
@@ -347,6 +347,10 @@ function AdminUsersOverviewPage() {
                   user.phoneNumber, registration?.isIeeeMember ? 'Yes' : 'No',
                   registration?.membershipNumber || 'Not applicable',
                   translateAttendanceType(registration?.attendanceType),
+                  resolveLatestPaymentStatusLabel(user.exportPayment?.status),
+                  user.exportPayment?.amountUsd ?? '',
+                  user.exportPayment?.amountCop ?? '',
+                  user.exportPayment?.createdAt ?? '',
                 ];
               }),
             ], `syscon-participants-${new Date().toISOString().slice(0, 10)}.csv`)}
