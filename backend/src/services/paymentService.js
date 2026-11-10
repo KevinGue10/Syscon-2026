@@ -10,6 +10,7 @@ const { createAuditLog } = require('./auditService');
 const { sendPaymentConfirmationEmail, sendPayPhoneLinkEmail } = require('./emailService');
 const AppError = require('../utils/errors');
 const { Op } = require('sequelize');
+const sequelize = require('../config/database');
 const { uploadPaymentProofFile, getSignedObjectUrl } = require('./objectStorageService');
 
 const PAYMENT_METHODS = {
@@ -234,12 +235,22 @@ const getActiveCouponByCode = async (code) => {
 const buildCouponPreview = ({ coupon, baseAmount }) => {
   const normalizedBaseAmount = Number(Math.max(0, Number(baseAmount || 0)).toFixed(2));
   const percentage = Number(coupon.percentage || 0);
-  const discountAmount = Number(Math.min(normalizedBaseAmount, normalizedBaseAmount * (percentage / 100)).toFixed(2));
+  const discountType = coupon.discountType || 'percentage';
+  const fixedAmountUsd = Number(coupon.fixedAmountUsd || 0);
+  if (!['percentage', 'fixed'].includes(discountType) ||
+      (discountType === 'fixed' ? !Number.isFinite(fixedAmountUsd) || fixedAmountUsd <= 0
+        : !Number.isFinite(percentage) || percentage <= 0 || percentage > 100)) {
+    throw new AppError('Invalid coupon discount configuration.', 409);
+  }
+  const discountAmount = Number(Math.min(normalizedBaseAmount,
+    discountType === 'fixed' ? fixedAmountUsd : normalizedBaseAmount * (percentage / 100)).toFixed(2));
   const finalAmount = Number(Math.max(0, normalizedBaseAmount - discountAmount).toFixed(2));
 
   return {
     code: coupon.code,
     percentage,
+    discountType,
+    fixedAmountUsd,
     baseAmount: normalizedBaseAmount,
     discountAmount,
     finalAmount,
@@ -531,7 +542,7 @@ const previewCoupon = async (payload, currentUser) => {
   const coupon = await getActiveCouponByCode(payload.code);
   const couponPreview = buildCouponPreview({
     coupon,
-    baseAmount: payload.baseAmount !== undefined ? payload.baseAmount : registration.pendingAmount,
+    baseAmount: registration.pendingAmount,
   });
 
   return {
@@ -541,18 +552,34 @@ const previewCoupon = async (payload, currentUser) => {
 };
 
 const redeemCoupon = async (payload, currentUser) => {
-  const registration = await Registration.findByPk(payload.registrationId);
+  const result = await sequelize.transaction(transaction => redeemCouponInTransaction(payload, currentUser, transaction));
+  return {
+    ...(await buildPaymentResponse(result.payment, payload.registrationId)),
+    couponRedemption: result.couponRedemption,
+  };
+};
+
+const redeemCouponInTransaction = async (payload, currentUser, transaction) => {
+  const registration = await Registration.findByPk(payload.registrationId, { transaction, lock: transaction.LOCK.UPDATE });
   assertRegistrationAccess(registration, currentUser);
+
+  const priorRedemption = await Payment.findOne({
+    where: { registrationId: registration.id, provider: PAYMENT_PROVIDERS.COUPON, status: PAYMENT_STATUSES.APPROVED },
+    transaction,
+  });
+  if (priorRedemption) throw new AppError('A coupon has already been redeemed for this registration.', 409);
+  const activeCheckout = await Payment.findOne({
+    where: { registrationId: registration.id, provider: PAYMENT_PROVIDERS.COBRU,
+      status: { [Op.in]: [PAYMENT_STATUSES.PENDING_LINK, PAYMENT_STATUSES.PENDING_PAYMENT, PAYMENT_STATUSES.PENDING] } },
+    transaction,
+  });
+  if (activeCheckout) throw new AppError('Expire and reconcile the active Cobru checkout before redeeming a coupon.', 409);
 
   const coupon = await getActiveCouponByCode(payload.code);
   const couponPreview = buildCouponPreview({
     coupon,
-    baseAmount: payload.baseAmount !== undefined ? payload.baseAmount : registration.pendingAmount,
+    baseAmount: registration.pendingAmount,
   });
-
-  if (couponPreview.finalAmount > 0) {
-    throw new AppError('The coupon does not fully cover the requested amount.', 409);
-  }
 
   if (couponPreview.discountAmount <= 0) {
     throw new AppError('The coupon does not apply to this payment.', 409);
@@ -573,12 +600,15 @@ const redeemCoupon = async (payload, currentUser) => {
     transactionReference: `COUPON-${coupon.code}-${Date.now()}`,
     providerResponseJson: {
       couponCode: coupon.code,
+      discountType: couponPreview.discountType,
+      fixedAmountUsd: couponPreview.fixedAmountUsd,
       percentage: Number(coupon.percentage || 0),
       discountAmount: couponPreview.discountAmount,
       includeTaxes: resolveRequiresInvoice(payload),
     },
     paymentDate: new Date(),
     status: PAYMENT_STATUSES.APPROVED,
+    transaction,
   });
 
   await recordStatusHistory({
@@ -588,6 +618,7 @@ const redeemCoupon = async (payload, currentUser) => {
     changedBy: currentUser.id,
     reason: `Coupon ${coupon.code} redeemed.`,
     providerResponseJson: payment.providerResponseJson,
+    transaction,
   });
 
   await createAuditLog({
@@ -596,12 +627,14 @@ const redeemCoupon = async (payload, currentUser) => {
     entity: 'payment',
     entityId: payment.id,
     newValue: payment.toJSON(),
-  });
+  }, { transaction });
 
   return {
-    ...(await buildPaymentResponse(payment, registration.id)),
+    payment,
     couponRedemption: {
       code: coupon.code,
+      discountType: couponPreview.discountType,
+      fixedAmountUsd: couponPreview.fixedAmountUsd,
       percentage: Number(coupon.percentage || 0),
       coveredAmount: couponPreview.discountAmount,
     },

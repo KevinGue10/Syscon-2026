@@ -18,6 +18,19 @@ Coupon.init(
     percentage: {
       type: DataTypes.DECIMAL(5, 2),
       allowNull: false,
+      defaultValue: 0,
+    },
+    discountType: {
+      type: DataTypes.ENUM('percentage', 'fixed'),
+      allowNull: false,
+      defaultValue: 'percentage',
+      field: 'discount_type',
+    },
+    fixedAmountUsd: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: false,
+      defaultValue: 0,
+      field: 'fixed_amount_usd',
     },
     isActive: {
       type: DataTypes.BOOLEAN,

@@ -159,7 +159,7 @@ function PaymentPage() {
 
   const bankDetails = useMemo(() => buildBankDetails(bankTransferDetails), [bankTransferDetails]);
   const latestPayment = pageState.payments?.[0] || null;
-  const canRedeemCoupon = Boolean(couponState.applied) && paymentBreakdown.totalAmount <= 0;
+  const canRedeemCoupon = Boolean(couponState.applied) && Number(couponState.applied.discountAmount) > 0;
 
   useEffect(() => {
     setCouponState((current) => {
@@ -294,9 +294,11 @@ function PaymentPage() {
       setCouponState((current) => ({
         ...current,
         isRedeeming: false,
+        applied: null,
+        code: '',
         message:
           response.message ||
-          "The coupon settled the balance. The outstanding amount is now zero.",
+          "Discount recorded. You can now pay any remaining balance.",
       }));
     } catch (error) {
       setCouponState((current) => ({
@@ -437,13 +439,13 @@ function PaymentPage() {
           {canRedeemCoupon ? (
             <Card className="rounded-xl p-8">
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-600">
-                Full discount
+                Coupon discount
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                No external payment is required
+                Confirm your discount
               </h2>
               <p className="mt-4 text-sm leading-7 text-slate-600">
-                The coupon covers the full payment amount. Confirm settlement to clear the outstanding balance and record the discount.
+                Confirm the coupon to record the discount. You can then pay any remaining balance by your preferred payment method.
               </p>
             </Card>
           ) : (
@@ -679,9 +681,12 @@ function resolveCouponDiscount(appliedCoupon, baseAmount) {
   }
 
   if (appliedCoupon.discountAmount !== undefined && appliedCoupon.discountAmount !== null) {
-    return Number(Math.max(0, Number(appliedCoupon.discountAmount)).toFixed(2));
+    return Number(Math.min(baseAmount, Math.max(0, Number(appliedCoupon.discountAmount))).toFixed(2));
   }
 
+  if (appliedCoupon.discountType === 'fixed') {
+    return Number(Math.min(baseAmount, Math.max(0, Number(appliedCoupon.fixedAmountUsd || 0))).toFixed(2));
+  }
   if (appliedCoupon.percentage !== undefined && appliedCoupon.percentage !== null) {
     return Number(
       Math.max(0, (baseAmount * Number(appliedCoupon.percentage)) / 100).toFixed(2),

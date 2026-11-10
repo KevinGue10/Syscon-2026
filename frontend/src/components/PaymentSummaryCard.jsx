@@ -128,9 +128,9 @@ export function PaymentSummaryCard({
 
         {canRedeemCoupon ? (
           <div className="mt-6 rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-4">
-            <p className="text-sm font-semibold text-white">Balance covered by coupon</p>
+            <p className="text-sm font-semibold text-white">Confirm coupon discount</p>
             <p className="mt-1 text-sm leading-6 text-white/72">
-              No external payment is required. You can settle the balance and leave your registration with no outstanding amount.
+              Record your discount before paying any remaining balance.
             </p>
             <button
               type="button"
@@ -138,7 +138,7 @@ export function PaymentSummaryCard({
               disabled={isRedeemingCoupon}
               className="mt-4 inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isRedeemingCoupon ? "Settling..." : "Settle balance with coupon"}
+              {isRedeemingCoupon ? "Confirming..." : "Confirm discount"}
             </button>
           </div>
         ) : null}
