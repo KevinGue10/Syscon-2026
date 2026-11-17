@@ -38,4 +38,16 @@ test('admin user list includes latest registration membership and attendance, ev
   assert.equal(member.registrations[0].attendanceType, 'in_person');
   assert.equal(member.latestPaymentStatus, null);
   assert.deepEqual(unregistered.registrations, []);
+
+  const approved = { id: 1, status: 'approved', createdAt: '2026-11-01T12:00:00Z',
+    amountUsd: 350, amountCop: 1100000, registration: { userId: 6 } };
+  t.mock.method(models.Payment, 'findAll', async () => [
+    { id: 2, status: 'pending_payment', createdAt: '2026-11-16T12:00:00Z', registration: { userId: 6 } },
+    approved,
+  ]);
+  await listUsers({ query: {} }, res, error => { throw error; });
+  assert.equal(response.data.users[0].latestPaymentStatus, 'approved');
+  assert.equal(response.data.users[0].exportPayment.id, approved.id);
+  assert.equal(response.data.users[0].exportPayment.amountUsd, 350);
+  assert.equal(response.data.users[1].latestPaymentStatus, null);
 });

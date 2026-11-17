@@ -155,11 +155,12 @@ const listUsers = asyncHandler(async (req, res) => {
         if (!paymentsByUserId.has(paymentUserId)) paymentsByUserId.set(paymentUserId, []);
         paymentsByUserId.get(paymentUserId).push(payment);
       }
-      if (!paymentUserId || latestPaymentStatusByUserId.has(paymentUserId)) {
-        continue;
-      }
+    }
 
-      latestPaymentStatusByUserId.set(paymentUserId, payment.status);
+    // Use the same priority as the CSV: a successful payment must not be
+    // hidden by a later, unused checkout. Keep the API field for compatibility.
+    for (const [userId, payments] of paymentsByUserId) {
+      latestPaymentStatusByUserId.set(userId, selectExportPayment(payments)?.status || null);
     }
   }
 
