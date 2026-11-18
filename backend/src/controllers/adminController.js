@@ -137,7 +137,7 @@ const listUsers = asyncHandler(async (req, res) => {
 
   if (userIds.length) {
     const payments = await Payment.findAll({
-      attributes: ['id', 'status', 'createdAt', 'amountUsd', 'amountCop'],
+      attributes: ['id', 'status', 'createdAt', 'amountUsd', 'amountCop', 'includesTax'],
       include: [
         {
           association: 'registration',
@@ -175,6 +175,7 @@ const listUsers = asyncHandler(async (req, res) => {
           return payment ? {
             id: payment.id, status: payment.status, amountUsd: payment.amountUsd,
             amountCop: payment.amountCop, createdAt: payment.createdAt,
+            includesTax: payment.includesTax,
           } : null;
         })(),
       })),

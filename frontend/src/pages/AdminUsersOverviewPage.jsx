@@ -199,6 +199,7 @@ function AdminUsersOverviewPage() {
   const [reviewCurrency, setReviewCurrency] = useState('USD');
   useEffect(() => { setReviewCurrency('USD'); }, [paymentReviewState.selectedPaymentId, paymentReviewState.isOpen]);
   const selectedReviewedPayment = resolveSelectedPayment(paymentReviewState);
+  const isCobruPayment = selectedReviewedPayment?.provider === 'cobru' || selectedReviewedPayment?.paymentMethod === 'cobru';
   const reviewAmounts = getPaymentReviewAmounts(selectedReviewedPayment, paymentReviewState.registration, paymentReviewState.reviewedAmount, reviewCurrency);
   const isResolvedPayment = isPaymentResolved(selectedReviewedPayment);
   const isRejectedPayment = isPaymentRejected(selectedReviewedPayment);
@@ -334,7 +335,7 @@ function AdminUsersOverviewPage() {
             className="border border-slate-200"
             disabled={!filteredUsers.length}
             onClick={() => downloadCsv([
-              ['ID', 'Status', 'Payment status', 'Full name', 'Email', 'Country', 'City', 'Affiliation', 'Occupation', 'Gender', 'ID document', 'Phone', 'IEEE member', 'Membership', 'Attendance', 'Payment status', 'Payment amount (USD)', 'Payment amount (COP)', 'Payment created at (UTC)'],
+              ['ID', 'Status', 'Payment status', 'Full name', 'Email', 'Country', 'City', 'Affiliation', 'Occupation', 'Gender', 'ID document', 'Phone', 'IEEE member', 'Membership', 'Attendance', 'Payment status', 'Payment amount (USD)', 'Payment amount (COP)', 'IVA selected', 'Payment created at (UTC)'],
               ...filteredUsers.map((user) => {
                 const registration = resolvePrimaryRegistration(user);
                 return [
@@ -350,6 +351,7 @@ function AdminUsersOverviewPage() {
                   resolveLatestPaymentStatusLabel(user.exportPayment?.status),
                   user.exportPayment?.amountUsd ?? '',
                   user.exportPayment?.amountCop ?? '',
+                  user.exportPayment?.includesTax == null ? '' : user.exportPayment.includesTax ? 'Yes' : 'No',
                   user.exportPayment?.createdAt ?? '',
                 ];
               }),
@@ -838,11 +840,15 @@ function AdminUsersOverviewPage() {
                       Uploaded receipt
                     </p>
                     <div className="mt-4">
-                      <PaymentProofViewer
+                      {isCobruPayment ? <Alert
+                        title="Cobru online payment"
+                        description="No uploaded receipt is required. Verify this payment directly with Cobru."
+                        variant="info"
+                      /> : <PaymentProofViewer
                         payment={resolveSelectedPayment(paymentReviewState)}
                         proofAccess={paymentReviewState.proofAccess}
                         isLoading={paymentReviewState.isProofLoading}
-                      />
+                      />}
                     </div>
                   </div>
 
@@ -850,7 +856,29 @@ function AdminUsersOverviewPage() {
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
                       Administrative review
                     </p>
-                    {isResolvedPayment ? (
+                    {isCobruPayment ? (
+                      <div className="mt-4 space-y-4">
+                        <Alert title="Cobru payment verification"
+                          description="Check the provider's current status to update this payment and the registration balance. No manual approval is needed."
+                          variant="info" />
+                        <Button variant="primary" disabled={paymentReviewState.isSubmitting}
+                          onClick={async () => {
+                            const paymentId = selectedReviewedPayment.id;
+                            try {
+                              setPaymentReviewState(current => ({ ...current, isSubmitting: true, error: '', success: '' }));
+                              const response = await paymentService.refreshCobruPayment(paymentId);
+                              await openPaymentReviewModal(paymentReviewState.user, paymentId);
+                              setPaymentReviewState(current => ({ ...current, isSubmitting: false,
+                                success: `Cobru status: ${resolveLatestPaymentStatusLabel(response.payment?.status)}.` }));
+                            } catch (error) {
+                              setPaymentReviewState(current => ({ ...current, isSubmitting: false, success: '',
+                                error: error?.response?.data?.message || error.message || 'Unable to verify the Cobru payment.' }));
+                            }
+                          }}>
+                          {paymentReviewState.isSubmitting ? 'Checking...' : 'Check payment'}
+                        </Button>
+                      </div>
+                    ) : isResolvedPayment ? (
                       <div className="mt-4 space-y-4">
                         {isApprovedPayment ? (
                           <ReviewItem
