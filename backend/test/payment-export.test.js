@@ -20,3 +20,12 @@ test('no payment differs from recorded rejected, cancelled or refunded payments'
   assert.equal(selectExportPayment([]), null);
   assert.equal(selectExportPayment([payment(1, 'rejected'), payment(2, 'refunded'), payment(3, 'cancelled')]).status, 'cancelled');
 });
+
+test('bank receipt awaiting review outranks newer unused payment attempts', () => {
+  const receipt = { ...payment(10, 'pending_validation', '2026-11-01T12:00:00Z'), paymentMethod: 'bank_transfer' };
+  for (const status of ['pending', 'pending_link', 'pending_payment', 'cancelled', 'rejected']) {
+    assert.equal(selectExportPayment([payment(20, status), receipt]), receipt);
+  }
+  const approved = payment(1, 'approved', '2026-10-01T12:00:00Z');
+  assert.equal(selectExportPayment([receipt, approved]), approved);
+});

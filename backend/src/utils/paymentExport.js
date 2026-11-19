@@ -1,10 +1,12 @@
 function priority(payment) {
   if (['paid', 'approved', 'accepted'].includes(payment.status)) return 0;
-  if (['pending', 'pending_link', 'pending_payment', 'pending_validation'].includes(payment.status)) return 1;
-  return 2;
+  if (payment.status === 'pending_validation') return 1;
+  if (['pending', 'pending_link', 'pending_payment'].includes(payment.status)) return 2;
+  return 3;
 }
 
-// Prefer successful payments, then pending payments, then other recorded states.
+// Prefer successful payments, then receipts awaiting review, then other pending
+// payments, then other recorded states.
 // Within each group use creation time and ID, never validation time.
 function selectExportPayment(payments) {
   return [...payments].sort((a, b) =>
