@@ -72,7 +72,8 @@ module.exports = ({ assertRegistrationAccess, syncRegistrationPaymentPreferences
     });
     if (!claimed) throw new AppError('Cobru creation is in progress or needs reconciliation before retrying.', 409);
     try {
-      const created = await cobru.createPayment({ paymentId: payment.id, registrationId: payment.registrationId, amountCop: Number(payment.amountCop), participantName });
+      const created = await cobru.createPayment({ paymentId: payment.id, registrationId: payment.registrationId, amountCop: Number(payment.amountCop), participantName,
+        purpose: payment.providerResponseJson?.purpose });
       await sequelize.transaction(async transaction => {
         const locked = await Payment.findByPk(payment.id, { transaction, lock: transaction.LOCK.UPDATE });
         await locked.update({ providerPaymentId: created.pk, paymentUrl: created.paymentUrl }, { transaction });

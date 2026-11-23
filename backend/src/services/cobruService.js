@@ -111,7 +111,7 @@ const authenticatedRequest = async (pathname, options = {}) => {
   }
 };
 
-const createPayment = async ({ paymentId, registrationId, amountCop, participantName }) => {
+const createPayment = async ({ paymentId, registrationId, amountCop, participantName, purpose }) => {
   assertConfigured();
   if (!Number.isSafeInteger(amountCop) || amountCop <= 0) {
     throw new AppError('Cobru requires a positive integer amount in COP. Reconcile existing fractional payment quotes before retrying.', 409);
@@ -125,7 +125,7 @@ const createPayment = async ({ paymentId, registrationId, amountCop, participant
     method: 'POST',
     body: {
       amount: amountCop,
-      description: `SYSCON LATAM 2026 - ${String(participantName || '').replace(/\s+/g, ' ').trim().slice(0, 100) || 'Conference registration'}`,
+      description: `SYSCON LATAM 2026${purpose === 'iva_adjustment' ? ' IVA' : ''} - ${String(participantName || '').replace(/\s+/g, ' ').trim().slice(0, 100) || 'Conference registration'}`,
       expiration_days: env.cobru.expirationDays,
       client_assume_costs: false,
       // Taxes already form part of the locally calculated amount; do not charge twice.

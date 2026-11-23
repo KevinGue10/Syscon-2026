@@ -118,7 +118,7 @@ function PaymentPage() {
 
     return {
       totalAmount: Number(
-        latestPendingPayment?.amountUsd ||
+        (registration?.ivaAdjustment ? registration.totalAmount : latestPendingPayment?.amountUsd) ||
           paymentSummary?.totalAmount ||
           registration?.pricing?.total ||
           registration?.totalAmount ||
@@ -134,6 +134,10 @@ function PaymentPage() {
   }, [pageState.registration]);
 
   const paymentBreakdown = useMemo(() => {
+    if (pageState.registration?.ivaAdjustment) {
+      const amount = sanitizePaymentAmount(paymentAmount, registrationTotals.pendingAmount);
+      return { baseAmount: 0, discountAmount: 0, discountedBaseAmount: 0, taxesAmount: amount, totalAmount: amount };
+    }
     const baseAmount = sanitizePaymentAmount(paymentAmount, registrationTotals.pendingAmount);
     const discountAmount = resolveCouponDiscount(couponState.applied, baseAmount);
     const discountedBaseAmount = Number(Math.max(0, baseAmount - discountAmount).toFixed(2));
@@ -406,6 +410,7 @@ function PaymentPage() {
 
       <div className="grid gap-8 xl:grid-cols-[0.9fr_1.1fr]">
         <PaymentSummaryCard
+          isIvaAdjustment={Boolean(pageState.registration?.ivaAdjustment)}
           registrationTotal={registrationTotals.totalAmount}
           paidAmount={registrationTotals.paidAmount}
           pendingAmount={registrationTotals.pendingAmount}
@@ -710,6 +715,7 @@ function buildPaymentProofFormData({ file, transactionReference }) {
 
 
 function resolvePaymentOptionDefaults(registration) {
+  if (registration?.ivaAdjustment) return { includeTaxes: true, baseAmount: resolvePendingAmount(registration) };
   const latestPendingPayment = resolveLatestPendingPayment(registration);
   const includeTaxes = resolvePersistedInvoiceSelection(registration);
   const persistedTaxAmount = resolvePersistedTaxAmount(registration);
@@ -881,6 +887,7 @@ function resolveLatestPendingPayment(registration) {
 }
 
 function resolveDisplayedPendingAmount(registration) {
+  if (registration?.ivaAdjustment) return resolvePendingAmount(registration);
   const latestPendingPayment = resolveLatestPendingPayment(registration);
 
   if (latestPendingPayment?.amountUsd) {

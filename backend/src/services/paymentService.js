@@ -11,6 +11,7 @@ const { sendPaymentConfirmationEmail, sendPayPhoneLinkEmail } = require('./email
 const AppError = require('../utils/errors');
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
+const { assertOriginalPaymentsIntact } = require('./ivaAdjustmentService');
 const { uploadPaymentProofFile, getSignedObjectUrl } = require('./objectStorageService');
 
 const PAYMENT_METHODS = {
@@ -187,7 +188,7 @@ const resolveRequestedAmounts = async (payload, registration) => {
 const normalizeCouponCode = (code) => String(code || '').trim().toUpperCase();
 const resolvePaymentIncludesTour = () => false;
 
-const syncRegistrationPaymentPreferences = async (registration, payload = {}) => {
+const syncRegistrationPaymentPreferences = async (registration, payload = {}, options = {}) => {
   if (!registration) {
     return registration;
   }
@@ -204,19 +205,29 @@ const syncRegistrationPaymentPreferences = async (registration, payload = {}) =>
   if (!shouldUpdateIncludesTour && !shouldUpdateRequiresInvoice) {
     return registration;
   }
+  if (!options.transaction) {
+    return sequelize.transaction(async transaction => {
+      await registration.reload({ transaction, lock: transaction.LOCK.UPDATE });
+      return syncRegistrationPaymentPreferences(registration, payload, { transaction });
+    });
+  }
+  if (!registration.ivaAdjustment && !registration.requiresInvoice && Number(registration.paidAmount) > 0 && resolveRequiresInvoice(payload)) {
+    throw new AppError('An administrator must add an IVA adjustment for an already paid registration.', 409);
+  }
 
   await registration.update({
     includesTour: false,
     requiresInvoice: registration.ivaAdjustment ? true : shouldUpdateRequiresInvoice
       ? resolveRequiresInvoice(payload)
       : registration.requiresInvoice,
-  });
+  }, { transaction: options.transaction });
 
   await calculateRegistrationTotals(registration.id, {
     allowMissingPricingRule: true,
+    transaction: options.transaction,
   });
 
-  await registration.reload();
+  await registration.reload({ transaction: options.transaction });
   return registration;
 };
 
@@ -310,7 +321,10 @@ const createPaymentRecord = async ({
   transaction = undefined,
 }) => {
   const ivaAdjustment = registration.ivaAdjustment;
-  if (ivaAdjustment) requiresInvoice = true;
+  if (ivaAdjustment) {
+    requiresInvoice = true;
+    await assertOriginalPaymentsIntact(registration, transaction);
+  }
   const normalizedTaxAmount =
     ivaAdjustment ? Number(amounts.amountUsd) : taxAmount !== null && taxAmount !== undefined
       ? Number(Number(taxAmount).toFixed(2))
@@ -492,9 +506,14 @@ const getPaymentWithRegistration = async (paymentId) => {
 };
 
 const createBankTransferPayment = async (payload, currentUser) => {
-  const registration = await Registration.findByPk(payload.registrationId);
+  const payment = await sequelize.transaction(transaction => createBankTransferInTransaction(payload, currentUser, transaction));
+  return buildPaymentResponse(payment, payment.registrationId);
+};
+
+const createBankTransferInTransaction = async (payload, currentUser, transaction) => {
+  const registration = await Registration.findByPk(payload.registrationId, { transaction, lock: transaction.LOCK.UPDATE });
   assertRegistrationAccess(registration, currentUser);
-  await syncRegistrationPaymentPreferences(registration, payload);
+  await syncRegistrationPaymentPreferences(registration, payload, { transaction });
 
   const amounts = await resolveRequestedAmounts(payload, registration);
   if (!Number.isFinite(amounts.amountCop) || amounts.amountCop <= 0) {
@@ -509,11 +528,11 @@ const createBankTransferPayment = async (payload, currentUser) => {
     amountCop: amounts.amountCop,
     currency: amounts.currency,
     includesTour: resolvePaymentIncludesTour(payload),
-    includesTax: resolveRequiresInvoice(payload),
+    includesTax: registration.ivaAdjustment ? true : resolveRequiresInvoice(payload),
   });
 
   if (reusablePayment) {
-    return buildPaymentResponse(reusablePayment, registration.id);
+    return reusablePayment;
   }
 
   const payment = await createPaymentRecord({
@@ -526,6 +545,7 @@ const createBankTransferPayment = async (payload, currentUser) => {
     taxAmount: payload.taxAmount,
     transactionReference: payload.transactionReference || null,
     status: PAYMENT_STATUSES.PENDING_PAYMENT,
+    transaction,
   });
 
   await createAuditLog({
@@ -534,7 +554,7 @@ const createBankTransferPayment = async (payload, currentUser) => {
     entity: 'payment',
     entityId: payment.id,
     newValue: payment.toJSON(),
-  });
+  }, { transaction });
 
   await recordStatusHistory({
     paymentId: payment.id,
@@ -542,14 +562,16 @@ const createBankTransferPayment = async (payload, currentUser) => {
     newStatus: PAYMENT_STATUSES.PENDING_PAYMENT,
     changedBy: currentUser.id,
     reason: 'Manual bank transfer created.',
+    transaction,
   });
 
-  return buildPaymentResponse(payment, registration.id);
+  return payment;
 };
 
 const previewCoupon = async (payload, currentUser) => {
   const registration = await Registration.findByPk(payload.registrationId);
   assertRegistrationAccess(registration, currentUser);
+  if (registration.ivaAdjustment) throw new AppError('Coupons cannot be used to pay an IVA adjustment.', 409);
   await syncRegistrationPaymentPreferences(registration, payload);
 
   const coupon = await getActiveCouponByCode(payload.code);

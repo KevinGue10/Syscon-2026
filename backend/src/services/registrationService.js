@@ -110,6 +110,8 @@ const updateRegistration = async (registrationId, payload, currentUser, options 
         (['requiresInvoice', 'includeTaxes', 'includesTaxes'].some(field => payload[field] !== undefined) && !resolveRequiresInvoice(payload))) {
       throw new AppError('Pricing and IVA selection are locked after adding an IVA adjustment.', 409);
     }
+  } else if (!registration.requiresInvoice && Number(registration.paidAmount) > 0 && resolveRequiresInvoice(payload)) {
+    throw new AppError('An administrator must add an IVA adjustment for an already paid registration.', 409);
   }
   const oldValue = registration.toJSON();
 

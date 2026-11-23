@@ -1,4 +1,5 @@
 import { getPaymentReviewAmounts, formatReviewMoney } from '../utils/paymentReview';
+import { IvaAdjustmentPanel } from '../components/IvaAdjustmentPanel';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert } from '../components/Alert';
@@ -831,6 +832,8 @@ function AdminUsersOverviewPage() {
                       <ReviewItem label="Payment exchange rate" value={reviewAmounts.rate ? reviewAmounts.rate.toLocaleString('en-US',{maximumFractionDigits:4}) + " COP per USD" : "No exchange rate recorded"} />
                     </div>
                     <p className="mt-3 text-xs leading-6 text-slate-500">COP equivalents in this summary use the selected payment's exchange rate. Previous payments may have used different rates.</p>
+                    <IvaAdjustmentPanel key={paymentReviewState.registration?.id} registration={paymentReviewState.registration}
+                      onAdded={() => openPaymentReviewModal(paymentReviewState.user, paymentReviewState.selectedPaymentId)} />
                   </div>
                 </div>
 

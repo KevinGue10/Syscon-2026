@@ -57,4 +57,15 @@ const processAdjustment = async (registrationId, currentUser, confirmation = nul
   });
 };
 
-module.exports = { quoteAdjustment, processAdjustment };
+const assertOriginalPaymentsIntact = async (registration, transaction) => {
+  const adjustment = registration.ivaAdjustment;
+  if (!adjustment) return;
+  const payments = await Payment.findAll({ where: {
+    registrationId: registration.id, id: adjustment.originalPaymentIds, status: 'approved',
+  }, transaction });
+  if (payments.reduce((sum, p) => sum + cents(p.amountUsd), 0) !== cents(adjustment.baseAmount)) {
+    throw new AppError('An original payment changed or was refunded. An accounting review is required before paying IVA.', 409);
+  }
+};
+
+module.exports = { quoteAdjustment, processAdjustment, assertOriginalPaymentsIntact };

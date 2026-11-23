@@ -1,6 +1,7 @@
 const { PricingRule, Registration } = require('../models');
 const { PAYMENT_STATUSES, REGISTRATION_PAYMENT_STATUSES } = require('../constants/enums');
 const AppError = require('../utils/errors');
+const sequelize = require('../config/database');
 
 const toNumber = (value) => Number(value || 0);
 const MISSING_PRICING_RULE_MESSAGE = 'No active pricing rule found for the selected registration type.';
@@ -125,9 +126,9 @@ const buildFallbackSummary = (registration) => {
     (sum, paper) => sum + Math.max(0, Number(paper.pages || 0) - INCLUDED_PAGES_PER_PAPER),
     0
   );
-  const paidAmount = registration.payments.reduce((sum, payment) => sum + toNumber(payment.amountUsd), 0);
+  const paidAmount = Number(registration.payments.reduce((sum, payment) => sum + toNumber(payment.amountUsd), 0).toFixed(2));
   const totalAmount = toNumber(registration.totalAmount);
-  const pendingAmount = Math.max(0, totalAmount - paidAmount);
+  const pendingAmount = Number(Math.max(0, totalAmount - paidAmount).toFixed(2));
 
   let paymentStatus = registration.paymentStatus || REGISTRATION_PAYMENT_STATUSES.PENDING;
   if (paidAmount <= 0) {
@@ -272,7 +273,10 @@ const buildPricingBreakdown = async ({
 };
 
 const calculateRegistrationTotals = async (registrationId, options = {}) => {
+  if (!options.transaction) return sequelize.transaction(transaction => calculateRegistrationTotals(registrationId, { ...options, transaction }));
   const { transaction, allowMissingPricingRule = false } = options;
+  // Serialize recalculation with administrative adjustments and payment creation.
+  await Registration.findByPk(registrationId, { transaction, lock: transaction.LOCK.UPDATE });
   const registration = await Registration.findByPk(registrationId, {
     include: [
       { association: 'papers' },
@@ -380,8 +384,8 @@ const previewRegistrationTotals = async (payload = {}, options = {}) => {
               ? payload.isIeeeMember
               : Boolean(registration.isIeeeMember),
           includesTour: resolveIncludesTour(payload, registration.includesTour),
-          requiresInvoice: resolveRequiresInvoice(payload, registration.requiresInvoice),
-          includesTaxes: resolveRequiresInvoice(payload, registration.requiresInvoice),
+          requiresInvoice: registration.ivaAdjustment ? true : resolveRequiresInvoice(payload, registration.requiresInvoice),
+          includesTaxes: registration.ivaAdjustment ? true : resolveRequiresInvoice(payload, registration.requiresInvoice),
           totalAmount: result.breakdown.totalAmount,
           paidAmount: result.breakdown.paidAmount,
           pendingAmount: result.breakdown.pendingAmount,

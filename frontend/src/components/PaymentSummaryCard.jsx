@@ -2,6 +2,7 @@ import { InputField } from './InputField';
 import { formatCurrency } from '../utils/currency';
 
 export function PaymentSummaryCard({
+  isIvaAdjustment = false,
   registrationTotal,
   paidAmount,
   pendingAmount,
@@ -44,13 +45,14 @@ export function PaymentSummaryCard({
 
       <div className="mt-6 rounded-[1.75rem] border border-white/10 bg-white/10 p-6">
         <InputField
-          label="Base amount to pay now"
+          label={isIvaAdjustment ? 'Additional IVA to pay now (USD)' : 'Base amount to pay now'}
           type="number"
           min="0"
           step="0.01"
           value={paymentAmount}
+          disabled={isIvaAdjustment}
           onChange={(event) => onPaymentAmountChange(event.target.value)}
-          helperText="You can make a partial payment toward your outstanding balance."
+          helperText={isIvaAdjustment ? 'This is the outstanding amount of the confirmed IVA charge.' : 'You can make a partial payment toward your outstanding balance.'}
           className="[&>span:first-child]:text-white [&_input]:border-white/10 [&_input]:bg-white/10 [&_input]:text-white [&_input]:placeholder:text-white/45 [&_input]:focus:border-white/25 [&_input]:focus:ring-white/10 [&_span:last-child]:text-white/70"
         />
 
@@ -62,7 +64,7 @@ export function PaymentSummaryCard({
             muted={!discountAmount}
           />
           <SummaryLine
-            label="Invoice and tax charge (19%)"
+            label={isIvaAdjustment ? 'Additional IVA payment' : 'Invoice and tax charge (19%)'}
             value={formatCurrency(taxesAmount)}
             muted={!includeTaxes}
           />
@@ -72,6 +74,7 @@ export function PaymentSummaryCard({
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <InputField
               label="Discount coupon"
+              disabled={isIvaAdjustment}
               placeholder="e.g. SYSCON2026"
               value={couponCode}
               onChange={(event) => onCouponCodeChange(event.target.value)}
@@ -80,7 +83,7 @@ export function PaymentSummaryCard({
             <button
               type="button"
               onClick={onApplyCoupon}
-              disabled={couponState.isApplying || !couponCode.trim()}
+              disabled={isIvaAdjustment || couponState.isApplying || !couponCode.trim()}
               className="inline-flex h-[3.25rem] items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-5 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {couponState.isApplying ? "Applying..." : "Apply coupon"}
@@ -112,12 +115,13 @@ export function PaymentSummaryCard({
             type="checkbox"
             className="mt-1 h-4 w-4"
             checked={includeTaxes}
+            disabled={isIvaAdjustment}
             onChange={(event) => onIncludeTaxesChange(event.target.checked)}
           />
           <span>
             <span className="block text-sm font-semibold text-white">Request an invoice</span>
             <span className="mt-1 block text-sm leading-6 text-white/72">
-              Select this option if you need an invoice. A 19% tax charge will be added to the base amount of this payment.
+              {isIvaAdjustment ? 'This payment is exclusively for the confirmed IVA charge. No additional tax will be added.' : 'Select this option if you need an invoice. A 19% tax charge will be added to the base amount of this payment.'}
             </span>
           </span>
         </label>

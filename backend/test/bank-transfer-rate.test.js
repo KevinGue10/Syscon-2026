@@ -6,6 +6,7 @@ const { Op } = require('sequelize');
 
 test('a new bank transfer uses the latest eligible rate and does not reuse an older COP quote', async t => {
   const registration = { id: 1, userId: 7, pendingAmount: 595 };
+  t.mock.method(require('../src/config/database'), 'transaction', async callback => callback({ LOCK: { UPDATE: 'UPDATE' } }));
   const oldPayment = { id: 5, amountUsd: 595, amountCop: 1900691.8 };
   let currentRate = 3218.75;
   let created;
