@@ -104,6 +104,9 @@ const applyReviewedAmount = async (payment, reviewedAmount) => {
   const updatePayload = {
     amountUsd: Number(normalizedReviewedAmount.toFixed(2)),
   };
+  if (payment.providerResponseJson?.purpose === 'iva_adjustment') {
+    updatePayload.taxAmount = updatePayload.amountUsd;
+  }
 
   if (payment.amountCop !== null && payment.amountCop !== undefined && originalAmountUsd > 0) {
     const conversionRatio = Number(payment.amountCop) / originalAmountUsd;
@@ -165,6 +168,13 @@ const normalizePaymentAmounts = async (payload = {}) => {
 
 const resolveRequestedAmounts = async (payload, registration) => {
   const pendingAmount = Number(registration.pendingAmount || 0);
+  if (registration.ivaAdjustment) {
+    const requested = Number(payload.amountUsd ?? payload.amount ?? pendingAmount);
+    if (payload.currency && payload.currency !== 'USD' || !Number.isFinite(requested) || requested <= 0 || requested > pendingAmount) {
+      throw new AppError('IVA payments must be in USD and cannot exceed the remaining IVA balance.', 409);
+    }
+    return normalizePaymentAmounts({ currency: 'USD', amountUsd: requested });
+  }
   const fallbackAmount = pendingAmount > 0 ? pendingAmount : null;
 
   return normalizePaymentAmounts({
@@ -197,7 +207,7 @@ const syncRegistrationPaymentPreferences = async (registration, payload = {}) =>
 
   await registration.update({
     includesTour: false,
-    requiresInvoice: shouldUpdateRequiresInvoice
+    requiresInvoice: registration.ivaAdjustment ? true : shouldUpdateRequiresInvoice
       ? resolveRequiresInvoice(payload)
       : registration.requiresInvoice,
   });
@@ -299,8 +309,10 @@ const createPaymentRecord = async ({
   status = PAYMENT_STATUSES.PENDING,
   transaction = undefined,
 }) => {
+  const ivaAdjustment = registration.ivaAdjustment;
+  if (ivaAdjustment) requiresInvoice = true;
   const normalizedTaxAmount =
-    taxAmount !== null && taxAmount !== undefined
+    ivaAdjustment ? Number(amounts.amountUsd) : taxAmount !== null && taxAmount !== undefined
       ? Number(Number(taxAmount).toFixed(2))
       : calculateTaxAmountFromGross({
           amountUsd: amounts.amountUsd,
@@ -323,6 +335,7 @@ const createPaymentRecord = async ({
     paymentUrl,
     providerResponseJson: {
       ...(providerResponseJson || {}),
+      ...(ivaAdjustment ? { purpose: 'iva_adjustment', adjustmentId: ivaAdjustment.id } : {}),
       includesTour: false,
       requiresInvoice: Boolean(requiresInvoice),
       includeTaxes: Boolean(requiresInvoice),
@@ -562,6 +575,7 @@ const redeemCoupon = async (payload, currentUser) => {
 const redeemCouponInTransaction = async (payload, currentUser, transaction) => {
   const registration = await Registration.findByPk(payload.registrationId, { transaction, lock: transaction.LOCK.UPDATE });
   assertRegistrationAccess(registration, currentUser);
+  if (registration.ivaAdjustment) throw new AppError('Coupons cannot be used to pay an IVA adjustment.', 409);
 
   const priorRedemption = await Payment.findOne({
     where: { registrationId: registration.id, provider: PAYMENT_PROVIDERS.COUPON, status: PAYMENT_STATUSES.APPROVED },

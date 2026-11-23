@@ -1,6 +1,8 @@
 const express = require('express');
 const registrationController = require('../controllers/registrationController');
 const authMiddleware = require('../middlewares/authMiddleware');
+const adminMiddleware = require('../middlewares/adminMiddleware');
+const { body } = require('express-validator');
 const validationMiddleware = require('../middlewares/validationMiddleware');
 const {
   registrationIdParamValidation,
@@ -15,6 +17,13 @@ const router = express.Router();
 
 router.post('/payment-preview', paymentPreviewValidation, validationMiddleware, registrationController.previewPaymentSummary);
 router.use(authMiddleware);
+router.post('/:id/iva-adjustment/preview', adminMiddleware, registrationIdParamValidation, validationMiddleware, registrationController.previewIvaAdjustment);
+router.post('/:id/iva-adjustment', adminMiddleware, [
+  ...registrationIdParamValidation,
+  body('expectedBaseAmount').isFloat({ gt: 0 }),
+  body('expectedTaxAmount').isFloat({ gt: 0 }),
+  body('reason').isString().trim().isLength({ min: 1, max: 500 }),
+], validationMiddleware, registrationController.addIvaAdjustment);
 router.post('/', createRegistrationValidation, validationMiddleware, registrationController.createRegistration);
 router.get('/me', registrationController.getMyRegistrations);
 router.get('/:id', registrationIdParamValidation, validationMiddleware, registrationController.getRegistrationById);

@@ -158,6 +158,7 @@ const buildFallbackSummary = (registration) => {
 };
 
 const buildPricingBreakdown = async ({
+  ivaAdjustment = null,
   eventEditionId,
   participationType,
   memberType,
@@ -171,6 +172,16 @@ const buildPricingBreakdown = async ({
   transaction,
   allowMissingPricingRule = false,
 }) => {
+  if (ivaAdjustment) {
+    const frozen = buildFallbackSummary({ papers, payments: [{ amountUsd: paidAmount }],
+      totalAmount: ivaAdjustment.totalAmount, paymentStatus: persistedPaymentStatus });
+    Object.assign(frozen.breakdown, {
+      baseAmount: Number(ivaAdjustment.baseAmount), subtotalAmount: Number(ivaAdjustment.baseAmount),
+      invoiceTaxAmount: Number(ivaAdjustment.taxAmount), requiresInvoice: true, includesTaxes: true,
+      includesTour: false, tourAmount: 0, ivaAdjustment,
+    });
+    return frozen;
+  }
   let pricingRule;
 
   try {
@@ -275,6 +286,7 @@ const calculateRegistrationTotals = async (registrationId, options = {}) => {
   }
 
   const result = await buildPricingBreakdown({
+    ivaAdjustment: registration.ivaAdjustment,
     eventEditionId: registration.eventEditionId,
     participationType: registration.participationType,
     memberType: registration.memberType,
@@ -292,7 +304,7 @@ const calculateRegistrationTotals = async (registrationId, options = {}) => {
   const { pricingRule, breakdown } = result;
 
   await Promise.all(
-    [...registration.papers].sort((a, b) => a.id - b.id).map((paper, index) => {
+    (registration.ivaAdjustment ? [] : [...registration.papers]).sort((a, b) => a.id - b.id).map((paper, index) => {
       const extraPagesForPaper = Math.max(0, Number(paper.pages || 0) - INCLUDED_PAGES_PER_PAPER);
       const paperExtraCharge =
         (index > 0 ? breakdown.extraPaperAmount : 0) + extraPagesForPaper * breakdown.extraPageAmount;
@@ -332,6 +344,7 @@ const previewRegistrationTotals = async (payload = {}, options = {}) => {
     : registration?.papers || [];
 
   const result = await buildPricingBreakdown({
+    ivaAdjustment: registration?.ivaAdjustment,
     eventEditionId: Number(payload.eventEditionId || registration?.eventEditionId || 0),
     participationType: payload.participationType || registration?.participationType,
     memberType: payload.memberType || registration?.memberType,
@@ -358,6 +371,7 @@ const previewRegistrationTotals = async (payload = {}, options = {}) => {
     registration: registration
       ? {
           id: registration.id,
+          ivaAdjustment: registration.ivaAdjustment || null,
           eventEditionId: Number(payload.eventEditionId || registration.eventEditionId),
           participationType: payload.participationType || registration.participationType,
           memberType: payload.memberType || registration.memberType,

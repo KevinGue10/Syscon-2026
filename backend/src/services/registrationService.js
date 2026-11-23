@@ -9,6 +9,7 @@ const {
 const { saveCustomFieldValues } = require('./customFieldService');
 const { ensureUserIsActive } = require('./userService');
 const AppError = require('../utils/errors');
+const sequelize = require('../config/database');
 const { resolveIncludesTour, resolveRequiresInvoice } = require('./pricingService');
 
 const getActiveEventEdition = async () => {
@@ -98,10 +99,18 @@ const createRegistration = async (payload, currentUser, options = {}) => {
 };
 
 const updateRegistration = async (registrationId, payload, currentUser, options = {}) => {
+  if (!options.transaction) return sequelize.transaction(transaction => updateRegistration(registrationId, payload, currentUser, { transaction }));
   const { transaction } = options;
   ensureUserIsActive(currentUser);
-  const registration = await Registration.findByPk(registrationId, { transaction });
+  const registration = await Registration.findByPk(registrationId, { transaction, lock: transaction.LOCK?.UPDATE || 'UPDATE' });
   assertRegistrationAccess(registration, currentUser);
+  if (registration.ivaAdjustment) {
+    const financialFields = ['eventEditionId', 'participationType', 'memberType', 'isIeeeMember'];
+    if (financialFields.some(field => payload[field] !== undefined && String(payload[field]) !== String(registration[field])) ||
+        (['requiresInvoice', 'includeTaxes', 'includesTaxes'].some(field => payload[field] !== undefined) && !resolveRequiresInvoice(payload))) {
+      throw new AppError('Pricing and IVA selection are locked after adding an IVA adjustment.', 409);
+    }
+  }
   const oldValue = registration.toJSON();
 
   if (payload.isIeeeMember === true && !payload.membershipNumber && !registration.membershipNumber) {
@@ -167,12 +176,16 @@ const updateRegistration = async (registrationId, payload, currentUser, options 
   return summary;
 };
 
-const addPaperToRegistration = async (registrationId, payload, currentUser) => {
+const addPaperToRegistration = async (registrationId, payload, currentUser, options = {}) => {
+  if (!options.transaction) return sequelize.transaction(transaction => addPaperToRegistration(registrationId, payload, currentUser, { transaction }));
+  const { transaction } = options;
   ensureUserIsActive(currentUser);
   const registration = await Registration.findByPk(registrationId, {
     include: [{ association: 'user' }],
+    transaction, lock: transaction.LOCK.UPDATE,
   });
   assertRegistrationAccess(registration, currentUser);
+  if (registration.ivaAdjustment) throw new AppError('Papers are locked after adding an IVA adjustment.', 409);
 
   const paper = await Paper.create({
     registrationId: registration.id,
@@ -180,17 +193,18 @@ const addPaperToRegistration = async (registrationId, payload, currentUser) => {
     paperCode: payload.paperCode,
     authors: payload.authors,
     pages: payload.pages || null,
-  });
+  }, { transaction });
 
   await saveCustomFieldValues({
     eventEditionId: registration.eventEditionId,
     appliesTo: 'article',
     values: payload.customFieldValues || [],
     entityIds: { articleId: paper.id },
+    transaction,
   });
 
-  const summary = await calculateRegistrationTotals(registration.id);
-  const refreshedPaper = await Paper.findByPk(paper.id);
+  const summary = await calculateRegistrationTotals(registration.id, { transaction });
+  const refreshedPaper = await Paper.findByPk(paper.id, { transaction });
 
   await createAuditLog({
     userId: currentUser.id,
@@ -198,12 +212,12 @@ const addPaperToRegistration = async (registrationId, payload, currentUser) => {
     entity: 'paper',
     entityId: paper.id,
     newValue: refreshedPaper.toJSON(),
-  });
+  }, { transaction });
   if (registration.user) {
-    dispatchEmailInBackground(
+    transaction.afterCommit(() => dispatchEmailInBackground(
       () => sendPaperRegistrationEmail(registration.user, refreshedPaper),
       'Paper registration email'
-    );
+    ));
   }
 
   return {
@@ -212,10 +226,13 @@ const addPaperToRegistration = async (registrationId, payload, currentUser) => {
   };
 };
 
-const removePaper = async (paperId, currentUser) => {
+const removePaper = async (paperId, currentUser, options = {}) => {
+  if (!options.transaction) return sequelize.transaction(transaction => removePaper(paperId, currentUser, { transaction }));
+  const { transaction } = options;
   ensureUserIsActive(currentUser);
   const paper = await Paper.findByPk(paperId, {
     include: [{ association: 'registration' }],
+    transaction,
   });
 
   if (!paper) {
@@ -223,11 +240,13 @@ const removePaper = async (paperId, currentUser) => {
   }
 
   assertRegistrationAccess(paper.registration, currentUser);
+  const lockedRegistration = await Registration.findByPk(paper.registrationId, { transaction, lock: transaction.LOCK.UPDATE });
+  if (lockedRegistration.ivaAdjustment) throw new AppError('Papers are locked after adding an IVA adjustment.', 409);
   const oldValue = paper.toJSON();
   const registrationId = paper.registrationId;
 
-  await paper.destroy();
-  const summary = await calculateRegistrationTotals(registrationId);
+  await paper.destroy({ transaction });
+  const summary = await calculateRegistrationTotals(registrationId, { transaction });
 
   await createAuditLog({
     userId: currentUser.id,
@@ -235,7 +254,7 @@ const removePaper = async (paperId, currentUser) => {
     entity: 'paper',
     entityId: paperId,
     oldValue,
-  });
+  }, { transaction });
 
   return summary;
 };

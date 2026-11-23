@@ -4,6 +4,14 @@ const { calculateRegistrationTotals, previewRegistrationTotals } = require('../s
 const { sendSuccess } = require('../utils/responseContract');
 const userService = require('../services/userService');
 const sequelize = require('../config/database');
+const { processAdjustment } = require('../services/ivaAdjustmentService');
+const previewIvaAdjustment = asyncHandler(async (req, res) => sendSuccess(res, {
+  message: 'IVA adjustment preview.', data: await processAdjustment(req.params.id, req.user),
+}));
+const addIvaAdjustment = asyncHandler(async (req, res) => sendSuccess(res, {
+  statusCode: 201, message: 'IVA adjustment added. The original payment was preserved.',
+  data: await processAdjustment(req.params.id, req.user, req.body),
+}));
 
 const hasUserProfileFields = (payload = {}) =>
   userService.USER_PROFILE_FIELDS.some((field) => payload[field] !== undefined) ||
@@ -153,6 +161,8 @@ const previewExistingPaymentSummary = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  previewIvaAdjustment,
+  addIvaAdjustment,
   createRegistration,
   getMyRegistrations,
   getRegistrationById,

@@ -65,6 +65,11 @@ Registration.init(
       defaultValue: false,
       field: 'requires_invoice',
     },
+    ivaAdjustment: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      field: 'iva_adjustment',
+    },
     includesTaxes: {
       type: DataTypes.VIRTUAL,
       get() {
