@@ -1,5 +1,6 @@
 import { getPaymentReviewAmounts, formatReviewMoney } from '../utils/paymentReview';
 import { IvaAdjustmentPanel } from '../components/IvaAdjustmentPanel';
+import { isCouponPayment, paymentAccounting } from '../utils/paymentAccounting';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert } from '../components/Alert';
@@ -336,7 +337,7 @@ function AdminUsersOverviewPage() {
             className="border border-slate-200"
             disabled={!filteredUsers.length}
             onClick={() => downloadCsv([
-              ['ID', 'Status', 'Payment status', 'Full name', 'Email', 'Country', 'City', 'Affiliation', 'Occupation', 'Gender', 'ID document', 'Phone', 'IEEE member', 'Membership', 'Attendance', 'Payment status', 'Payment amount (USD)', 'Payment amount (COP)', 'IVA selected', 'Payment created at (UTC)'],
+              ['ID', 'Status', 'Payment status', 'Full name', 'Email', 'Country', 'City', 'Affiliation', 'Occupation', 'Gender', 'ID document', 'Phone', 'IEEE member', 'Membership', 'Attendance', 'Payment status', 'Payment amount (USD)', 'Payment amount (COP)', 'IVA selected', 'Payment created at (UTC)', 'Coupon discount (USD) - not revenue'],
               ...filteredUsers.map((user) => {
                 const registration = resolvePrimaryRegistration(user);
                 return [
@@ -354,6 +355,7 @@ function AdminUsersOverviewPage() {
                   user.exportPayment?.amountCop ?? '',
                   user.exportPayment?.includesTax == null ? '' : user.exportPayment.includesTax ? 'Yes' : 'No',
                   user.exportPayment?.createdAt ?? '',
+                  user.couponDiscountUsd ?? 0,
                 ];
               }),
             ], `syscon-participants-${new Date().toISOString().slice(0, 10)}.csv`)}
@@ -797,7 +799,7 @@ function AdminUsersOverviewPage() {
                           <div className="flex items-start justify-between gap-4">
                             <div>
                               <p className="text-sm font-semibold text-slate-950">
-                                Payment #{payment.id}
+                                {isCouponPayment(payment) ? 'Coupon discount' : 'Payment'} #{payment.id}
                               </p>
                               <p className="mt-1 text-sm text-slate-600">
                                 {formatMethod(payment.paymentMethod)} · {formatCurrency(payment.amountUsd || 0)}
@@ -827,7 +829,8 @@ function AdminUsersOverviewPage() {
                         value={formatReviewMoney(reviewAmounts.pendingUsd, reviewAmounts.rate)}
                       />
                       <ReviewItem label="Registration total" value={formatReviewMoney(Number(paymentReviewState.registration?.paymentSummary?.totalAmount ?? paymentReviewState.registration?.totalAmount ?? 0), reviewAmounts.rate)} />
-                      <ReviewItem label="Previously paid" value={formatReviewMoney(Number(paymentReviewState.registration?.paymentSummary?.paidAmount ?? paymentReviewState.registration?.paidAmount ?? 0), reviewAmounts.rate)} />
+                      <ReviewItem label="Money received" value={formatReviewMoney(paymentAccounting(paymentReviewState.payments).cashPaidUsd, reviewAmounts.rate)} />
+                      <ReviewItem label="Coupon discounts (not revenue)" value={formatReviewMoney(paymentAccounting(paymentReviewState.payments).discountUsd, reviewAmounts.rate)} />
                       <ReviewItem label="Selected payment amount" value={formatReviewMoney(reviewAmounts.originalUsd, reviewAmounts.rate)} />
                       <ReviewItem label="Payment exchange rate" value={reviewAmounts.rate ? reviewAmounts.rate.toLocaleString('en-US',{maximumFractionDigits:4}) + " COP per USD" : "No exchange rate recorded"} />
                     </div>
@@ -859,7 +862,9 @@ function AdminUsersOverviewPage() {
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
                       Administrative review
                     </p>
-                    {isCobruPayment ? (
+                    {isCouponPayment(selectedReviewedPayment) ? <Alert title="Coupon discount recorded"
+                      description="This is a discount credit, not money received. It is excluded from revenue and monetary payment exports."
+                      variant="info" /> : isCobruPayment ? (
                       <div className="mt-4 space-y-4">
                         <Alert title="Cobru payment verification"
                           description="Check the provider's current status to update this payment and the registration balance. No manual approval is needed."

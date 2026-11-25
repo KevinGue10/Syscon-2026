@@ -54,4 +54,12 @@ test('admin user list includes latest registration membership and attendance, ev
   approved.includesTax = false;
   await listUsers({ query: {} }, res, error => { throw error; });
   assert.equal(response.data.users[0].exportPayment.includesTax, false);
+  t.mock.method(models.Payment, 'findAll', async () => [
+    { id: 107, status: 'approved', provider: 'coupon', amountUsd: 50, registration: { userId: 6 } },
+    { id: 108, status: 'pending_payment', provider: 'cobru', amountUsd: 350, registration: { userId: 6 } },
+  ]);
+  await listUsers({ query: {} }, res, error => { throw error; });
+  assert.equal(response.data.users[0].latestPaymentStatus, 'pending_payment');
+  assert.equal(response.data.users[0].exportPayment.id, 108);
+  assert.equal(response.data.users[0].couponDiscountUsd, 50);
 });

@@ -10,6 +10,7 @@ import { paymentService } from '../services/paymentService';
 import { formatCurrency } from '../utils/currency';
 import { StatusBadge } from '../utils/statusStyles.jsx';
 import { translatePaymentStatus } from '../utils/translations';
+import { isCouponPayment, paymentAccounting } from '../utils/paymentAccounting';
 
 const TAX_RATE = 0.19;
 
@@ -115,10 +116,11 @@ function PaymentPage() {
     const paymentSummary = registration?.paymentSummary || registration?.pricing?.breakdown || null;
     const latestPendingPayment = resolveLatestPendingPayment(registration);
     const displayedPendingAmount = resolveDisplayedPendingAmount(registration);
+    const accounting = paymentAccounting(registration?.payments || []);
 
     return {
       totalAmount: Number(
-        (registration?.ivaAdjustment ? registration.totalAmount : latestPendingPayment?.amountUsd) ||
+        (registration?.ivaAdjustment || accounting.discountUsd > 0 ? registration.totalAmount : latestPendingPayment?.amountUsd) ||
           paymentSummary?.totalAmount ||
           registration?.pricing?.total ||
           registration?.totalAmount ||
@@ -126,8 +128,9 @@ function PaymentPage() {
           0,
       ),
       paidAmount: Number(
-        paymentSummary?.paidAmount || registration?.pricing?.paid || registration?.paidAmount || 0,
+        accounting.cashPaidUsd,
       ),
+      recordedDiscountAmount: accounting.discountUsd,
       pendingAmount: displayedPendingAmount,
       latestPendingPayment,
     };
@@ -162,7 +165,7 @@ function PaymentPage() {
   ]);
 
   const bankDetails = useMemo(() => buildBankDetails(bankTransferDetails), [bankTransferDetails]);
-  const latestPayment = pageState.payments?.[0] || null;
+  const latestPayment = pageState.payments?.find(payment => !isCouponPayment(payment)) || null;
   const canRedeemCoupon = Boolean(couponState.applied) && Number(couponState.applied.discountAmount) > 0;
 
   useEffect(() => {
@@ -411,6 +414,7 @@ function PaymentPage() {
       <div className="grid gap-8 xl:grid-cols-[0.9fr_1.1fr]">
         <PaymentSummaryCard
           isIvaAdjustment={Boolean(pageState.registration?.ivaAdjustment)}
+          recordedDiscountAmount={registrationTotals.recordedDiscountAmount}
           registrationTotal={registrationTotals.totalAmount}
           paidAmount={registrationTotals.paidAmount}
           pendingAmount={registrationTotals.pendingAmount}
@@ -535,15 +539,15 @@ function PaymentPage() {
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Payment #{payment.id}
+                      {isCouponPayment(payment) ? 'Coupon discount' : 'Payment'} #{payment.id}
                     </p>
                     <p className="mt-2 text-lg font-semibold text-slate-950">
-                      {formatCurrency(payment.amountUsd || 0)}
+                      {isCouponPayment(payment) ? '-' : ''}{formatCurrency(payment.amountUsd || 0)}
                     </p>
                   </div>
                   <StatusBadge
                     status={payment.status}
-                    label={translatePaymentStatus(payment.status)}
+                    label={isCouponPayment(payment) && payment.status === 'approved' ? 'Discount recorded' : translatePaymentStatus(payment.status)}
                   />
                 </div>
 

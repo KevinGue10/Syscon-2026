@@ -14,6 +14,7 @@ const { PAPER_STATUSES, PARTICIPANT_TYPES, MEMBER_TYPES, PAYMENT_STATUSES, USER_
 const asyncHandler = require('../utils/asyncHandler');
 const { buildWorkbook } = require('../services/exportService');
 const { selectExportPayment } = require('../utils/paymentExport');
+const { cashPaymentWhere, approvedPaymentAccounting } = require('../utils/paymentAccounting');
 const { calculateRegistrationTotals } = require('../services/pricingService');
 const { createAuditLog } = require('../services/auditService');
 const { setUserActiveStatus } = require('../services/userService');
@@ -75,7 +76,7 @@ const getDashboardSummaryData = async () => {
     Registration.count(),
     Paper.count(),
     Paper.count({ where: { status: PAPER_STATUSES.ACCEPTED } }),
-    Payment.sum('amountUsd', { where: { status: PAYMENT_STATUSES.APPROVED } }),
+    Payment.sum('amountUsd', { where: cashPaymentWhere({ status: PAYMENT_STATUSES.APPROVED }) }),
     Registration.sum('pendingAmount'),
   ]);
 
@@ -137,7 +138,7 @@ const listUsers = asyncHandler(async (req, res) => {
 
   if (userIds.length) {
     const payments = await Payment.findAll({
-      attributes: ['id', 'status', 'createdAt', 'amountUsd', 'amountCop', 'includesTax'],
+      attributes: ['id', 'status', 'createdAt', 'amountUsd', 'amountCop', 'includesTax', 'provider', 'paymentMethod'],
       include: [
         {
           association: 'registration',
@@ -170,6 +171,7 @@ const listUsers = asyncHandler(async (req, res) => {
       users: users.map((user) => ({
         ...user.toJSON(),
         latestPaymentStatus: latestPaymentStatusByUserId.get(user.id) || null,
+        couponDiscountUsd: approvedPaymentAccounting(paymentsByUserId.get(user.id)).discountUsd,
         exportPayment: (() => {
           const payment = selectExportPayment(paymentsByUserId.get(user.id) || []);
           return payment ? {
@@ -318,7 +320,7 @@ const getDashboard = asyncHandler(async (req, res) => {
     User.count(),
     Registration.count(),
     Paper.count(),
-    Payment.sum('amountUsd', { where: { status: PAYMENT_STATUSES.APPROVED } }),
+    Payment.sum('amountUsd', { where: cashPaymentWhere({ status: PAYMENT_STATUSES.APPROVED }) }),
     Registration.findAll({
       attributes: ['paymentStatus', [fn('COUNT', col('id')), 'count']],
       group: ['paymentStatus'],
@@ -484,7 +486,7 @@ const exportUsers = asyncHandler(async (req, res) => {
 
 const exportRegistrations = asyncHandler(async (req, res) => {
   const registrations = await Registration.findAll({
-    include: ['user', 'eventEdition'],
+    include: ['user', 'eventEdition', { association: 'payments', separate: true }],
   });
 
   await exportData({
@@ -499,7 +501,8 @@ const exportRegistrations = asyncHandler(async (req, res) => {
       { header: 'Attendance Type', key: 'attendanceType' },
       { header: 'Member Type', key: 'memberType' },
       { header: 'Total Amount', key: 'totalAmount' },
-      { header: 'Paid Amount', key: 'paidAmount' },
+      { header: 'Money received (USD)', key: 'paidAmount' },
+      { header: 'Coupon discounts (USD) - not revenue', key: 'couponDiscountUsd' },
       { header: 'Pending Amount', key: 'pendingAmount' },
       { header: 'Payment Status', key: 'paymentStatus' },
       { header: 'Status', key: 'status' },
@@ -513,7 +516,8 @@ const exportRegistrations = asyncHandler(async (req, res) => {
       attendanceType: registration.attendanceType,
       memberType: registration.memberType,
       totalAmount: registration.totalAmount,
-      paidAmount: registration.paidAmount,
+      paidAmount: approvedPaymentAccounting(registration.payments).cashPaidUsd,
+      couponDiscountUsd: approvedPaymentAccounting(registration.payments).discountUsd,
       pendingAmount: registration.pendingAmount,
       paymentStatus: registration.paymentStatus,
       status: registration.status,
@@ -524,6 +528,7 @@ const exportRegistrations = asyncHandler(async (req, res) => {
 
 const exportPayments = asyncHandler(async (req, res) => {
   const payments = await Payment.findAll({
+    where: cashPaymentWhere(),
     include: [{ association: 'registration', include: ['user'] }],
   });
 

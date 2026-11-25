@@ -29,3 +29,13 @@ test('bank receipt awaiting review outranks newer unused payment attempts', () =
   const approved = payment(1, 'approved', '2026-10-01T12:00:00Z');
   assert.equal(selectExportPayment([receipt, approved]), approved);
 });
+
+test('coupon credits never represent a monetary payment or hide a pending real payment', () => {
+  const coupon = { ...payment(107, 'approved'), provider: 'coupon', amountUsd: 50 };
+  const pending = { ...payment(108, 'pending_payment'), provider: 'cobru', amountUsd: 350 };
+  assert.equal(selectExportPayment([coupon, pending]), pending);
+  assert.equal(selectExportPayment([coupon]), null);
+  assert.equal(selectExportPayment([{ ...coupon, provider: null, paymentMethod: 'coupon' }]), null);
+  const approved = { ...pending, status: 'approved' };
+  assert.equal(selectExportPayment([coupon, approved]), approved);
+});

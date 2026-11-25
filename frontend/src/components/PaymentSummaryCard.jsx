@@ -3,6 +3,7 @@ import { formatCurrency } from '../utils/currency';
 
 export function PaymentSummaryCard({
   isIvaAdjustment = false,
+  recordedDiscountAmount = 0,
   registrationTotal,
   paidAmount,
   pendingAmount,
@@ -44,6 +45,9 @@ export function PaymentSummaryCard({
       </div>
 
       <div className="mt-6 rounded-[1.75rem] border border-white/10 bg-white/10 p-6">
+        {recordedDiscountAmount > 0 && <p className="mb-4 text-sm text-white/80">
+          Coupon discounts recorded: {formatCurrency(recordedDiscountAmount)}. Discounts reduce your balance and are not money received.
+        </p>}
         <InputField
           label={isIvaAdjustment ? 'Additional IVA to pay now (USD)' : 'Base amount to pay now'}
           type="number"

@@ -1,3 +1,5 @@
+const { isCouponPayment } = require('./paymentAccounting');
+
 function priority(payment) {
   if (['paid', 'approved', 'accepted'].includes(payment.status)) return 0;
   if (payment.status === 'pending_validation') return 1;
@@ -9,7 +11,7 @@ function priority(payment) {
 // payments, then other recorded states.
 // Within each group use creation time and ID, never validation time.
 function selectExportPayment(payments) {
-  return [...payments].sort((a, b) =>
+  return payments.filter(payment => !isCouponPayment(payment)).sort((a, b) =>
     priority(a) - priority(b) ||
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() ||
     Number(b.id) - Number(a.id)
