@@ -26,7 +26,12 @@ test('both dashboard revenue totals and financial export exclude coupon payments
   });
   t.mock.method(models.User, 'count', async () => 1);
   t.mock.method(models.Registration, 'count', async () => 1);
-  t.mock.method(models.Registration, 'sum', async () => 0);
+  const balances = [{ active: true, pendingAmount: 350 }, { active: false, pendingAmount: 900 }];
+  t.mock.method(models.Registration, 'sum', async (field, options) => {
+    assert.equal(field, 'pendingAmount');
+    assert.deepEqual(options.include, [{ association: 'user', attributes: [], required: true, where: { active: true } }]);
+    return balances.filter(row => row.active).reduce((sum, row) => sum + row.pendingAmount, 0) || null;
+  });
   t.mock.method(models.Registration, 'findAll', async () => []);
   t.mock.method(models.Paper, 'count', async () => 0);
   let revenueCalls = 0;
@@ -43,6 +48,13 @@ test('both dashboard revenue totals and financial export exclude coupon payments
   assert.equal(revenueCalls, 2);
   assert.equal(response.data.metrics.approvedPaymentsTotal, 350);
   assert.equal(response.data.summary.revenueCollected, 350);
+  assert.equal(response.data.summary.pendingBalances, 350);
+  balances[0].active = false;
+  await controller.getDashboardSummary({}, res, next);
+  assert.equal(response.data.summary.pendingBalances, 0);
+  balances[0].active = true;
+  await controller.getDashboardSummary({}, res, next);
+  assert.equal(response.data.summary.pendingBalances, 350);
   t.mock.method(models.Payment, 'findAll', async options => {
     assert.deepEqual(options.where, cashPaymentWhere());
     return [];

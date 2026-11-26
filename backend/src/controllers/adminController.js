@@ -77,7 +77,9 @@ const getDashboardSummaryData = async () => {
     Paper.count(),
     Paper.count({ where: { status: PAPER_STATUSES.ACCEPTED } }),
     Payment.sum('amountUsd', { where: cashPaymentWhere({ status: PAYMENT_STATUSES.APPROVED }) }),
-    Registration.sum('pendingAmount'),
+    Registration.sum('pendingAmount', {
+      include: [{ association: 'user', attributes: [], required: true, where: { active: true } }],
+    }),
   ]);
 
   return {
