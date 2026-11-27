@@ -1,7 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const models = require('../src/models');
-const { approvedPaymentAccounting, cashPaymentWhere } = require('../src/utils/paymentAccounting');
+const { approvedPaymentAccounting, cashPaymentWhere, approvedPaymentTotals } = require('../src/utils/paymentAccounting');
 
 test('USD 50 discount is not cash before or after USD 350 is received', () => {
   const coupon = { status: 'approved', provider: 'coupon', amountUsd: 50 };
@@ -9,6 +9,24 @@ test('USD 50 discount is not cash before or after USD 350 is received', () => {
   assert.deepEqual(approvedPaymentAccounting([coupon, payment]), { cashPaidUsd: 0, discountUsd: 50 });
   assert.deepEqual(approvedPaymentAccounting([coupon, { ...payment, status: 'approved' }]), { cashPaidUsd: 350, discountUsd: 50 });
   assert.deepEqual(approvedPaymentAccounting([{ ...coupon, provider: null, paymentMethod: 'coupon' }]), { cashPaidUsd: 0, discountUsd: 50 });
+});
+
+test('CSV and review totals sum approved payments at their stored exchange rates, excluding coupons and other states', async () => {
+  const payments = [
+    { id: 139, status: 'approved', provider: 'cobru', amountUsd: '1500.00', amountCop: '5438860.00' },
+    { id: 138, status: 'approved', provider: 'cobru', amountUsd: '350.00', amountCop: '1278286.50' },
+    { status: 'approved', provider: 'coupon', amountUsd: 50, amountCop: 180000 },
+    ...['pending_payment', 'pending_validation', 'cancelled', 'refunded', 'rejected'].map(status => ({ status, amountUsd: 100, amountCop: 400000 })),
+  ];
+  assert.deepEqual(approvedPaymentTotals(payments), { amountUsd: 1850, amountCop: 6717146.5, count: 2, missingCopCount: 0 });
+  const frontend = await import('../../frontend/src/utils/paymentAccounting.js');
+  assert.equal(frontend.paymentAccounting(payments).cashPaidCop, 6717146.5);
+  assert.equal(frontend.paymentAccounting(payments).cashPaidUsd, 1850);
+  assert(frontend.formatApprovedMoneyReceived(payments).includes('6,717,146.50'));
+  payments[0].amountCop = null;
+  assert.equal(approvedPaymentTotals(payments).amountCop, null, 'Never present an incomplete COP sum as the total');
+  assert.equal(approvedPaymentTotals(payments).missingCopCount, 1);
+  assert.equal(frontend.paymentAccounting(payments).cashPaidCop, null);
 });
 
 test('both dashboard revenue totals and financial export exclude coupon payments', async t => {

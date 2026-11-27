@@ -62,4 +62,12 @@ test('admin user list includes latest registration membership and attendance, ev
   assert.equal(response.data.users[0].latestPaymentStatus, 'pending_payment');
   assert.equal(response.data.users[0].exportPayment.id, 108);
   assert.equal(response.data.users[0].couponDiscountUsd, 50);
+  t.mock.method(models.Payment, 'findAll', async () => [
+    { id: 139, status: 'approved', provider: 'cobru', amountUsd: '1500.00', amountCop: '5438860.00', registration: { userId: 6 } },
+    { id: 138, status: 'approved', provider: 'cobru', amountUsd: '350.00', amountCop: '1278286.50', registration: { userId: 6 } },
+    { id: 137, status: 'approved', provider: 'coupon', amountUsd: '50.00', amountCop: '180000.00', registration: { userId: 6 } },
+  ]);
+  await listUsers({ query: {} }, res, error => { throw error; });
+  assert.deepEqual(response.data.users[0].approvedPaymentTotals, { amountUsd: 1850, amountCop: 6717146.5, count: 2, missingCopCount: 0 });
+  assert.equal(response.data.users[0].couponDiscountUsd, 50);
 });

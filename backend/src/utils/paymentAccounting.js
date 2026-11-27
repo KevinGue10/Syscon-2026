@@ -18,4 +18,15 @@ const approvedPaymentAccounting = (payments = []) => {
   return { cashPaidUsd: cashCents / 100, discountUsd: discountCents / 100 };
 };
 
-module.exports = { isCouponPayment, cashPaymentWhere, approvedPaymentAccounting };
+const approvedPaymentTotals = (payments = []) => {
+  const approved = payments.filter(payment => payment.status === 'approved' && !isCouponPayment(payment));
+  const missingCopCount = approved.filter(payment => payment.amountCop == null || payment.amountCop === '' || !Number.isFinite(Number(payment.amountCop))).length;
+  return {
+    amountUsd: approvedPaymentAccounting(approved).cashPaidUsd,
+    amountCop: missingCopCount ? null : approved.reduce((sum, payment) => sum + Math.round(Number(payment.amountCop) * 100), 0) / 100,
+    count: approved.length,
+    missingCopCount,
+  };
+};
+
+module.exports = { isCouponPayment, cashPaymentWhere, approvedPaymentAccounting, approvedPaymentTotals };

@@ -1,6 +1,6 @@
 import { getPaymentReviewAmounts, formatReviewMoney } from '../utils/paymentReview';
 import { IvaAdjustmentPanel } from '../components/IvaAdjustmentPanel';
-import { isCouponPayment, paymentAccounting } from '../utils/paymentAccounting';
+import { isCouponPayment, paymentAccounting, formatApprovedMoneyReceived } from '../utils/paymentAccounting';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert } from '../components/Alert';
@@ -337,7 +337,7 @@ function AdminUsersOverviewPage() {
             className="border border-slate-200"
             disabled={!filteredUsers.length}
             onClick={() => downloadCsv([
-              ['ID', 'Status', 'Payment status', 'Full name', 'Email', 'Country', 'City', 'Affiliation', 'Occupation', 'Gender', 'ID document', 'Phone', 'IEEE member', 'Membership', 'Attendance', 'Payment status', 'Payment amount (USD)', 'Payment amount (COP)', 'IVA selected', 'Payment created at (UTC)', 'Coupon discount (USD) - not revenue'],
+              ['ID', 'Status', 'Payment status', 'Full name', 'Email', 'Country', 'City', 'Affiliation', 'Occupation', 'Gender', 'ID document', 'Phone', 'IEEE member', 'Membership', 'Attendance', 'Reference payment status', 'Total approved payments (USD)', 'Total approved payments (COP)', 'Reference payment IVA selected', 'Reference payment created at (UTC)', 'Coupon discount (USD) - not revenue', 'Approved monetary payments count', 'Approved payments missing COP amount'],
               ...filteredUsers.map((user) => {
                 const registration = resolvePrimaryRegistration(user);
                 return [
@@ -351,11 +351,13 @@ function AdminUsersOverviewPage() {
                   registration?.membershipNumber || 'Not applicable',
                   translateAttendanceType(registration?.attendanceType),
                   resolveLatestPaymentStatusLabel(user.exportPayment?.status),
-                  user.exportPayment?.amountUsd ?? '',
-                  user.exportPayment?.amountCop ?? '',
+                  user.approvedPaymentTotals?.amountUsd ?? '',
+                  user.approvedPaymentTotals?.amountCop ?? '',
                   user.exportPayment?.includesTax == null ? '' : user.exportPayment.includesTax ? 'Yes' : 'No',
                   user.exportPayment?.createdAt ?? '',
                   user.couponDiscountUsd ?? 0,
+                  user.approvedPaymentTotals?.count ?? '',
+                  user.approvedPaymentTotals?.missingCopCount ?? '',
                 ];
               }),
             ], `syscon-participants-${new Date().toISOString().slice(0, 10)}.csv`)}
@@ -829,12 +831,12 @@ function AdminUsersOverviewPage() {
                         value={formatReviewMoney(reviewAmounts.pendingUsd, reviewAmounts.rate)}
                       />
                       <ReviewItem label="Registration total" value={formatReviewMoney(Number(paymentReviewState.registration?.paymentSummary?.totalAmount ?? paymentReviewState.registration?.totalAmount ?? 0), reviewAmounts.rate)} />
-                      <ReviewItem label="Money received" value={formatReviewMoney(paymentAccounting(paymentReviewState.payments).cashPaidUsd, reviewAmounts.rate)} />
+                      <ReviewItem label="Money received" value={formatApprovedMoneyReceived(paymentReviewState.payments)} />
                       <ReviewItem label="Coupon discounts (not revenue)" value={formatReviewMoney(paymentAccounting(paymentReviewState.payments).discountUsd, reviewAmounts.rate)} />
                       <ReviewItem label="Selected payment amount" value={formatReviewMoney(reviewAmounts.originalUsd, reviewAmounts.rate)} />
                       <ReviewItem label="Payment exchange rate" value={reviewAmounts.rate ? reviewAmounts.rate.toLocaleString('en-US',{maximumFractionDigits:4}) + " COP per USD" : "No exchange rate recorded"} />
                     </div>
-                    <p className="mt-3 text-xs leading-6 text-slate-500">COP equivalents in this summary use the selected payment's exchange rate. Previous payments may have used different rates.</p>
+                    <p className="mt-3 text-xs leading-6 text-slate-500">Money received sums the stored USD and COP amounts of all approved monetary payments. Other COP equivalents use the selected payment's exchange rate.</p>
                     <IvaAdjustmentPanel key={paymentReviewState.registration?.id} registration={paymentReviewState.registration}
                       onAdded={() => openPaymentReviewModal(paymentReviewState.user, paymentReviewState.selectedPaymentId)} />
                   </div>

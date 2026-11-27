@@ -14,7 +14,7 @@ const { PAPER_STATUSES, PARTICIPANT_TYPES, MEMBER_TYPES, PAYMENT_STATUSES, USER_
 const asyncHandler = require('../utils/asyncHandler');
 const { buildWorkbook } = require('../services/exportService');
 const { selectExportPayment } = require('../utils/paymentExport');
-const { cashPaymentWhere, approvedPaymentAccounting } = require('../utils/paymentAccounting');
+const { cashPaymentWhere, approvedPaymentAccounting, approvedPaymentTotals } = require('../utils/paymentAccounting');
 const { calculateRegistrationTotals } = require('../services/pricingService');
 const { createAuditLog } = require('../services/auditService');
 const { setUserActiveStatus } = require('../services/userService');
@@ -174,6 +174,7 @@ const listUsers = asyncHandler(async (req, res) => {
         ...user.toJSON(),
         latestPaymentStatus: latestPaymentStatusByUserId.get(user.id) || null,
         couponDiscountUsd: approvedPaymentAccounting(paymentsByUserId.get(user.id)).discountUsd,
+        approvedPaymentTotals: approvedPaymentTotals(paymentsByUserId.get(user.id)),
         exportPayment: (() => {
           const payment = selectExportPayment(paymentsByUserId.get(user.id) || []);
           return payment ? {
